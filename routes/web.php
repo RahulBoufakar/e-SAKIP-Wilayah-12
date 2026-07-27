@@ -16,3 +16,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/tailwind-test', function () {
+    return view('tailwind-test');
+});
+
+Route::get('/alpine-test', function () {
+    return view('alpine-test');
+});
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+});
