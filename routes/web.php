@@ -1,30 +1,15 @@
 <?php
 
+use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+// GET / (FR-L1): pengganti welcome page Laravel default
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Placeholder Tim Kerja/Validator (jawaban Open Question #1 — belum ada
+// auth, tombol Landing Page cukup diarahkan ke halaman "segera hadir").
+// Tim Kerja/Validator sendiri di luar scope PRD §3.
+Route::view('/tim-kerja', 'placeholder.index', ['role' => 'Tim Kerja'])->name('tim-kerja.placeholder');
+Route::view('/validator', 'placeholder.index', ['role' => 'Validator'])->name('validator.placeholder');
 
-Route::get('/tailwind-test', function () {
-    return view('tailwind-test');
-});
-
-Route::get('/alpine-test', function () {
-    return view('alpine-test');
-});
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-});
+require __DIR__.'/admin.php';
