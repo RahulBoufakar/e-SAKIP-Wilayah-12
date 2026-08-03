@@ -13,15 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('realisasis', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->enum('role', ['administrator', 'tim_kerja', 'validator'])->default('tim_kerja');
-            $table->rememberToken();
+            $table->foreignId('iku_id')->constrained('iku')->cascadeOnDelete();
+            $table->enum('triwulan', ['tw1', 'tw2', 'tw3', 'tw4']);
+            $table->decimal('target', 10, 2)->nullable();
+            $table->decimal('realisasi', 10, 2)->nullable();
             $table->timestamps();
+
+            $table->unique(['iku_id', 'triwulan']);
         });
     }
 
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('realisasis');
     }
 };

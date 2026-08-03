@@ -1,0 +1,24 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Rule R-5: master lookup, diseed sekali (TriwulanSeeder), tidak ada
+        // endpoint create/delete dari UI.
+        Schema::create('triwulan', function (Blueprint $table) {
+            $table->tinyIncrements('id');
+            $table->string('kode', 4)->unique(); // "TW1".."TW4"
+            $table->tinyInteger('urutan');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('triwulan');
+    }
+};
