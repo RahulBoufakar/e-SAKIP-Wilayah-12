@@ -56,34 +56,56 @@
                            class="mt-1.5 w-full rounded-lg border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:ring-brand-500">
                     @error('password')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
                 </div>
+                
+                <!-- 1. Dropdown hanya tampil jika BUKAN mode edit untuk user bertipe Admin -->
+                <div x-show="!(mode === 'edit' && form.role === 'admin')">
+                    <x-form.select
+                        label="Role"
+                        name="role"
+                        x-model="form.role"
+                        required
+                    >
+                        <option value="" disabled>Pilih role</option>
+                        <option value="tim_kerja">Tim Kerja</option>
+                        <option value="validator">Validator</option>
+                    </x-form.select>
+                </div>
 
-                <x-form.select
-                    label="Role"
-                    name="role"
-                    x-model="form.role"
-                    required
-                >
-                    <option value="" disabled>Pilih role</option>
-                    <option value="administrator">Administrator</option>
-                    <option value="tim_kerja">Tim Kerja</option>
-                    <option value="validator">Validator</option>
-                </x-form.select>
+                <!-- 2. Saat edit user Admin, sembunyikan dropdown & kirim nilainya via input hidden -->
+                <template x-if="mode === 'edit' && form.role === 'admin'">
+                    <div>
+                        <input type="hidden" name="role" x-model="form.role">
+                        
+                        <!-- Tampilan membaca saja (Read-only status) -->
+                        <div class="mt-2">
+                            <label class="block text-sm font-medium text-gray-700">Role</label>
+                            <span class="inline-flex items-center rounded-md bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10 mt-1">
+                                Admin (Role ini tidak dapat diubah)
+                            </span>
+                        </div>
+                    </div>
+                </template>
 
                 {{-- FR-M5: hanya muncul untuk Role = Tim Kerja, murni x-show (toggle UI) --}}
                 <div x-show="form.role === 'tim_kerja'" x-cloak>
-                    <label class="block text-sm font-medium text-ink-900">Tim Kerja</label>
-                    <div class="mt-1.5 max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 p-3">
-                        @forelse ($timKerjaList as $sk)
-                            <label class="flex items-center gap-2 text-sm text-slate-600">
-                                <input type="checkbox" name="tim_kerja_id[]" value="{{ $sk->id }}" x-model.number="form.tim_kerja_id"
-                                       class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                                {{ $sk->nama_tim }}
-                            </label>
-                        @empty
-                            <p class="text-xs text-slate-400">Belum ada data Tim Kerja.</p>
-                        @endforelse
-                    </div>
-                    @error('tim_kerja_id')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+                    <label for="tim_kerja_id" class="block text-sm font-medium text-ink-900">Tim Kerja</label>
+                    <select name="tim_kerja_id" 
+                    id="tim_kerja_id" 
+                    x-model.number="form.tim_kerja_id"
+                    class="mt-1.5 block w-full rounded-lg border border-slate-200 p-2.5 text-sm text-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                    <option value="">-- Pilih Tim Kerja --</option>
+                        @foreach ($timKerjaList as $sk)
+                        <option value="{{ $sk->id }}">{{ $sk->nama_tim }}</option>
+                        @endforeach
+                    </select>
+                    
+                    @if ($timKerjaList->isEmpty())
+                        <p class="mt-1.5 text-xs text-slate-400">Belum ada data Tim Kerja.</p>
+                    @endif
+
+                    @error('tim_kerja_id')
+                        <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
             </div>

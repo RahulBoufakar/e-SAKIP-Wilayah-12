@@ -9,8 +9,31 @@
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
             mode: {{ $errors->any() ? '\'edit\'' : '\'create\'' }},
             form: { id: null, name: '{{ old('name', '') }}', email: '{{ old('email', '') }}', password: '', role: '{{ old('role', '') }}', tim_kerja_id: @json(collect(old('tim_kerja_id', []))->map(fn($v) => (int) $v)) },
-            openCreate() { this.mode = 'create'; this.form = { id: null, name: '', email: '', password: '', role: '', tim_kerja_id: [] }; this.modalOpen = true },
-            openEdit(row) { this.mode = 'edit'; this.form = { id: row.id, name: row.name, email: row.email, password: '', role: row.role, tim_kerja_id: row.tim_kerja?.map(sk => sk.id) }; this.modalOpen = true },
+            openCreate() { 
+            this.mode = 'create'; 
+                this.form = { 
+                    id: null, 
+                    name: '', 
+                    email: '', 
+                    password: '', 
+                    role: '', 
+                    tim_kerja_id: null 
+                }; 
+                this.modalOpen = true; 
+            },
+
+            openEdit(row) { 
+                this.mode = 'edit'; 
+                this.form = { 
+                    id: row.id, 
+                    name: row.name, 
+                    email: row.email, 
+                    password: '', 
+                    role: row.roles[0]?.name ?? '', 
+                    tim_kerja_id: row.tim_kerja[0]?.id ?? null 
+                }; 
+                this.modalOpen = true; 
+            },
         }"
     >
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -43,9 +66,10 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($users as $i => $row)
                         @php
-                            $roleLabel = ['administrator' => 'Administrator', 'tim_kerja' => 'Tim Kerja', 'validator' => 'Validator'][$row->role] ?? $row->role;
-                            $roleBadge = match ($row->role) {
-                                'administrator' => 'bg-brand-50 text-brand-700',
+                            $userRole = $row->getRoleNames()->first();
+                            $roleLabel = ['admin' => 'Admin', 'tim_kerja' => 'Tim Kerja', 'validator' => 'Validator'][$userRole] ?? $userRole;
+                            $roleBadge = match ($userRole) {
+                                'admin' => 'bg-brand-50 text-brand-700',
                                 'tim_kerja' => 'bg-amber-50 text-amber-700',
                                 default => 'bg-slate-100 text-slate-600',
                             };
@@ -58,12 +82,14 @@
                                 <span class="inline-flex rounded-full {{ $roleBadge }} px-2.5 py-0.5 text-xs font-semibold">{{ $roleLabel }}</span>
                             </td>
                             <td class="px-5 py-3 text-slate-600">
-                                {{ $row->role === 'tim_kerja' && $row->timKerja->isNotEmpty() ? $row->timKerja->pluck('nama_tim')->join(', ') : '-' }}
+                                {{ $row->hasRole('tim_kerja') && $row->timKerja->isNotEmpty() ? $row->timKerja->pluck('nama_tim')->join(', ') : '-' }}
                             </td>
                             <td class="px-5 py-3">
                                 <div class="flex items-center justify-end gap-2">
                                     <button @click="openEdit(@js($row))" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Edit</button>
-                                    <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
+                                    @unlessrole('admin')
+                                        <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
+                                    @endunlessrole
                                 </div>
                                 @include('admin.layout.confirm-delete', [
                                     'refName' => 'confirm-'.$row->id,

@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class AdminUserSeeder extends Seeder
 {
@@ -14,9 +13,11 @@ class AdminUserSeeder extends Seeder
         $email = env('ADMIN_EMAIL', 'admin@esakip-lldikti12.test');
         $password = Hash::make('admin123'); // Ganti dengan password yang diinginkan
 
-        User::firstOrCreate(
+        $user = User::firstOrCreate(
             ['email' => $email],
-            ['name' => 'Administrator', 'password' => $password, 'role' => 'administrator']
+            ['name' => 'Administrator', 'password' => $password]
         );
+
+        $user->syncRoles(['admin']);
     }
 }
