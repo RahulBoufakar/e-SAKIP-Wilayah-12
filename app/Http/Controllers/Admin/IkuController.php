@@ -13,20 +13,6 @@ class IkuController extends Controller
 {
     use HandlesRestrictedDeletes;
 
-    // GET /admin/iku — tampilkan semua IKU & IKK yang sudah ada
-    public function index(Request $request)
-    {
-        $listIku = Iku::with(['sasaranKegiatan', 'timKerja'])
-            ->when($request->filled('search'), fn ($q) => $q->where('deskripsi', 'like', '%'.$request->search.'%'))
-            ->orderBy('kode')
-            ->paginate(15)
-            ->withQueryString();
-
-        $sasaran = SasaranKegiatan::orderBy('kode')->get(['id', 'kode']);
-        $timKerjaOptions = TimKerja::orderBy('nama_tim')->get(['id', 'nama_tim']);
-        return view('admin.target-kinerja.iku.index', compact('listIku', 'sasaran', 'timKerjaOptions'));
-    }
-
     // POST /admin/iku — buat IKU atau IKK, dibedakan field 'jenis' pada form
     public function store(Request $request)
     {

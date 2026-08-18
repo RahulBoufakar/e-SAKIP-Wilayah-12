@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TimKerja;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -33,7 +34,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => $data['password'], // cast 'hashed' -> auto di-hash saat disimpan
+            'password' => Hash::make($data['password']), // cast 'hashed' -> auto di-hash saat disimpan
             'role' => $data['role'],
         ]);
 
@@ -51,7 +52,7 @@ class UserController extends Controller
         $user->email = $data['email'];
         $user->role = $data['role'];
         if (! empty($data['password'])) {
-            $user->password = $data['password']; // kosong = tidak diubah
+            $user->password = Hash::make($data['password']); // kosong = tidak diubah
         }
         $user->save();
 
@@ -77,8 +78,6 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user?->id)],
             'password' => [$isUpdate ? 'nullable' : 'required', 'string', 'min:8'],
             'role' => 'required|in:administrator,tim_kerja,validator',
-            // ponytail-flag: tim_kerja_id kini array (many-to-many via user_tim_kerja,
-            // lihat jawaban Open Question #2) — bukan dropdown tunggal seperti di Desain Sistem §5.4.
             'tim_kerja_id' => 'required_if:role,tim_kerja|array',
             'tim_kerja_id.*' => 'exists:tim_kerja,id',
         ], [
