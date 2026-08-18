@@ -15,7 +15,7 @@ class RealisasiController extends Controller
     // GET /admin/iku-lldikti
     public function index(Request $request)
     {
-        $tahunAnggaranId = $request->integer('tahun_anggaran_id')
+        $tahunAnggaranId = $request->session()->get('tahun_anggaran_id')
             ?: optional(TahunAnggaran::orderByDesc('tahun')->first())->id;
 
         $triwulan = in_array($request->get('triwulan'), self::TRIWULAN_VALID, true)

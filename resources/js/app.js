@@ -1,10 +1,13 @@
 import Alpine from 'alpinejs';
-import Chart from 'chart.js/auto';
 import collapse from '@alpinejs/collapse';
- 
-window.Alpine = Alpine;
-window.Chart = Chart;
- 
+import Chart from 'chart.js/auto'; // Impor Chart.js lengkap (auto register controller & scales)
+
+// Registrasi Alpine Plugin
 Alpine.plugin(collapse);
 
+// Set Global Variables
+window.Alpine = Alpine;
+window.Chart = Chart;
+
+// Start Alpine
 Alpine.start();

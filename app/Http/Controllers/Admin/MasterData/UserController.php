@@ -15,11 +15,16 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $users = User::with('timKerja')
-            ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%'.$request->search.'%')
-                ->orWhere('email', 'like', '%'.$request->search.'%'))
-            ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
+                // ->withoutRole('admin')
+                ->when($request->filled('search'), function ($q) use ($request) {
+                    $q->where(function ($subQuery) use ($request) {
+                        $subQuery->where('name', 'like', '%' . $request->search . '%')
+                                ->orWhere('email', 'like', '%' . $request->search . '%');
+                    });
+                })
+                ->orderBy('name')
+                ->paginate(15)
+                ->withQueryString();
 
         $timKerjaList = TimKerja::orderBy('nama_tim')->get(['id', 'nama_tim']);
 
@@ -30,15 +35,13 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
-
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']), // cast 'hashed' -> auto di-hash saat disimpan
-            'role' => $data['role'],
         ]);
-
-        $user->timKerja()->sync($data['role'] === 'tim_kerja' ? $data['tim_kerja_id'] : []);
+        $user->syncRoles([$data['role']]);
+        $user->timKerja()->sync($data['role'] === 'tim_kerja' ? [$data['tim_kerja_id']] : []);
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'User berhasil ditambahkan.']);
     }
@@ -50,13 +53,16 @@ class UserController extends Controller
 
         $user->name = $data['name'];
         $user->email = $data['email'];
-        $user->role = $data['role'];
         if (! empty($data['password'])) {
             $user->password = Hash::make($data['password']); // kosong = tidak diubah
         }
         $user->save();
 
-        $user->timKerja()->sync($data['role'] === 'tim_kerja' ? $data['tim_kerja_id'] : []);
+        $user->syncRoles([$data['role']]);
+        // 3. Update Tim Kerja di Tabel Pivot
+        $user->timKerja()->sync(
+            $data['role'] === 'tim_kerja' ? [$data['tim_kerja_id']] : []
+        );
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'User berhasil diperbarui.']);
     }
@@ -64,7 +70,12 @@ class UserController extends Controller
     // DELETE /admin/master-data/user/{id} (FR-M3)
     public function destroy(User $user)
     {
+        if( $user->hasRole('admin')){
+            return back()->with('feedback', ['type' => 'error', 'message' => 'User Admin tidak dapat dihapus']);
+        }
+
         $user->timKerja()->detach();
+        $user->syncRoles([]);
         $user->delete();
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'User berhasil dihapus.']);
@@ -78,7 +89,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user?->id)],
             'password' => [$isUpdate ? 'nullable' : 'required', 'string', 'min:8'],
             'role' => 'required|in:administrator,tim_kerja,validator',
-            'tim_kerja_id' => 'required_if:role,tim_kerja|array',
+            'tim_kerja_id' => 'required_if:role,tim_kerja',
             'tim_kerja_id.*' => 'exists:tim_kerja,id',
         ], [
             'name.required' => 'Nama wajib diisi.',

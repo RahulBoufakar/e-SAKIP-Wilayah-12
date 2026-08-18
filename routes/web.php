@@ -1,15 +1,32 @@
 <?php
 
-use App\Http\Controllers\LandingController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// GET / (FR-L1): pengganti welcome page Laravel default
-Route::get('/', [LandingController::class, 'index'])->name('landing');
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
 
-// Placeholder Tim Kerja/Validator (jawaban Open Question #1 — belum ada
-// auth, tombol Landing Page cukup diarahkan ke halaman "segera hadir").
-// Tim Kerja/Validator sendiri di luar scope PRD §3.
-Route::view('/tim-kerja', 'placeholder.index', ['role' => 'Tim Kerja'])->name('tim-kerja.placeholder');
-Route::view('/validator', 'placeholder.index', ['role' => 'Validator'])->name('validator.placeholder');
+Route::get('/', function () {
+    return view('welcome');
+});
 
+Route::get('/dashboard', fn () => redirect()->route(
+    \App\Providers\RouteServiceProvider::homeRouteFor(auth()->user())
+))->middleware('auth')->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';

@@ -17,7 +17,29 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/home';
+    public const HOME = '/dashboard';
+
+    /**
+     * Alias nama route "home" per role — dipakai AuthenticatedSessionController
+     * untuk redirect setelah login berhasil.
+     */
+    public const HOME_ADMIN = 'admin.dashboard';
+    public const HOME_TIM_KERJA = 'tim-kerja.placeholder';
+    public const HOME_VALIDATOR = 'validator.placeholder';
+
+    /**
+     * Resolve nama route home sesuai role user yang login. Return nama route
+     * (string), dipakai bareng route()/redirect()->route().
+     */
+    public static function homeRouteFor($user): string
+    {
+        return match (true) {
+            $user->hasRole('admin') => static::HOME_ADMIN,
+            $user->hasRole('tim_kerja') => static::HOME_TIM_KERJA,
+            $user->hasRole('validator') => static::HOME_VALIDATOR,
+            default => 'landing',
+        };
+    }
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.

@@ -15,10 +15,8 @@ use App\Http\Controllers\Admin\Tools\TahunAnggaranController;
 use App\Http\Controllers\Admin\Tools\TriwulanController;
 use Illuminate\Support\Facades\Route;
 
-// Semua route di bawah middleware auth + role:administrator, prefix /admin
-// (autentikasi/otorisasi ini di luar scope PRD §3 — diasumsikan sudah ada / dibuat menyusul).
-//middleware(['auth', 'role:administrator'])
-Route::prefix('admin')
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
