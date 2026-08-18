@@ -1,6 +1,7 @@
 {{-- PRD §6.5 / API_Routes §6: dipakai controller saat data prasyarat (Tahun
-     Anggaran) belum ada. Layout penuh tetap @extends, hanya isi content diganti. --}}
-@extends('admin.layout.app')
+     Anggaran) belum ada. Layout penuh tetap @extends, hanya isi content diganti.
+     $layout/$backRoute opsional supaya view ini bisa dipakai lintas-role. --}}
+@extends($layout ?? 'admin.layout.app')
 
 @section('title', 'Data Belum Tersedia')
 
@@ -13,7 +14,7 @@
         </div>
         <h2 class="mt-5 text-lg font-bold text-ink-900">Data Belum Tersedia</h2>
         <p class="mt-2 max-w-sm text-sm text-slate-500">{{ $errorMessage }}</p>
-        <a href="{{ route('admin.dashboard') }}" class="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700">
+        <a href="{{ route($backRoute ?? 'admin.dashboard') }}" class="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700">
             Kembali ke Dashboard
         </a>
     </div>

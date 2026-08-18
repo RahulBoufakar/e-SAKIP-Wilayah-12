@@ -23,10 +23,12 @@ trait ResolvesActiveTahunAnggaran
      * PRD §6.5 / API_Routes §6: graceful degradation — layout penuh tetap
      * tampil, hanya area konten diganti pesan ramah (bukan abort/exception).
      */
-    protected function missingTahunAnggaran(): View
+    protected function missingTahunAnggaran(?string $layout = null, ?string $backRoute = null): View
     {
         return view('admin.layout.app-error-content', [
             'errorMessage' => 'Data tahun anggaran belum tersedia. Silakan hubungi Administrator.',
+            'layout' => $layout,
+            'backRoute' => $backRoute,
         ]);
     }
 }
