@@ -15,7 +15,9 @@ class RoleSeeder extends Seeder
      */
     public function run()
     {
-        foreach (['admin', 'tim_kerja', 'validator'] as $role) {
+        // super_admin ditambahkan untuk bypass semua Gate (lihat AppServiceProvider::boot),
+        // termasuk buka-kunci field yang sudah 'disetujui' pada modul Tim Kerja.
+        foreach (['admin', 'super_admin', 'tim_kerja', 'validator'] as $role) {
             Role::firstOrCreate(['name' => $role]);
         }
     }

@@ -5,6 +5,9 @@ import Chart from 'chart.js/auto'; // Impor Chart.js lengkap (auto register cont
 // Registrasi Alpine Plugin
 Alpine.plugin(collapse);
 
+// Impor Store Workflow Status
+import './stores/workflow-status';
+
 // Set Global Variables
 window.Alpine = Alpine;
 window.Chart = Chart;

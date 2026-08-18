@@ -24,7 +24,7 @@ class RouteServiceProvider extends ServiceProvider
      * untuk redirect setelah login berhasil.
      */
     public const HOME_ADMIN = 'admin.dashboard';
-    public const HOME_TIM_KERJA = 'tim-kerja.placeholder';
+    public const HOME_TIM_KERJA = 'tim-kerja.dashboard';
     public const HOME_VALIDATOR = 'validator.placeholder';
 
     /**

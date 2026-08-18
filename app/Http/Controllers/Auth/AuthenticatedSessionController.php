@@ -40,16 +40,16 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // Halaman login sementara ini memuat pilihan Tahun Anggaran (lihat
-    // ContextController untuk mekanisme yang sama, dipakai lagi di sini
-    // supaya user langsung landing di TA yang dipilih).
-    if ($request->filled('tahun_anggaran_id')) {
-        $request->session()->put('tahun_anggaran_id', $request->integer('tahun_anggaran_id'));
-    }
+        // ContextController untuk mekanisme yang sama, dipakai lagi di sini
+        // supaya user langsung landing di TA yang dipilih).
+        if ($request->filled('tahun_anggaran_id')) {
+            $request->session()->put('tahun_anggaran_id', $request->integer('tahun_anggaran_id'));
+        }
 
         return redirect()->intended(
             route(RouteServiceProvider::homeRouteFor($request->user()))
         );
-    }
+}
 
     /**
      * Destroy an authenticated session.
