@@ -112,11 +112,16 @@ class DashboardController extends Controller
 
         // (3) Daftar item ditolak lintas 4 modul, terbaru lebih dulu
         $itemDitolak = collect();
+        // SESUDAH
         foreach (self::MODUL as $modelClass => $meta) {
+            $withRelations = $modelClass === UsulanProgramKerja::class
+                ? ['iku:id,kode,deskripsi']
+                : ['iku:id,kode,deskripsi', 'triwulan:id,kode'];
+
             $rows = $modelClass::whereIn('iku_id', $ikuIds)
                 ->where('tahun_anggaran_id', $tahunAnggaranId)
                 ->where('status', 'ditolak')
-                ->with(['iku:id,kode,deskripsi', 'triwulan:id,kode'])
+                ->with($withRelations)
                 ->get();
 
             foreach ($rows as $row) {
@@ -124,10 +129,14 @@ class DashboardController extends Controller
                     'modul' => $meta['label'],
                     'iku_kode' => $row->iku->kode ?? '-',
                     'iku_deskripsi' => $row->iku->deskripsi ?? '-',
-                    'triwulan' => $row->triwulan->kode ?? '-',
+                    'triwulan' => $modelClass === UsulanProgramKerja::class
+                        ? ($row->tahun === 'h_plus_1' ? 'TA+1' : 'TA Berjalan')
+                        : ($row->triwulan->kode ?? '-'),
                     'catatan_revisi' => $row->catatan_revisi,
                     'updated_at' => $row->updated_at,
-                    'url' => Route::has($meta['route']) ? route($meta['route'], ['iku' => $row->iku_id]) : null,
+                    'url' => $modelClass === UsulanProgramKerja::class
+                        ? route('tim-kerja.usulan-program-kerja.show', $row->id)
+                        : (Route::has($meta['route']) ? route($meta['route'], ['iku' => $row->iku_id]) : null),
                 ]);
             }
         }

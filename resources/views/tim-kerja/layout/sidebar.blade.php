@@ -1,7 +1,16 @@
 @php
+    $isTargetKinerja = request()->routeIs('tim-kerja.target-kinerja.*', 'tim-kerja.rencana-aksi.*', 'tim-kerja.iku-lldikti.*');
+    $isUsulanProker = request()->routeIs('tim-kerja.usulan-program-kerja.*');
+    
     $linkBase = 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
     $linkIdle = 'text-brand-100/70 hover:bg-white/5 hover:text-white';
     $linkActive = 'bg-brand-500 text-white shadow-card';
+
+    $sublinkBase = 'flex items-center gap-2 rounded-lg py-2 pl-9 pr-3 text-sm transition-colors';
+    $sublinkIdle = 'text-brand-100/60 hover:bg-white/5 hover:text-white';
+    $sublinkActive = 'bg-white/10 text-white font-medium';
+
+    $groupHeadBase = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
 @endphp
 
 <!-- Mobile Sidebar Overlay -->
