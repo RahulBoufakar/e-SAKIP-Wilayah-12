@@ -19,15 +19,19 @@ return new class extends Migration
         Schema::create('usulan_program_kerja', function (Blueprint $table) {
             $table->id();
             $table->foreignId('iku_id')->constrained('iku')->restrictOnDelete();
-            $table->unsignedTinyInteger('triwulan_id');
-            $table->foreign('triwulan_id')->references('id')->on('triwulan')->restrictOnDelete();
+            $table->string('nama_kegiatan');
             $table->foreignId('tahun_anggaran_id')->constrained('tahun_anggaran')->restrictOnDelete();
+            $table->enum('tahun', ['berjalan', 'h_plus_1'])->default('berjalan');
+            $table->text('permasalahan')->nullable();
+            $table->string('file_kak_pdf')->nullable();
+            $table->string('file_rab_pdf')->nullable();
+            $table->string('file_rab_excel')->nullable();
             $table->enum('status', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
 
-            $table->unique(['iku_id', 'triwulan_id', 'tahun_anggaran_id']);
+            $table->unique(['iku_id', 'tahun_anggaran_id', 'tahun']);
         });
     }
 

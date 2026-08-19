@@ -18,8 +18,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
+        $tahunDepan = now()->year + 1;
         return view('auth.login', [
-            'tahunList' => TahunAnggaran::orderByDesc('tahun')->get(['id', 'tahun']),
+            'tahunList' => TahunAnggaran::where('tahun', '!=', $tahunDepan)->orderByDesc('tahun')->get(['id', 'tahun']),
         ]);
     }
 

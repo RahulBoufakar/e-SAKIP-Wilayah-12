@@ -3,5 +3,31 @@
     Dashboard
 </a>
 
-{{-- Menu Usulan Program Kerja, Pelaporan Kegiatan, Capaian Kinerja, Analisa
+<!-- Target Kinerja -->
+<div x-data="{ open: {{ $isTargetKinerja ? 'true' : 'false' }} }">
+    <button @click="open = !open" class="{{ $groupHeadBase }} {{ $isTargetKinerja ? 'text-white' : $linkIdle }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 12.75l3-1.5" /></svg>
+        <span class="flex-1 text-left">Target Kinerja</span>
+        <svg :class="open ? 'rotate-180' : ''" class="h-4 w-4 shrink-0 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+    </button>
+    <div x-show="open" x-collapse class="mt-1 space-y-1">
+        <a href="{{ route('tim-kerja.target-kinerja.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.target-kinerja.*') ? $sublinkActive : $sublinkIdle }}">Target Kinerja</a>
+        <a href="{{ route('tim-kerja.rencana-aksi.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.rencana-aksi.*') ? $sublinkActive : $sublinkIdle }}">Rencana Aksi Triwulan</a>
+        <a href="{{ route('tim-kerja.iku-lldikti.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.iku-lldikti.*') ? $sublinkActive : $sublinkIdle }}">IKU LLDIKTI XII</a>
+    </div>
+</div>
+
+<!-- Usulan Proker -->
+<div x-data="{ open: {{ $isUsulanProker ? 'true' : 'false' }} }">
+    <button @click="open = !open" class="{{ $groupHeadBase }} {{ $isUsulanProker ? 'text-white' : $linkIdle }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H5.25a2.25 2.25 0 01-2.25-2.25V6.75a2.25 2.25 0 012.25-2.25h5.379a2.25 2.25 0 011.591.659l4.121 4.121a2.25 2.25 0 01.659 1.591V16.5a2.25 2.25 0 01-2.25 2.25z" /></svg>
+        <span class="flex-1 text-left">Usulan Proker</span>
+        <svg :class="open ? 'rotate-180' : ''" class="h-4 w-4 shrink-0 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+    </button>
+    <div x-show="open" x-collapse class="mt-1 space-y-1">
+        <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => 'berjalan']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.usulan-program-kerja.*') && request('tahun', 'berjalan') === 'berjalan' ? $sublinkActive : $sublinkIdle }}">Tahun Ini</a>
+        <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => 'h_plus_1']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.usulan-program-kerja.*') && request('tahun') === 'h_plus_1' ? $sublinkActive : $sublinkIdle }}">Tahun Depan</a>
+    </div>
+</div>
+{{-- Pelaporan Kegiatan, Capaian Kinerja, Analisa
      Kinerja ditambahkan di sini saat masing-masing halaman dibangun. --}}
