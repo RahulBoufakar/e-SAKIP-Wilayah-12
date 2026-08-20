@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\TimKerja\DashboardController;
+use App\Http\Controllers\TimKerja\DataProkerController;
 use App\Http\Controllers\TimKerja\DetailKegiatanController;
 use App\Http\Controllers\TimKerja\IkuLldiktiController;
 use App\Http\Controllers\TimKerja\RencanaAksiController;
@@ -28,4 +29,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::put('usulan-program-kerja/{usulanProgramKerja}/detail', [DetailKegiatanController::class, 'storeOrUpdate'])->name('usulan-program-kerja.detail.store-or-update');
         Route::get('usulan-program-kerja/{usulanProgramKerja}/file/{field}/preview', [UsulanProgramKerjaFileController::class, 'preview'])->name('usulan-program-kerja.file.preview');
         Route::get('usulan-program-kerja/{usulanProgramKerja}/file/{field}/unduh', [UsulanProgramKerjaFileController::class, 'unduh'])->name('usulan-program-kerja.file.unduh');
+    
+        // Data Proker
+        Route::get('data-proker', [DataProkerController::class, 'index'])->name('data-proker.index');
     });
