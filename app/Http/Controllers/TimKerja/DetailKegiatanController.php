@@ -14,13 +14,12 @@ class DetailKegiatanController extends Controller
     use GatesUsulanProgramKerja;
 
     // PUT /tim-kerja/usulan-program-kerja/{usulanProgramKerja}/detail
-    // Satu Program Kerja Utama hanya boleh punya satu Detail Kegiatan (create-or-update).
     public function storeOrUpdate(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
         $this->authorizeAksesUsulan($usulanProgramKerja);
 
-        if ($usulanProgramKerja->isFieldLocked() || ! $this->anyTriwulanAktif($usulanProgramKerja->tahun_anggaran_id)) {
-            return back()->with('feedback', ['type' => 'error', 'message' => 'Data ini sedang terkunci dan tidak dapat diubah.']);
+        if ($usulanProgramKerja->isFieldLocked()) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini sedang terkunci dan tidak dapat diubah.']);
         }
 
         $data = $request->validate([

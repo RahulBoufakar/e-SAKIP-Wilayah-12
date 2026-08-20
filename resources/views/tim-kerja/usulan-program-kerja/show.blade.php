@@ -1,7 +1,7 @@
 @extends('tim-kerja.layout.app')
 
 @section('title', 'Usulan Program Kerja')
-@section('subtitle', $usulan->nama_kegiatan)
+@section('subtitle', $usulan->nama_usulan)
 
 @section('content')
     <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => $usulan->tahun]) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-700">
@@ -10,40 +10,35 @@
     </a>
 
     @php
-        $locked = $usulan->isFieldLocked() || $formLocked;
+        $locked = $usulan->isFieldLocked();
         $detail = $usulan->detailKegiatan;
-        $detailEditDisabled = $locked || in_array($usulan->status, ['menunggu_validasi', 'disetujui'], true);
+        $detailEditDisabled = $locked;
     @endphp
 
     <div class="mt-4 space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-5 shadow-card">
             <div>
-                <p class="font-mono text-xs font-semibold text-brand-700">{{ $usulan->iku->kode }} — {{ $usulan->tahun === 'h_plus_1' ? 'Tahun Depan' : 'Tahun Ini' }}</p>
-                <h2 class="mt-1 text-lg font-bold text-ink-900">{{ $usulan->nama_kegiatan }}</h2>
+                <p class="font-mono text-xs font-semibold text-brand-700">{{ $usulan->iku->kode }} — Tahun {{ $usulan->tahun }}</p>
+                <h2 class="mt-1 text-lg font-bold text-ink-900">{{ $usulan->nama_usulan }}</h2>
             </div>
-            <x-status-badge :status="$usulan->status" />
+            <x-status-badge :status="$usulan->status_validasi" />
         </div>
 
-        @if ($formLocked)
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-800">
-                Tidak ada Triwulan aktif saat ini — seluruh form terkunci.
-            </div>
-        @elseif ($usulan->isFieldLocked())
+        @if ($usulan->isFieldLocked())
             <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-medium text-slate-600">
-                Usulan ini berstatus "{{ $usulan->status }}" dan sedang terkunci.
+                Usulan ini berstatus "{{ $usulan->status_validasi }}" dan sedang terkunci.
             </div>
         @endif
 
-        @if ($usulan->status === 'ditolak' && $usulan->catatan_revisi)
+        @if ($usulan->status_validasi === 'rejected' && $usulan->catatan_revisi)
             <div class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
                 <p class="font-semibold">Catatan Revisi:</p>
                 <p class="mt-1">{{ $usulan->catatan_revisi }}</p>
             </div>
         @endif
 
-        {{-- Form Program Kerja Utama --}}
         <div
-            x-data="{ form: { nama_kegiatan: @js(old('nama_kegiatan', $usulan->nama_kegiatan)), permasalahan: @js(old('permasalahan', $usulan->permasalahan)) } }"
+            x-data="{ form: { nama_usulan: @js(old('nama_usulan', $usulan->nama_usulan)), deskripsi: @js(old('deskripsi', $usulan->deskripsi)) } }"
             class="rounded-2xl bg-white p-6 shadow-card"
         >
             <form method="POST" action="{{ route('tim-kerja.usulan-program-kerja.update', $usulan->id) }}" enctype="multipart/form-data">
@@ -51,8 +46,8 @@
                 @method('PUT')
 
                 <fieldset {{ $locked ? 'disabled' : '' }} class="space-y-3">
-                    <x-form.input label="Nama Kegiatan" name="nama_kegiatan" type="text" maxlength="255" x-model="form.nama_kegiatan" required />
-                    <x-form.textarea label="Permasalahan" name="permasalahan" :rows="3" x-model="form.permasalahan" />
+                    <x-form.input label="Nama Usulan" name="nama_usulan" type="text" maxlength="255" x-model="form.nama_usulan" required />
+                    <x-form.textarea label="Deskripsi" name="deskripsi" :rows="3" x-model="form.deskripsi" />
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <x-file-preview id="kak-{{ $usulan->id }}" label="File KAK (PDF)" :url="$usulan->file_kak_pdf"
@@ -114,7 +109,6 @@
             </div>
         @endunless
 
-        {{-- Detail Kegiatan: 1:1 dengan Program Kerja Utama --}}
         <div
             x-data="{
                 editing: {{ (! $detail && ! $detailEditDisabled) ? 'true' : 'false' }},

@@ -18,20 +18,33 @@ return new class extends Migration
         // halaman Usulan Program Kerja dibangun.
         Schema::create('usulan_program_kerja', function (Blueprint $table) {
             $table->id();
+            
+            // Relasi ke IKU
             $table->foreignId('iku_id')->constrained('iku')->restrictOnDelete();
-            $table->string('nama_kegiatan');
-            $table->foreignId('tahun_anggaran_id')->constrained('tahun_anggaran')->restrictOnDelete();
-            $table->enum('tahun', ['berjalan', 'h_plus_1'])->default('berjalan');
-            $table->text('permasalahan')->nullable();
+            
+            // Kolom baru
+            $table->string('nama_usulan');
+            $table->text('deskripsi')->nullable();
+            
+            // Mengubah 'tahun' dari enum menjadi integer (unsignedSmallInteger)
+            $table->unsignedSmallInteger('tahun');
+            
+            // File lampiran (dipertahankan)
             $table->string('file_kak_pdf')->nullable();
             $table->string('file_rab_pdf')->nullable();
             $table->string('file_rab_excel')->nullable();
-            $table->enum('status', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
+            
+            // Mengubah status lama menjadi status_validasi
+            $table->enum('status_validasi', ['draft', 'menunggu_validasi', 'approved', 'rejected'])->default('draft');
+            $table->foreignId('validator_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('tgl_validasi')->nullable();
+            
             $table->text('catatan_revisi')->nullable();
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
 
-            $table->unique(['iku_id', 'tahun_anggaran_id', 'tahun']);
+            // Constraint unique diperbarui (tanpa tahun_anggaran_id)
+            $table->unique(['iku_id', 'tahun']);
         });
     }
 

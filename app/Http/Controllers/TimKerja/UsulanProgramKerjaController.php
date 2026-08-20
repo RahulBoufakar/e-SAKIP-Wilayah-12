@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\Iku;
+use App\Models\TahunAnggaran;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +17,6 @@ class UsulanProgramKerjaController extends Controller
     use ResolvesTimKerjaSession;
     use GatesUsulanProgramKerja;
 
-    // GET /tim-kerja/usulan-program-kerja?tahun=berjalan|h_plus_1
     public function index(Request $request)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
@@ -33,42 +33,80 @@ class UsulanProgramKerjaController extends Controller
             ]);
         }
 
-        $tab = $request->get('tahun') === 'h_plus_1' ? 'h_plus_1' : 'berjalan';
+        $activeTahunAnggaran = TahunAnggaran::find($tahunAnggaranId);
+        $activeTahun = (int) $activeTahunAnggaran->tahun;
+        $nextYear = $activeTahun + 1;
+        $nextYearAvailable = $this->nextTahunAnggaranExists($tahunAnggaranId);
 
-        if ($tab === 'h_plus_1' && ! $this->nextTahunAnggaranExists($tahunAnggaranId)) {
+        // Blokir akses ke tahun depan jika belum tersedia (via submenu h_plus_1 atau param integer)
+        if (
+            ($request->get('tahun') === 'h_plus_1' || ($request->filled('tahun') && (int) $request->tahun === $nextYear))
+            && ! $nextYearAvailable
+        ) {
             return view('admin.layout.app-error-content', [
-                'errorMessage' => 'Tahun belum tersedia, silahkan hubungi admin untuk ditambahkan.',
+                'errorMessage' => 'Tahun Anggaran ' . $nextYear . ' belum tersedia. Hubungi Administrator.',
+                'layout' => 'tim-kerja.layout.app',
+                'backRoute' => 'tim-kerja.dashboard',
+            ]);
+        }
+
+        // Data untuk view: IKUs dan pilihan tahun (dropdown)
+        $ikuOptions = Iku::with('sasaranKegiatan.tahunAnggaran')
+            ->whereIn('tim_kerja_id', $timKerjaIds)
+            ->orderBy('kode')
+            ->get(['id', 'kode', 'deskripsi', 'sasaran_kegiatan_id']);
+
+        $tahunOptions = $ikuOptions
+            ->pluck('sasaranKegiatan.tahunAnggaran.tahun')
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        // Sembunyikan tahun depan dari dropdown jika belum tersedia
+        if (! $nextYearAvailable) {
+            $tahunOptions = $tahunOptions->reject(fn ($t) => $t === $nextYear);
+        }
+
+        // Tentukan tahun yang dipilih
+        $tahun = match ($request->get('tahun')) {
+            'berjalan' => $activeTahun,
+            'h_plus_1' => $nextYear, // sudah lolos gate di atas
+            default => $request->filled('tahun') && $tahunOptions->contains((int) $request->tahun)
+                ? (int) $request->tahun
+                : $tahunOptions->first(),
+        };
+
+        // Fallback jika tahun belum ter-set atau tidak ada di opsi
+        if (! $tahun || ! $tahunOptions->contains($tahun)) {
+            $tahun = $tahunOptions->first();
+        }
+
+        if (! $tahun) {
+            return view('admin.layout.app-error-content', [
+                'errorMessage' => 'Belum ada data Tahun Anggaran yang tersedia. Hubungi Administrator.',
                 'layout' => 'tim-kerja.layout.app',
                 'backRoute' => 'tim-kerja.dashboard',
             ]);
         }
 
         $usulanList = UsulanProgramKerja::with(['iku.timKerja'])
-            ->where('tahun_anggaran_id', $tahunAnggaranId)
-            ->where('tahun', $tab)
+            ->where('tahun', $tahun)
             ->whereHas('iku', fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds))
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString();
 
-        $ikuOptions = Iku::whereIn('tim_kerja_id', $timKerjaIds)
-            ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-            ->orderBy('kode')
-            ->get(['id', 'kode', 'deskripsi']);
-
-        $formLocked = ! $this->anyTriwulanAktif($tahunAnggaranId);
-
-        return view('tim-kerja.usulan-program-kerja.index', compact('usulanList', 'ikuOptions', 'formLocked', 'tab'));
+        return view('tim-kerja.usulan-program-kerja.index', compact('usulanList', 'ikuOptions', 'tahunOptions', 'tahun'));
     }
 
     // POST /tim-kerja/usulan-program-kerja
     public function store(Request $request)
     {
-        $tahunAnggaranId = $this->activeTahunAnggaranId($request);
         $timKerjaIds = $this->activeTimKerjaIds();
 
-        if (! $tahunAnggaranId || $timKerjaIds->isEmpty() || ! $this->anyTriwulanAktif($tahunAnggaranId)) {
-            return back()->with('feedback', ['type' => 'error', 'message' => 'Form terkunci: tidak ada Triwulan aktif saat ini.']);
+        if ($timKerjaIds->isEmpty()) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Anda belum ditugaskan ke Tim Kerja manapun.']);
         }
 
         $data = $request->validate([
@@ -76,22 +114,16 @@ class UsulanProgramKerjaController extends Controller
                 'required',
                 Rule::exists('iku', 'id')->where(fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds)),
             ],
-            'nama_kegiatan' => 'required|string|max:255',
-            'tahun' => 'required|in:berjalan,h_plus_1',
-            'permasalahan' => 'nullable|string',
+            'nama_usulan' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
         ], [
             'iku_id.required' => 'IKU wajib dipilih.',
             'iku_id.exists' => 'IKU tidak valid atau bukan milik Tim Kerja Anda.',
-            'nama_kegiatan.required' => 'Nama Kegiatan wajib diisi.',
-            'tahun.required' => 'Tahun wajib dipilih.',
-            'tahun.in' => 'Tahun tidak valid.',
+            'nama_usulan.required' => 'Nama Usulan wajib diisi.',
         ]);
 
-        if ($data['tahun'] === 'h_plus_1' && ! $this->nextTahunAnggaranExists($tahunAnggaranId)) {
-            return back()->with('feedback', ['type' => 'error', 'message' => 'Tahun belum tersedia, silahkan hubungi admin untuk ditambahkan.']);
-        }
-
-        $data['tahun_anggaran_id'] = $tahunAnggaranId;
+        $iku = Iku::with('sasaranKegiatan.tahunAnggaran')->findOrFail($data['iku_id']);
+        $data['tahun'] = $iku->sasaranKegiatan->tahunAnggaran->tahun;
 
         $usulan = UsulanProgramKerja::create($data);
 
@@ -107,12 +139,10 @@ class UsulanProgramKerjaController extends Controller
 
         $usulanProgramKerja->load(['iku', 'detailKegiatan']);
 
-        $formLocked = ! $this->anyTriwulanAktif($usulanProgramKerja->tahun_anggaran_id);
         $bulanIndo = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
         return view('tim-kerja.usulan-program-kerja.show', [
             'usulan' => $usulanProgramKerja,
-            'formLocked' => $formLocked,
             'bulanIndo' => $bulanIndo,
         ]);
     }
@@ -122,18 +152,18 @@ class UsulanProgramKerjaController extends Controller
     {
         $this->authorizeAksesUsulan($usulanProgramKerja);
 
-        if ($usulanProgramKerja->isFieldLocked() || ! $this->anyTriwulanAktif($usulanProgramKerja->tahun_anggaran_id)) {
-            return back()->with('feedback', ['type' => 'error', 'message' => 'Data ini sedang terkunci dan tidak dapat diubah.']);
+        if ($usulanProgramKerja->isFieldLocked()) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini sedang terkunci dan tidak dapat diubah.']);
         }
 
         $data = $request->validate([
-            'nama_kegiatan' => 'required|string|max:255',
-            'permasalahan' => 'nullable|string',
+            'nama_usulan' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
             'file_kak_pdf' => 'nullable|file|mimes:pdf|max:10240',
             'file_rab_pdf' => 'nullable|file|mimes:pdf|max:10240',
             'file_rab_excel' => 'nullable|file|mimes:xls,xlsx|max:10240',
         ], [
-            'nama_kegiatan.required' => 'Nama Kegiatan wajib diisi.',
+            'nama_usulan.required' => 'Nama Usulan wajib diisi.',
             'file_kak_pdf.mimes' => 'File KAK harus berformat PDF.',
             'file_rab_pdf.mimes' => 'File RAB harus berformat PDF.',
             'file_rab_excel.mimes' => 'File RAB Excel harus berformat XLS/XLSX.',
@@ -157,10 +187,6 @@ class UsulanProgramKerjaController extends Controller
     public function kirim(UsulanProgramKerja $usulanProgramKerja)
     {
         $this->authorizeAksesUsulan($usulanProgramKerja);
-
-        if (! $this->anyTriwulanAktif($usulanProgramKerja->tahun_anggaran_id)) {
-            return back()->with('feedback', ['type' => 'error', 'message' => 'Form terkunci: tidak ada Triwulan aktif saat ini.']);
-        }
 
         if (! $usulanProgramKerja->can_kirim) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Lengkapi file KAK, RAB PDF, RAB Excel, dan Detail Kegiatan sebelum mengirim.']);

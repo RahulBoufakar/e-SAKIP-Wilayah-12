@@ -8,7 +8,7 @@ class DetailKegiatan extends Model
 {
     protected $table = 'detail_kegiatan';
     protected $fillable = [
-        'program_kerja_id', 'nama_detail', 'tempat_pelaksanaan',
+        'usulan_program_kerja_id', 'nama_detail', 'tempat_pelaksanaan',
         'bentuk_kegiatan', 'bulan_kegiatan', 'anggaran',
     ];
 
@@ -17,8 +17,8 @@ class DetailKegiatan extends Model
         'anggaran' => 'decimal:2',
     ];
 
-    public function programKerja()
+    public function usulanProgramKerja()
     {
-        return $this->belongsTo(UsulanProgramKerja::class, 'program_kerja_id');
+        return $this->belongsTo(UsulanProgramKerja::class);
     }
 }
