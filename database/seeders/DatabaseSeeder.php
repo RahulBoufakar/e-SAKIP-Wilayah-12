@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             NilaiTriwulan1Seeder::class,
             NilaiTriwulan2Seeder::class,
             TimKerjaSeeder::class,
+            ValidatorSeeder::class,
         ]);
     }
 }
