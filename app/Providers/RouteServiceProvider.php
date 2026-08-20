@@ -25,7 +25,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     public const HOME_ADMIN = 'admin.dashboard';
     public const HOME_TIM_KERJA = 'tim-kerja.dashboard';
-    public const HOME_VALIDATOR = 'validator.placeholder';
+    public const HOME_VALIDATOR = 'validator.dashboard';
 
     /**
      * Resolve nama route home sesuai role user yang login. Return nama route
