@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             SasaranKegiatanSeeder::class,
             NilaiTriwulan1Seeder::class,
             NilaiTriwulan2Seeder::class,
+            TimKerjaSeeder::class,
         ]);
     }
 }

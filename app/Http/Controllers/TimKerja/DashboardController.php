@@ -9,6 +9,7 @@ use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\PelaporanKegiatan;
 use App\Models\Realisasi;
+use App\Models\TahunAnggaran;
 use App\Models\TriwulanStatus;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
@@ -18,16 +19,9 @@ class DashboardController extends Controller
 {
     use ResolvesTimKerjaSession;
 
-    private const STATUS_LIST = ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'];
+    private const STATUS_LIST = ['draft', 'menunggu_validasi', 'approved', 'rejected'];
 
-    /**
-     * Modul pengajuan yang dipantau di dashboard ini. 'route' MENGASUMSIKAN
-     * konvensi penamaan route halaman modul yang akan dibangun kemudian
-     * (tim-kerja.<modul>.index) — dibungkus Route::has() di bawah supaya
-     * tidak error selama halaman sumbernya belum ada.
-     */
     private const MODUL = [
-        UsulanProgramKerja::class => ['label' => 'Usulan Program Kerja', 'route' => 'tim-kerja.usulan-program-kerja.index'],
         PelaporanKegiatan::class => ['label' => 'Pelaporan Kegiatan', 'route' => 'tim-kerja.pelaporan-kegiatan.index'],
         CapaianKinerja::class => ['label' => 'Capaian Kinerja', 'route' => 'tim-kerja.capaian-kinerja.index'],
         AnalisaKinerja::class => ['label' => 'Analisa Kinerja', 'route' => 'tim-kerja.analisa-kinerja.index'],
@@ -54,33 +48,32 @@ class DashboardController extends Controller
             ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
             ->pluck('id');
 
-        // (1) Breakdown status Usulan Program Kerja tahun berjalan
+        $tahunAktif = TahunAnggaran::find($tahunAnggaranId)?->tahun;
+
+        // (1) Breakdown status Usulan Program Kerja untuk tahun anggaran aktif
         $statusCounts = UsulanProgramKerja::whereIn('iku_id', $ikuIds)
-            ->where('tahun_anggaran_id', $tahunAnggaranId)
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+            ->where('tahun', $tahunAktif)
+            ->selectRaw('status_validasi, count(*) as total')
+            ->groupBy('status_validasi')
+            ->pluck('total', 'status_validasi');
 
         $usulanStatusBreakdown = collect(self::STATUS_LIST)
             ->mapWithKeys(fn ($status) => [$status => (int) ($statusCounts[$status] ?? 0)]);
         $jumlahUsulan = $usulanStatusBreakdown->sum();
 
-        // (1) Jumlah usulan dikelompokkan per IKU
         $usulanPerIku = UsulanProgramKerja::whereIn('iku_id', $ikuIds)
-            ->where('tahun_anggaran_id', $tahunAnggaranId)
+            ->where('tahun', $tahunAktif)
             ->with('iku:id,kode,deskripsi')
             ->select('iku_id')
             ->selectRaw('count(*) as total')
             ->groupBy('iku_id')
             ->get();
 
-        // Triwulan berjalan (aktif) untuk tahun anggaran ini
         $triwulanAktif = TriwulanStatus::with('triwulan')
             ->where('tahun_anggaran_id', $tahunAnggaranId)
             ->where('status', 'aktif')
             ->first();
 
-        // (1) Ringkasan realisasi/capaian triwulan berjalan + (2) data chart
         $rataCapaian = null;
         $kelengkapanRealisasi = null;
         $ikuCapaianChart = collect();
@@ -110,18 +103,32 @@ class DashboardController extends Controller
             ]);
         }
 
-        // (3) Daftar item ditolak lintas 4 modul, terbaru lebih dulu
+        // (3) Daftar item ditolak lintas modul
         $itemDitolak = collect();
-        // SESUDAH
-        foreach (self::MODUL as $modelClass => $meta) {
-            $withRelations = $modelClass === UsulanProgramKerja::class
-                ? ['iku:id,kode,deskripsi']
-                : ['iku:id,kode,deskripsi', 'triwulan:id,kode'];
 
+        $usulanDitolak = UsulanProgramKerja::whereIn('iku_id', $ikuIds)
+            ->where('tahun', $tahunAktif)
+            ->where('status_validasi', 'rejected')
+            ->with('iku:id,kode,deskripsi')
+            ->get();
+
+        foreach ($usulanDitolak as $row) {
+            $itemDitolak->push([
+                'modul' => 'Usulan Program Kerja',
+                'iku_kode' => $row->iku->kode ?? '-',
+                'iku_deskripsi' => $row->iku->deskripsi ?? '-',
+                'triwulan' => 'Tahun '.$row->tahun,
+                'catatan_revisi' => $row->catatan_revisi,
+                'updated_at' => $row->updated_at,
+                'url' => route('tim-kerja.usulan-program-kerja.show', $row->id),
+            ]);
+        }
+
+        foreach (self::MODUL as $modelClass => $meta) {
             $rows = $modelClass::whereIn('iku_id', $ikuIds)
                 ->where('tahun_anggaran_id', $tahunAnggaranId)
                 ->where('status', 'ditolak')
-                ->with($withRelations)
+                ->with(['iku:id,kode,deskripsi', 'triwulan:id,kode'])
                 ->get();
 
             foreach ($rows as $row) {
@@ -129,28 +136,18 @@ class DashboardController extends Controller
                     'modul' => $meta['label'],
                     'iku_kode' => $row->iku->kode ?? '-',
                     'iku_deskripsi' => $row->iku->deskripsi ?? '-',
-                    'triwulan' => $modelClass === UsulanProgramKerja::class
-                        ? ($row->tahun === 'h_plus_1' ? 'TA+1' : 'TA Berjalan')
-                        : ($row->triwulan->kode ?? '-'),
+                    'triwulan' => $row->triwulan->kode ?? '-',
                     'catatan_revisi' => $row->catatan_revisi,
                     'updated_at' => $row->updated_at,
-                    'url' => $modelClass === UsulanProgramKerja::class
-                        ? route('tim-kerja.usulan-program-kerja.show', $row->id)
-                        : (Route::has($meta['route']) ? route($meta['route'], ['iku' => $row->iku_id]) : null),
+                    'url' => Route::has($meta['route']) ? route($meta['route'], ['iku' => $row->iku_id]) : null,
                 ]);
             }
         }
         $itemDitolak = $itemDitolak->sortByDesc('updated_at')->take(10)->values();
 
         return view('tim-kerja.dashboard.index', compact(
-            'jumlahUsulan',
-            'usulanStatusBreakdown',
-            'usulanPerIku',
-            'triwulanAktif',
-            'rataCapaian',
-            'kelengkapanRealisasi',
-            'ikuCapaianChart',
-            'itemDitolak'
+            'jumlahUsulan', 'usulanStatusBreakdown', 'usulanPerIku', 'triwulanAktif',
+            'rataCapaian', 'kelengkapanRealisasi', 'ikuCapaianChart', 'itemDitolak'
         ));
     }
 }

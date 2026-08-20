@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('detail_kegiatan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('program_kerja_id')->constrained('usulan_program_kerja')->cascadeOnDelete();
+            $table->foreignId('usulan_program_kerja_id')->constrained('usulan_program_kerja')->cascadeOnDelete();
             $table->string('nama_detail');
             $table->string('tempat_pelaksanaan');
             $table->string('bentuk_kegiatan');
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Rule: 1 Program Kerja Utama hanya boleh punya 1 Detail Kegiatan
-            $table->unique('program_kerja_id');
+            $table->unique('usulan_program_kerja_id');
         });
     }
 

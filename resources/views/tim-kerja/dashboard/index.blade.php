@@ -12,8 +12,8 @@
             <div class="mt-3 flex flex-wrap gap-1.5">
                 <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Draft {{ $usulanStatusBreakdown['draft'] }}</span>
                 <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Menunggu {{ $usulanStatusBreakdown['menunggu_validasi'] }}</span>
-                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Disetujui {{ $usulanStatusBreakdown['disetujui'] }}</span>
-                <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Ditolak {{ $usulanStatusBreakdown['ditolak'] }}</span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Disetujui {{ $usulanStatusBreakdown['approved'] }}</span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Ditolak {{ $usulanStatusBreakdown['rejected'] }}</span>
             </div>
         </div>
 
