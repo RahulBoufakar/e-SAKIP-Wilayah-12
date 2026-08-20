@@ -1,4 +1,4 @@
-@props(['id', 'label', 'url', 'previewUrl' => null, 'downloadUrl' => null])
+@props(['id', 'label', 'url', 'previewUrl' => null, 'downloadUrl' => null, 'hideLabel' => false])
 
 <div
     x-data="{
@@ -23,10 +23,12 @@
         },
     }"
 >
-    <label class="block text-sm font-medium text-ink-900">{{ $label }}</label>
+    @unless ($hideLabel)
+        <label class="block text-sm font-medium text-ink-900">{{ $label }}</label>
+    @endunless
     @if ($url)
-        <div class="mt-1 flex items-center gap-3">
-            <a href="{{ $downloadUrl }}" class="truncate text-xs font-medium text-brand-700 hover:underline">Unduh</a>
+        <div class="{{ $hideLabel ? '' : 'mt-1' }} flex items-center gap-3">
+            <a href="{{ $downloadUrl }}" class="truncate text-xs font-medium text-brand-700 hover:underline">Download</a>
             <button type="button" @click="openPreview()" :disabled="loading" class="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100 disabled:opacity-50">
                 <span x-show="!loading">Pratinjau</span>
                 <span x-show="loading">Memuat...</span>
@@ -44,6 +46,6 @@
             </div>
         </dialog>
     @else
-        <p class="mt-1 text-xs text-slate-400">Belum ada file.</p>
+        <p class="{{ $hideLabel ? '' : 'mt-1' }} text-xs text-slate-400">Belum ada file.</p>
     @endif
 </div>

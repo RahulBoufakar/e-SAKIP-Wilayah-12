@@ -1,8 +1,8 @@
-@props(['id', 'text'])
+@props(['id', 'text', 'short' => null])
 
 <div x-data>
     <button type="button" @click="$refs['trunc-{{ $id }}'].showModal()" class="block w-full text-left">
-        <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ $text }}</span>
+        <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ $short ?? $text }}</span>
     </button>
 
     <dialog x-ref="trunc-{{ $id }}" @click.self="$el.close()" class="m-auto w-full max-w-lg rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
