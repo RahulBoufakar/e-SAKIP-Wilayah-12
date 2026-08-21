@@ -16,7 +16,7 @@ class ValidatorSeeder extends Seeder
 
         // 2. Buat User Validator
         $validator = User::firstOrCreate(
-            ['email' => 'validator1@ldikti12.test'],
+            ['email' => 'validator1@lldikti12.test'],
             [
                 'name' => 'validator1',
                 'password' => Hash::make('validator123'),

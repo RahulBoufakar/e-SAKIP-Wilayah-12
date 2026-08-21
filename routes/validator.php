@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Validator\DashboardController;
 use App\Http\Controllers\Validator\DataProkerController;
+use App\Http\Controllers\Validator\KalenderProkerController;
 use App\Http\Controllers\Validator\UsulanProgramKerjaController;
 use App\Http\Controllers\Validator\UsulanProgramKerjaFileController;
 use Illuminate\Support\Facades\Route;
@@ -23,5 +24,7 @@ Route::middleware(['auth', 'role:validator'])
         //Data Proker
         Route::get('data-proker', [DataProkerController::class, 'index'])->name('data-proker.index');
         Route::put('data-proker/detail-kegiatan/{detailKegiatan}/jenis-kegiatan', [DataProkerController::class, 'updateJenisKegiatan'])->name('data-proker.jenis-kegiatan.update');
+
+        Route::get('kalender-proker', [KalenderProkerController::class, 'index'])->name('kalender-proker.index');
     });
     
