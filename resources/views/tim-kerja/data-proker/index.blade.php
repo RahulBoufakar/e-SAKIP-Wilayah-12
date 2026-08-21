@@ -38,7 +38,7 @@
             <tbody class="divide-y divide-slate-100">
                 @forelse ($prokerList as $row)
                     @php $detail = $row->detailKegiatan; @endphp
-                    <tr class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
+                    <tr id="proker-{{ $row->id }}" class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
                         <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->nama_tim ?? '—' }}</td>
                         <td class="max-w-[12rem] px-3 py-2">
                             <x-truncate-cell :id="'nama-'.$row->id" :text="$row->nama_usulan" />

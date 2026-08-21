@@ -39,4 +39,11 @@ class Iku extends Model
     {
         return $this->hasMany(Realisasi::class);
     }
+
+    public function getNomorAttribute(): string
+    {
+        preg_match('/(\d+\.\d+)/', $this->kode, $matches);
+
+        return $matches[1] ?? $this->kode;
+    }
 }

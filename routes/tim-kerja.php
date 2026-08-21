@@ -4,6 +4,7 @@ use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\DataProkerController;
 use App\Http\Controllers\TimKerja\DetailKegiatanController;
 use App\Http\Controllers\TimKerja\IkuLldiktiController;
+use App\Http\Controllers\TimKerja\KalenderProkerController;
 use App\Http\Controllers\TimKerja\RencanaAksiController;
 use App\Http\Controllers\TimKerja\TargetKinerjaController;
 use App\Http\Controllers\TimKerja\UsulanProgramKerjaController;
@@ -32,4 +33,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
     
         // Data Proker
         Route::get('data-proker', [DataProkerController::class, 'index'])->name('data-proker.index');
+
+        // Kalender Proker
+        Route::get('kalender-proker', [KalenderProkerController::class, 'index'])->name('kalender-proker.index');
     });
