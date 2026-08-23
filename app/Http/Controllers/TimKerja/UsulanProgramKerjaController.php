@@ -17,6 +17,7 @@ class UsulanProgramKerjaController extends Controller
     use ResolvesTimKerjaSession;
     use GatesUsulanProgramKerja;
 
+    // GET /tim-kerja/usulan-program-kerja?tahun=berjalan|h_plus_1
     public function index(Request $request)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
@@ -33,62 +34,20 @@ class UsulanProgramKerjaController extends Controller
             ]);
         }
 
-        $activeTahunAnggaran = TahunAnggaran::find($tahunAnggaranId);
-        $activeTahun = (int) $activeTahunAnggaran->tahun;
+        $activeTahun = (int) TahunAnggaran::find($tahunAnggaranId)->tahun;
         $nextYear = $activeTahun + 1;
         $nextYearAvailable = $this->nextTahunAnggaranExists($tahunAnggaranId);
 
-        // Blokir akses ke tahun depan jika belum tersedia (via submenu h_plus_1 atau param integer)
-        if (
-            ($request->get('tahun') === 'h_plus_1' || ($request->filled('tahun') && (int) $request->tahun === $nextYear))
-            && ! $nextYearAvailable
-        ) {
-            return view('admin.layout.app-error-content', [
-                'errorMessage' => 'Tahun Anggaran ' . $nextYear . ' belum tersedia. Hubungi Administrator.',
-                'layout' => 'tim-kerja.layout.app',
-                'backRoute' => 'tim-kerja.dashboard',
-            ]);
-        }
+        $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
+        $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
-        // Data untuk view: IKUs dan pilihan tahun (dropdown)
+        // IKU untuk modal "Tambah" — dibatasi ke tahun yang sedang aktif di tab ini,
+        // karena tahun Usulan Program Kerja mengikuti tahun IKU yang dipilih (lihat store()).
         $ikuOptions = Iku::with('sasaranKegiatan.tahunAnggaran')
             ->whereIn('tim_kerja_id', $timKerjaIds)
+            ->whereHas('sasaranKegiatan.tahunAnggaran', fn ($q) => $q->where('tahun', $tahun))
             ->orderBy('kode')
             ->get(['id', 'kode', 'deskripsi', 'sasaran_kegiatan_id']);
-
-        $tahunOptions = $ikuOptions
-            ->pluck('sasaranKegiatan.tahunAnggaran.tahun')
-            ->filter()
-            ->unique()
-            ->sortDesc()
-            ->values();
-
-        // Sembunyikan tahun depan dari dropdown jika belum tersedia
-        if (! $nextYearAvailable) {
-            $tahunOptions = $tahunOptions->reject(fn ($t) => $t === $nextYear);
-        }
-
-        // Tentukan tahun yang dipilih
-        $tahun = match ($request->get('tahun')) {
-            'berjalan' => $activeTahun,
-            'h_plus_1' => $nextYear, // sudah lolos gate di atas
-            default => $request->filled('tahun') && $tahunOptions->contains((int) $request->tahun)
-                ? (int) $request->tahun
-                : $tahunOptions->first(),
-        };
-
-        // Fallback jika tahun belum ter-set atau tidak ada di opsi
-        if (! $tahun || ! $tahunOptions->contains($tahun)) {
-            $tahun = $tahunOptions->first();
-        }
-
-        if (! $tahun) {
-            return view('admin.layout.app-error-content', [
-                'errorMessage' => 'Belum ada data Tahun Anggaran yang tersedia. Hubungi Administrator.',
-                'layout' => 'tim-kerja.layout.app',
-                'backRoute' => 'tim-kerja.dashboard',
-            ]);
-        }
 
         $usulanList = UsulanProgramKerja::with(['iku.timKerja'])
             ->where('tahun', $tahun)
@@ -97,7 +56,9 @@ class UsulanProgramKerjaController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('tim-kerja.usulan-program-kerja.index', compact('usulanList', 'ikuOptions', 'tahunOptions', 'tahun'));
+        return view('tim-kerja.usulan-program-kerja.index', compact(
+            'usulanList', 'ikuOptions', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
+        ));
     }
 
     // POST /tim-kerja/usulan-program-kerja
@@ -109,13 +70,14 @@ class UsulanProgramKerjaController extends Controller
             return back()->with('feedback', ['type' => 'error', 'message' => 'Anda belum ditugaskan ke Tim Kerja manapun.']);
         }
 
-        $data = $request->validate([
+        $$data = $request->validate([
             'iku_id' => [
                 'required',
                 Rule::exists('iku', 'id')->where(fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds)),
             ],
             'nama_usulan' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
+            'permasalahan' => 'nullable|string',
         ], [
             'iku_id.required' => 'IKU wajib dipilih.',
             'iku_id.exists' => 'IKU tidak valid atau bukan milik Tim Kerja Anda.',
@@ -133,17 +95,22 @@ class UsulanProgramKerjaController extends Controller
     }
 
     // GET /tim-kerja/usulan-program-kerja/{usulanProgramKerja}
-    public function show(UsulanProgramKerja $usulanProgramKerja)
+    public function show(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
         $this->authorizeAksesUsulan($usulanProgramKerja);
 
         $usulanProgramKerja->load(['iku', 'detailKegiatan']);
+
+        $tahunAnggaranId = $this->activeTahunAnggaranId($request);
+        $activeTahun = $tahunAnggaranId ? (int) TahunAnggaran::find($tahunAnggaranId)->tahun : null;
+        $tab = $activeTahun !== null && $usulanProgramKerja->tahun == $activeTahun ? 'berjalan' : 'h_plus_1';
 
         $bulanIndo = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
         return view('tim-kerja.usulan-program-kerja.show', [
             'usulan' => $usulanProgramKerja,
             'bulanIndo' => $bulanIndo,
+            'tab' => $tab,
         ]);
     }
 
@@ -159,6 +126,7 @@ class UsulanProgramKerjaController extends Controller
         $data = $request->validate([
             'nama_usulan' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
+            'permasalahan' => 'nullable|string',
             'file_kak_pdf' => 'nullable|file|mimes:pdf|max:10240',
             'file_rab_pdf' => 'nullable|file|mimes:pdf|max:10240',
             'file_rab_excel' => 'nullable|file|mimes:xls,xlsx|max:10240',

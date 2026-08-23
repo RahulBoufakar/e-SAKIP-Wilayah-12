@@ -4,7 +4,7 @@
 @section('subtitle', $usulan->nama_usulan)
 
 @section('content')
-    <a href="{{ route('validator.usulan-program-kerja.index', ['status' => $usulan->status_validasi]) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-700">
+    <a href="{{ route('validator.usulan-program-kerja.index', ['status' => $usulan->status_validasi, 'tahun' => $tab]) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
         Kembali
     </a>
@@ -53,13 +53,36 @@
         <div class="rounded-2xl bg-white p-6 shadow-card">
             <h3 class="text-sm font-bold text-ink-900">Detail Kegiatan</h3>
             @if ($usulan->detailKegiatan)
-                <div class="mt-4 space-y-2 text-sm">
-                    <p><span class="font-medium text-ink-900">Nama Detail:</span> <span class="text-slate-600">{{ $usulan->detailKegiatan->nama_detail }}</span></p>
-                    <p><span class="font-medium text-ink-900">Tempat Pelaksanaan:</span> <span class="text-slate-600">{{ $usulan->detailKegiatan->tempat_pelaksanaan }}</span></p>
-                    <p><span class="font-medium text-ink-900">Bentuk Kegiatan:</span> <span class="text-slate-600">{{ $usulan->detailKegiatan->bentuk_kegiatan }}</span></p>
-                    <p><span class="font-medium text-ink-900">Bulan Kegiatan:</span> <span class="text-slate-600">{{ collect($usulan->detailKegiatan->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') }}</span></p>
-                    <p><span class="font-medium text-ink-900">Anggaran:</span> <span class="text-slate-600">Rp {{ number_format($usulan->detailKegiatan->anggaran, 0, ',', '.') }}</span></p>
-                </div>
+                @php $detail = $usulan->detailKegiatan; @endphp
+                <table class="mt-4 w-full text-sm">
+                    <tbody class="divide-y divide-slate-100">
+                        <tr>
+                            <td class="w-48 py-2 text-left align-top font-medium text-ink-900">Nama Detail</td>
+                            <td class="w-4 py-2 text-left align-top text-slate-400">:</td>
+                            <td class="py-2 text-left align-top text-slate-600">{{ $detail->nama_detail }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-left align-top font-medium text-ink-900">Tempat Pelaksanaan</td>
+                            <td class="py-2 text-left align-top text-slate-400">:</td>
+                            <td class="py-2 text-left align-top text-slate-600">{{ $detail->tempat_pelaksanaan }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-left align-top font-medium text-ink-900">Bentuk Kegiatan</td>
+                            <td class="py-2 text-left align-top text-slate-400">:</td>
+                            <td class="py-2 text-left align-top text-slate-600">{{ $detail->bentuk_kegiatan }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-left align-top font-medium text-ink-900">Bulan Kegiatan</td>
+                            <td class="py-2 text-left align-top text-slate-400">:</td>
+                            <td class="py-2 text-left align-top text-slate-600">{{ collect($detail->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-left align-top font-medium text-ink-900">Anggaran</td>
+                            <td class="py-2 text-left align-top text-slate-400">:</td>
+                            <td class="py-2 text-left align-top text-slate-600">Rp {{ number_format($detail->anggaran, 0, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             @else
                 <p class="mt-2 text-sm text-slate-400">Belum ada Detail Kegiatan.</p>
             @endif

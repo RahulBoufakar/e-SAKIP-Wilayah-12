@@ -5,6 +5,25 @@
 
 @section('content')
     <div class="flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
+        <a href="{{ request()->fullUrlWithQuery(['tahun' => 'berjalan']) }}"
+           class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors
+                  {{ $tab === 'berjalan' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-brand-600' }}">
+            Tahun Ini ({{ $activeTahun }})
+        </a>
+        @if ($nextYearAvailable)
+            <a href="{{ request()->fullUrlWithQuery(['tahun' => 'h_plus_1']) }}"
+               class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors
+                      {{ $tab === 'h_plus_1' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-brand-600' }}">
+                Tahun Depan ({{ $nextYear }})
+            </a>
+        @else
+            <span class="flex-1 cursor-not-allowed px-4 py-3 text-center text-sm font-semibold text-slate-300">
+                Tahun Depan ({{ $nextYear }}) — Belum tersedia
+            </span>
+        @endif
+    </div>
+
+    <div class="flex w-full overflow-hidden bg-white shadow-card">
         @foreach (['menunggu_validasi' => 'Menunggu Validasi', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'] as $key => $label)
             <a href="{{ request()->fullUrlWithQuery(['status' => $key]) }}"
                class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors
@@ -20,6 +39,7 @@
                 <tr class="bg-ink-900 text-white">
                     <th class="w-24 px-4 py-3 font-semibold">IKU</th>
                     <th class="px-4 py-3 font-semibold">Nama Usulan</th>
+                    <th class="px-4 py-3 font-semibold">Permasalahan</th>
                     <th class="w-40 px-4 py-3 font-semibold">Tim Kerja</th>
                     <th class="w-24 px-4 py-3 text-center font-semibold">Tahun</th>
                     <th class="w-28 px-4 py-3 text-center font-semibold">Aksi</th>
@@ -30,6 +50,9 @@
                     <tr class="hover:bg-brand-50/40">
                         <td class="px-4 py-3 font-mono text-xs font-semibold text-brand-700">{{ $row->iku->kode }}</td>
                         <td class="px-4 py-3 font-medium text-ink-900">{{ $row->nama_usulan }}</td>
+                        <td class="max-w-[16rem] px-4 py-3">
+                            <x-truncate-cell :id="'permasalahan-'.$row->id" :text="$row->permasalahan ?: '—'" />
+                        </td>
                         <td class="px-4 py-3 text-slate-600">{{ $row->iku->timKerja->nama_tim ?? '—' }}</td>
                         <td class="px-4 py-3 text-center text-slate-600">{{ $row->tahun }}</td>
                         <td class="px-4 py-3 text-center">
@@ -38,7 +61,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-12 text-center text-sm text-slate-400">Tidak ada Usulan Program Kerja pada status ini.</td>
+                        <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">Tidak ada Usulan Program Kerja pada status ini.</td>
                     </tr>
                 @endforelse
             </tbody>
