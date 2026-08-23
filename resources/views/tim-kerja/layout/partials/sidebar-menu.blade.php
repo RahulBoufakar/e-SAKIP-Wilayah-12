@@ -18,17 +18,10 @@
 </div>
 
 <!-- Usulan Proker -->
-<div x-data="{ open: {{ $isUsulanProker ? 'true' : 'false' }} }">
-    <button @click="open = !open" class="{{ $groupHeadBase }} {{ $isUsulanProker ? 'text-white' : $linkIdle }}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H5.25a2.25 2.25 0 01-2.25-2.25V6.75a2.25 2.25 0 012.25-2.25h5.379a2.25 2.25 0 011.591.659l4.121 4.121a2.25 2.25 0 01.659 1.591V16.5a2.25 2.25 0 01-2.25 2.25z" /></svg>
-        <span class="flex-1 text-left">Usulan Proker</span>
-        <svg :class="open ? 'rotate-180' : ''" class="h-4 w-4 shrink-0 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-    </button>
-    <div x-show="open" x-collapse class="mt-1 space-y-1">
-        <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => 'berjalan']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.usulan-program-kerja.*') && request('tahun', 'berjalan') === 'berjalan' ? $sublinkActive : $sublinkIdle }}">Tahun Ini</a>
-        <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => 'h_plus_1']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('tim-kerja.usulan-program-kerja.*') && request('tahun') === 'h_plus_1' ? $sublinkActive : $sublinkIdle }}">Tahun Depan</a>
-    </div>
-</div>
+<a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => 'berjalan']) }}" class="{{ $linkBase }} {{ request()->routeIs('tim-kerja.usulan-program-kerja.*') ? $linkActive : $linkIdle }}">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H5.25a2.25 2.25 0 01-2.25-2.25V6.75a2.25 2.25 0 012.25-2.25h5.379a2.25 2.25 0 011.591.659l4.121 4.121a2.25 2.25 0 01.659 1.591V16.5a2.25 2.25 0 01-2.25 2.25z" /></svg>
+    Usulan Proker
+</a>
 <a href="{{ route('tim-kerja.data-proker.index', ['tahun' => 'berjalan']) }}" class="{{ $linkBase }} {{ request()->routeIs('tim-kerja.data-proker.*') ? $linkActive : $linkIdle }}">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.75h16.5M3.75 15h16.5M6 6h12a2.25 2.25 0 012.25 2.25v9.5A2.25 2.25 0 0118 20H6a2.25 2.25 0 01-2.25-2.25v-9.5A2.25 2.25 0 016 6z" /></svg>
     Data Proker

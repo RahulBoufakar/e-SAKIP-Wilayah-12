@@ -27,7 +27,7 @@
         <table class="w-full text-left text-xs">
             <thead>
                 <tr class="bg-ink-900 text-white">
-                    <th class="w-28 px-3 py-2.5 font-semibold">PJ (Tim Kerja)</th>
+                    <th class="w-28 px-3 py-2.5 font-semibold">Tim Kerja</th>
                     <th class="w-48 px-3 py-2.5 font-semibold">Nama Kegiatan / Proker</th>
                     <th class="w-24 px-3 py-2.5 font-semibold">IKU / IKK</th>
                     <th class="w-48 px-3 py-2.5 font-semibold">Permasalahan</th>
@@ -49,7 +49,7 @@
                             </span>
                         </td>
                         <td class="max-w-[12rem] px-3 py-2">
-                            <x-truncate-cell :id="'masalah-'.$row->id" :text="$detail->permasalahan ?: '—'" />
+                            <x-truncate-cell :id="'masalah-'.$row->id" :text="$row->permasalahan ?: '—'" />
                         </td>
                         <td class="px-3 py-2 text-right text-slate-600">{{ $detail ? 'Rp '.number_format($detail->anggaran, 0, ',', '.') : '—' }}</td>
                         <td class="px-3 py-2 text-center">

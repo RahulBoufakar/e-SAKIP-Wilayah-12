@@ -12,7 +12,7 @@ class UsulanProgramKerja extends Model
 
     protected $table = 'usulan_program_kerja';
     protected $fillable = [
-        'iku_id', 'nama_usulan', 'deskripsi', 'tahun',
+        'iku_id', 'nama_usulan', 'deskripsi', 'permasalahan','tahun',
         'file_kak_pdf', 'file_rab_pdf', 'file_rab_excel',
         'status_validasi', 'validator_id', 'tgl_validasi', 'catatan_revisi',
     ];

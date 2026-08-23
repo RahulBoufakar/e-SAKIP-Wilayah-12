@@ -6,6 +6,8 @@
         'menunggu_validasi' => ['label' => 'Menunggu Validasi', 'class' => 'bg-amber-50 text-amber-700'],
         'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700'],
         'ditolak' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
+        'approved' => ['label' => 'Diterima', 'class' => 'bg-emerald-50 text-emerald-700'],
+        'rejected' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
     ];
     $badge = $map[$status] ?? ['label' => $status, 'class' => 'bg-slate-100 text-slate-600'];
 @endphp

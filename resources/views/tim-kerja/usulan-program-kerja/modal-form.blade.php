@@ -30,6 +30,7 @@
 
                 <x-form.input label="Nama Usulan" name="nama_usulan" type="text" maxlength="255" x-model="form.nama_usulan" required />
                 <x-form.textarea label="Deskripsi" name="deskripsi" :rows="3" x-model="form.deskripsi" />
+                <x-form.textarea label="Permasalahan" name="permasalahan" :rows="3" x-model="form.permasalahan" />
             </div>
 
             <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">

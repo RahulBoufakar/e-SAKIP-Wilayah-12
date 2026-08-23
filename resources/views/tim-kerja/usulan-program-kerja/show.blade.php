@@ -4,7 +4,7 @@
 @section('subtitle', $usulan->nama_usulan)
 
 @section('content')
-    <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => $usulan->tahun]) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-700">
+    <a href="{{ route('tim-kerja.usulan-program-kerja.index', ['tahun' => $tab]) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
         Kembali ke Usulan Program Kerja
     </a>
@@ -38,7 +38,7 @@
         @endif
 
         <div
-            x-data="{ form: { nama_usulan: @js(old('nama_usulan', $usulan->nama_usulan)), deskripsi: @js(old('deskripsi', $usulan->deskripsi)) } }"
+            x-data="{ form: { nama_usulan: @js(old('nama_usulan', $usulan->nama_usulan)), deskripsi: @js(old('deskripsi', $usulan->deskripsi)), permasalahan: @js(old('permasalahan', $usulan->permasalahan)) } }"
             class="rounded-2xl bg-white p-6 shadow-card"
         >
             <form method="POST" action="{{ route('tim-kerja.usulan-program-kerja.update', $usulan->id) }}" enctype="multipart/form-data">
@@ -48,6 +48,7 @@
                 <fieldset {{ $locked ? 'disabled' : '' }} class="space-y-3">
                     <x-form.input label="Nama Usulan" name="nama_usulan" type="text" maxlength="255" x-model="form.nama_usulan" required />
                     <x-form.textarea label="Deskripsi" name="deskripsi" :rows="3" x-model="form.deskripsi" />
+                    <x-form.textarea label="Permasalahan" name="permasalahan" :rows="3" x-model="form.permasalahan" />
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <x-file-preview id="kak-{{ $usulan->id }}" label="File KAK (PDF)" :url="$usulan->file_kak_pdf"
@@ -129,28 +130,60 @@
             </div>
 
             <template x-if="!editing">
-                <div class="mt-4 space-y-2 text-sm">
+                <div class="mt-4">
                     @if ($detail)
-                        <p><span class="font-medium text-ink-900">Nama Detail:</span> <span class="text-slate-600">{{ $detail->nama_detail }}</span></p>
-                        <p><span class="font-medium text-ink-900">Tempat Pelaksanaan:</span> <span class="text-slate-600">{{ $detail->tempat_pelaksanaan }}</span></p>
-                        <p><span class="font-medium text-ink-900">Bentuk Kegiatan:</span> <span class="text-slate-600">{{ $detail->bentuk_kegiatan }}</span></p>
-                        <p><span class="font-medium text-ink-900">Bulan Kegiatan:</span> <span class="text-slate-600">{{ collect($detail->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') }}</span></p>
-                        <p><span class="font-medium text-ink-900">Anggaran:</span> <span class="text-slate-600">Rp {{ number_format($detail->anggaran, 0, ',', '.') }}</span></p>
+                        <table class="w-full text-sm">
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="w-48 py-2 text-left align-top font-medium text-ink-900">Nama Detail</td>
+                                    <td class="w-4 py-2 text-left align-top text-slate-400">:</td>
+                                    <td class="py-2 text-left align-top text-slate-600">{{ $detail->nama_detail }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 text-left align-top font-medium text-ink-900">Tempat Pelaksanaan</td>
+                                    <td class="py-2 text-left align-top text-slate-400">:</td>
+                                    <td class="py-2 text-left align-top text-slate-600">{{ $detail->tempat_pelaksanaan }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 text-left align-top font-medium text-ink-900">Bentuk Kegiatan</td>
+                                    <td class="py-2 text-left align-top text-slate-400">:</td>
+                                    <td class="py-2 text-left align-top text-slate-600">{{ $detail->bentuk_kegiatan }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 text-left align-top font-medium text-ink-900">Bulan Kegiatan</td>
+                                    <td class="py-2 text-left align-top text-slate-400">:</td>
+                                    <td class="py-2 text-left align-top text-slate-600">{{ collect($detail->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 text-left align-top font-medium text-ink-900">Anggaran</td>
+                                    <td class="py-2 text-left align-top text-slate-400">:</td>
+                                    <td class="py-2 text-left align-top text-slate-600">Rp {{ number_format($detail->anggaran, 0, ',', '.') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     @else
-                        <p class="text-slate-400">Belum ada Detail Kegiatan.</p>
+                        <p class="text-sm text-slate-400">Belum ada Detail Kegiatan.</p>
                     @endif
                 </div>
             </template>
 
             <template x-if="editing">
                 <form method="POST" action="{{ route('tim-kerja.usulan-program-kerja.detail.store-or-update', $usulan->id) }}" class="mt-4 space-y-3">
+                    <form method="POST" action="{{ route('tim-kerja.usulan-program-kerja.detail.store-or-update', $usulan->id) }}" class="mt-4 space-y-3">
                     @csrf
                     @method('PUT')
 
+                    @php $bentukKegiatanValue = old('bentuk_kegiatan', $detail->bentuk_kegiatan ?? ''); @endphp
+
                     <x-form.input label="Nama Detail" name="nama_detail" type="text" maxlength="255" value="{{ old('nama_detail', $detail->nama_detail ?? '') }}" required />
                     <x-form.input label="Tempat Pelaksanaan" name="tempat_pelaksanaan" type="text" maxlength="255" value="{{ old('tempat_pelaksanaan', $detail->tempat_pelaksanaan ?? '') }}" required />
-                    <x-form.input label="Bentuk Kegiatan" name="bentuk_kegiatan" type="text" maxlength="255" value="{{ old('bentuk_kegiatan', $detail->bentuk_kegiatan ?? '') }}" required />
 
+                    <x-form.select label="Bentuk Kegiatan" name="bentuk_kegiatan" required>
+                        <option value="" disabled {{ $bentukKegiatanValue ? '' : 'selected' }}>Pilih bentuk kegiatan</option>
+                        <option value="Luring" @selected($bentukKegiatanValue === 'Luring')>Luring</option>
+                        <option value="Daring" @selected($bentukKegiatanValue === 'Daring')>Daring</option>
+                    </x-form.select>
+                    
                     <div>
                         <label class="block text-sm font-medium text-ink-900">Bulan Kegiatan</label>
                         <div class="mt-1.5 grid grid-cols-4 gap-2 sm:grid-cols-6">
