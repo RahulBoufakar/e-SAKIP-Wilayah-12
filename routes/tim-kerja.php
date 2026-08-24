@@ -3,8 +3,10 @@
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\DataProkerController;
 use App\Http\Controllers\TimKerja\DetailKegiatanController;
+use App\Http\Controllers\TimKerja\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\TimKerja\IkuLldiktiController;
 use App\Http\Controllers\TimKerja\KalenderProkerController;
+use App\Http\Controllers\TimKerja\PelaporanKegiatanController;
 use App\Http\Controllers\TimKerja\RencanaAksiController;
 use App\Http\Controllers\TimKerja\TargetKinerjaController;
 use App\Http\Controllers\TimKerja\UsulanProgramKerjaController;
@@ -36,4 +38,12 @@ Route::middleware(['auth', 'role:tim_kerja'])
 
         // Kalender Proker
         Route::get('kalender-proker', [KalenderProkerController::class, 'index'])->name('kalender-proker.index');
+
+        // Pelaporan Kegiatan
+        Route::get('pelaporan-kegiatan', [PelaporanKegiatanController::class, 'index'])->name('pelaporan-kegiatan.index');
+        Route::get('pelaporan-kegiatan/{programKerja}', [PelaporanKegiatanController::class, 'show'])->name('pelaporan-kegiatan.show');
+        Route::post('pelaporan-kegiatan/{laporanKegiatan}/dokumen', [PelaporanKegiatanController::class, 'storeDokumen'])->name('pelaporan-kegiatan.dokumen.store');
+        Route::put('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/upload', [PelaporanKegiatanController::class, 'uploadDokumen'])->name('pelaporan-kegiatan.dokumen.upload');
+        Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/preview', [DokumenLaporanKegiatanFileController::class, 'preview'])->name('pelaporan-kegiatan.dokumen.preview');
+        Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/unduh', [DokumenLaporanKegiatanFileController::class, 'unduh'])->name('pelaporan-kegiatan.dokumen.unduh');
     });

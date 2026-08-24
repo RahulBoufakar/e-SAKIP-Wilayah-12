@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Validator\DashboardController;
 use App\Http\Controllers\Validator\DataProkerController;
+use App\Http\Controllers\Validator\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\Validator\KalenderProkerController;
+use App\Http\Controllers\Validator\PelaporanKegiatanController;
 use App\Http\Controllers\Validator\UsulanProgramKerjaController;
 use App\Http\Controllers\Validator\UsulanProgramKerjaFileController;
 use Illuminate\Support\Facades\Route;
@@ -26,5 +28,13 @@ Route::middleware(['auth', 'role:validator'])
         Route::put('data-proker/detail-kegiatan/{detailKegiatan}/jenis-kegiatan', [DataProkerController::class, 'updateJenisKegiatan'])->name('data-proker.jenis-kegiatan.update');
 
         Route::get('kalender-proker', [KalenderProkerController::class, 'index'])->name('kalender-proker.index');
+
+        // Pelaporan Kegiatan
+        Route::get('pelaporan-kegiatan', [PelaporanKegiatanController::class, 'index'])->name('pelaporan-kegiatan.index');
+        Route::get('pelaporan-kegiatan/{programKerja}', [PelaporanKegiatanController::class, 'show'])->name('pelaporan-kegiatan.show');
+        Route::put('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/validasi', [PelaporanKegiatanController::class, 'validasi'])->name('pelaporan-kegiatan.dokumen.validasi');
+        Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/preview', [DokumenLaporanKegiatanFileController::class, 'preview'])->name('pelaporan-kegiatan.dokumen.preview');
+        Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/unduh', [DokumenLaporanKegiatanFileController::class, 'unduh'])->name('pelaporan-kegiatan.dokumen.unduh');
+        Route::put('pelaporan-kegiatan/{laporanKegiatan}/toggle-kunci', [PelaporanKegiatanController::class, 'toggleKunci'])->name('pelaporan-kegiatan.toggle-kunci');
     });
     
