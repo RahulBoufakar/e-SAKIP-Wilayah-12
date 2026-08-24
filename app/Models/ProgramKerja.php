@@ -36,4 +36,9 @@ class ProgramKerja extends Model
     {
         return $this->belongsTo(UsulanProgramKerja::class);
     }
+
+    public function laporanKegiatan()
+    {
+        return $this->hasOne(LaporanKegiatan::class, 'proker_id');
+    }
 }
