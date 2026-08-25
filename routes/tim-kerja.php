@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TimKerja\CapaianKinerjaController;
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\DataProkerController;
 use App\Http\Controllers\TimKerja\DetailKegiatanController;
@@ -23,7 +24,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::get('rencana-aksi', [RencanaAksiController::class, 'index'])->name('rencana-aksi.index');
         Route::get('iku-lldikti', [IkuLldiktiController::class, 'index'])->name('iku-lldikti.index');
 
-       // Usulan Program Kerja
+        // Usulan Program Kerja
         Route::get('usulan-program-kerja', [UsulanProgramKerjaController::class, 'index'])->name('usulan-program-kerja.index');
         Route::post('usulan-program-kerja', [UsulanProgramKerjaController::class, 'store'])->name('usulan-program-kerja.store');
         Route::get('usulan-program-kerja/{usulanProgramKerja}', [UsulanProgramKerjaController::class, 'show'])->name('usulan-program-kerja.show');
@@ -46,4 +47,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::put('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/upload', [PelaporanKegiatanController::class, 'uploadDokumen'])->name('pelaporan-kegiatan.dokumen.upload');
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/preview', [DokumenLaporanKegiatanFileController::class, 'preview'])->name('pelaporan-kegiatan.dokumen.preview');
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/unduh', [DokumenLaporanKegiatanFileController::class, 'unduh'])->name('pelaporan-kegiatan.dokumen.unduh');
+
+        // Capaian Kinerja
+        Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
     });

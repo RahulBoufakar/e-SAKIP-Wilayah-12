@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\CapaianKinerja;
 use App\Models\Iku;
-use App\Models\Realisasi;
 use App\Models\SasaranKegiatan;
 use App\Models\TahunAnggaran;
+use App\Models\Triwulan;
 use Illuminate\Database\Seeder;
 
 class NilaiTriwulan2Seeder extends Seeder
@@ -44,6 +45,14 @@ class NilaiTriwulan2Seeder extends Seeder
             return;
         }
 
+        $tw2 = Triwulan::where('kode', 'TW2')->first();
+
+        if (! $tw2) {
+            $this->command?->warn('Triwulan TW2 belum ada — jalankan TriwulanSeeder terlebih dahulu.');
+
+            return;
+        }
+
         foreach (self::DATA as $namaSasaran => $ikuList) {
             $sasaran = SasaranKegiatan::where('tahun_anggaran_id', $tahunAnggaran->id)
                 ->where('nama_sasaran', $namaSasaran)
@@ -66,8 +75,8 @@ class NilaiTriwulan2Seeder extends Seeder
                     continue;
                 }
 
-                Realisasi::updateOrCreate(
-                    ['iku_id' => $iku->id, 'triwulan' => 'tw2'],
+                CapaianKinerja::updateOrCreate(
+                    ['iku_id' => $iku->id, 'triwulan_id' => $tw2->id, 'tahun_anggaran_id' => $tahunAnggaran->id],
                     ['target' => $target, 'realisasi' => $realisasi]
                 );
             }

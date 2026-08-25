@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\IkuController;
 use App\Http\Controllers\Admin\MasterData\TimKerjaController;
 use App\Http\Controllers\Admin\MasterData\UserController;
-use App\Http\Controllers\Admin\RealisasiController;
+use App\Http\Controllers\Admin\CapaianKinerjaController;
 use App\Http\Controllers\Admin\RencanaAksiController;
 use App\Http\Controllers\Admin\SasaranKegiatanController;
 use App\Http\Controllers\Admin\Tools\JumlahMahasiswaController;
@@ -52,9 +52,9 @@ Route::middleware(['auth', 'role:admin'])
         Route::put('iku/{iku}', [IkuController::class, 'update'])->name('iku.update');
         Route::delete('iku/{iku}', [IkuController::class, 'destroy'])->name('iku.destroy');
 
-        // 3. Menu "iku-lldikti" — tampilan gabungan, baca + edit + hapus data yang sudah ada
-        Route::get('iku-lldikti', [RealisasiController::class, 'index'])->name('iku-lldikti.index');
-        Route::put('realisasi', [RealisasiController::class, 'storeOrUpdate'])->name('realisasi.store-or-update');
+        // 3. Menu "iku-lldikti" — tampilan gabungan, baca data + edit Target oleh Admin
+        Route::get('iku-lldikti', [CapaianKinerjaController::class, 'index'])->name('iku-lldikti.index');
+        Route::put('capaian-kinerja/target', [CapaianKinerjaController::class, 'updateTarget'])->name('capaian-kinerja.target.update');
 
         // 4. Rencana Aksi Triwulan (GET /rencana-aksi/{iku} pre-fill DIHAPUS, lihat controller)
         Route::get('rencana-aksi', [RencanaAksiController::class, 'index'])->name('rencana-aksi.index');

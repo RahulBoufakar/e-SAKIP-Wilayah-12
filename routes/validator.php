@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Validator\CapaianKinerjaController;
 use App\Http\Controllers\Validator\DashboardController;
 use App\Http\Controllers\Validator\DataProkerController;
 use App\Http\Controllers\Validator\DokumenLaporanKegiatanFileController;
@@ -36,5 +37,8 @@ Route::middleware(['auth', 'role:validator'])
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/preview', [DokumenLaporanKegiatanFileController::class, 'preview'])->name('pelaporan-kegiatan.dokumen.preview');
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/unduh', [DokumenLaporanKegiatanFileController::class, 'unduh'])->name('pelaporan-kegiatan.dokumen.unduh');
         Route::put('pelaporan-kegiatan/{laporanKegiatan}/toggle-kunci', [PelaporanKegiatanController::class, 'toggleKunci'])->name('pelaporan-kegiatan.toggle-kunci');
+
+        // Capaian Kinerja
+        Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
     });
     
