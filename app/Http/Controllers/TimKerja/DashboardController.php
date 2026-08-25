@@ -8,7 +8,6 @@ use App\Models\AnalisaKinerja;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\PelaporanKegiatan;
-use App\Models\Realisasi;
 use App\Models\TahunAnggaran;
 use App\Models\TriwulanStatus;
 use App\Models\UsulanProgramKerja;
@@ -78,11 +77,10 @@ class DashboardController extends Controller
         $kelengkapanRealisasi = null;
         $ikuCapaianChart = collect();
 
-        if ($triwulanAktif) {
-            $triwulanKode = strtolower($triwulanAktif->triwulan->kode);
-
-            $realisasiList = Realisasi::whereIn('iku_id', $ikuIds)
-                ->where('triwulan', $triwulanKode)
+         if ($triwulanAktif) {
+            $realisasiList = CapaianKinerja::whereIn('iku_id', $ikuIds)
+                ->where('tahun_anggaran_id', $tahunAnggaranId)
+                ->where('triwulan_id', $triwulanAktif->triwulan_id)
                 ->with('iku:id,kode')
                 ->get();
 

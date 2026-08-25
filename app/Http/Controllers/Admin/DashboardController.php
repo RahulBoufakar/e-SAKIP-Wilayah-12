@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Iku;
 use App\Models\JumlahMahasiswa;
 use App\Models\JumlahPts;
-use App\Models\Realisasi;
+use App\Models\CapaianKinerja;
 use App\Models\RencanaAksi;
 use App\Models\SasaranKegiatan;
 use App\Models\TriwulanStatus;
@@ -45,17 +45,17 @@ class DashboardController extends Controller
         $kelengkapanRencanaAksi = null;
 
         if ($triwulanAktif) {
-            $triwulanKode = strtolower($triwulanAktif->triwulan->kode);
-
-            $capaianList = Realisasi::whereIn('iku_id', $ikuIdsTahunIni)
-                ->where('triwulan', $triwulanKode)
+            $capaianList = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
+                ->where('tahun_anggaran_id', $tahunAnggaranId)
+                ->where('triwulan_id', $triwulanAktif->triwulan_id)
                 ->get()
                 ->map(fn ($r) => $r->capaian)
                 ->filter(fn ($c) => $c !== null);
             $rataCapaian = $capaianList->isNotEmpty() ? round($capaianList->avg(), 2) : null;
 
-            $realisasiTerisi = Realisasi::whereIn('iku_id', $ikuIdsTahunIni)
-                ->where('triwulan', $triwulanKode)
+            $realisasiTerisi = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
+                ->where('tahun_anggaran_id', $tahunAnggaranId)
+                ->where('triwulan_id', $triwulanAktif->triwulan_id)
                 ->whereNotNull('realisasi')
                 ->count();
             $kelengkapanRealisasi = [
@@ -75,18 +75,20 @@ class DashboardController extends Controller
             ];
         }
 
-        // Target vs Realisasi per triwulan (TW1-TW4)
-        $targetRealisasiRaw = Realisasi::whereIn('iku_id', $ikuIdsTahunIni)
-            ->selectRaw('triwulan, SUM(target) as total_target, SUM(realisasi) as total_realisasi')
-            ->groupBy('triwulan')
+        // Target vs Realisasi per triwulan (TW1-TW4); asumsi id Triwulan 1-4
+        // berurutan sesuai TriwulanSeeder (sama seperti asumsi lama).
+        $targetRealisasiRaw = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
+            ->where('tahun_anggaran_id', $tahunAnggaranId)
+            ->selectRaw('triwulan_id, SUM(target) as total_target, SUM(realisasi) as total_realisasi')
+            ->groupBy('triwulan_id')
             ->get()
-            ->keyBy('triwulan');
+            ->keyBy('triwulan_id');
 
         $triwulanChartLabels = ['TW1', 'TW2', 'TW3', 'TW4'];
         $targetChartData = [];
         $realisasiChartData = [];
-        foreach (['tw1', 'tw2', 'tw3', 'tw4'] as $kode) {
-            $row = $targetRealisasiRaw->get($kode);
+        foreach ([1, 2, 3, 4] as $triwulanId) {
+            $row = $targetRealisasiRaw->get($triwulanId);
             $targetChartData[] = (float) ($row->total_target ?? 0);
             $realisasiChartData[] = (float) ($row->total_realisasi ?? 0);
         }

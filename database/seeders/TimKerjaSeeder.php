@@ -34,5 +34,25 @@ class TimKerjaSeeder extends Seeder
 
         // 5. Relasikan User ke Tim Kerja Humas (Pivot: user_tim_kerja)
         $userHumas->timKerja()->syncWithoutDetaching([$timHumas->id]);
+
+        // 6. Buat Tim Kerja "Kelembagaan" (di-assign ke IKU 1.1 lewat SasaranKegiatanSeeder)
+        $timKelembagaan = TimKerja::firstOrCreate([
+            'nama_tim' => 'Kelembagaan',
+        ]);
+
+        // 7. Buat User Kelembagaan
+        $userKelembagaan = User::firstOrCreate(
+            ['email' => 'kelembagaan1@lldikti12.test'],
+            [
+                'name' => 'kelembagaan1',
+                'password' => Hash::make('kelembagaan123'),
+            ]
+        );
+
+        // 8. Assign Role Spatie
+        $userKelembagaan->syncRoles([$roleTimKerja]);
+
+        // 9. Relasikan User ke Tim Kerja Kelembagaan (Pivot: user_tim_kerja)
+        $userKelembagaan->timKerja()->syncWithoutDetaching([$timKelembagaan->id]);
     }
 }

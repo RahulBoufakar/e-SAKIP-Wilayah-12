@@ -3,25 +3,24 @@
 @section('title', 'IKU LLDIKTI — Target & Realisasi')
 @section('content')
 
-    <!-- Tabel -->
    <div
     x-data="{
         modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-        form: { iku_id: null, label: '', triwulan: '{{ $triwulan }}', target: '', realisasi: '' },
+        form: { iku_id: null, label: '', triwulan_id: {{ $triwulanDipilih?->id ?? 'null' }}, target: '', realisasi: null },
         openEdit(iku) {
-            this.form = { iku_id: iku.id, label: iku.kode + ' — ' + iku.deskripsi, triwulan: '{{ $triwulan }}', target: iku.target ?? '', realisasi: iku.realisasi ?? '' };
+            this.form = { iku_id: iku.id, label: iku.kode + ' — ' + iku.deskripsi, triwulan_id: {{ $triwulanDipilih?->id ?? 'null' }}, target: iku.target ?? '', realisasi: iku.realisasi ?? null };
             this.modalOpen = true;
         },
     }"
     class="mt-4"
 >
-    <!-- Tabs Triwulan: full width, menonjol saat aktif -->
+    <!-- Tabs Triwulan: semua dapat diklik, Admin bisa set Target periode mana pun -->
     <div class="flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
-        @foreach (['tw1' => 'Triwulan 1', 'tw2' => 'Triwulan 2', 'tw3' => 'Triwulan 3', 'tw4' => 'Triwulan 4'] as $key => $label)
-            <a href="{{ request()->fullUrlWithQuery(['triwulan' => $key]) }}"
+        @foreach ($triwulanList as $tw)
+            <a href="{{ request()->fullUrlWithQuery(['triwulan' => $tw->kode]) }}"
                class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors
-                      {{ $triwulan === $key ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-brand-600' }}">
-                {{ $label }}
+                      {{ $triwulanDipilih && $triwulanDipilih->id === $tw->id ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-brand-600' }}">
+                {{ $tw->kode }}
             </a>
         @endforeach
     </div>
@@ -35,7 +34,7 @@
                     <th rowspan="2" class="w-2/5 px-4 py-3 text-center align-middle font-semibold">Indikator Kinerja (IKU/IKK)</th>
                     <th rowspan="2" class="w-24 whitespace-nowrap px-4 py-3 text-center align-middle font-semibold">Target PK</th>
                     <th rowspan="2" class="w-20 px-4 py-3 text-center align-middle font-semibold">Satuan</th>
-                    <th colspan="2" class="px-4 py-2 text-center align-middle font-semibold">{{ strtoupper($triwulan) }}</th>
+                    <th colspan="2" class="px-4 py-2 text-center align-middle font-semibold">{{ $triwulanDipilih->kode ?? '—' }}</th>
                     <th rowspan="2" class="w-20 px-4 py-3 text-center align-middle font-semibold">Aksi</th>
                 </tr>
                 <tr class="bg-ink-900 text-white">
@@ -47,7 +46,7 @@
                 @forelse ($sasaranList as $sasaran)
                     @php $jumlahIku = $sasaran->iku->count(); @endphp
                     @forelse ($sasaran->iku as $iku)
-                        @php $r = $iku->realisasis->first(); @endphp
+                        @php $r = $iku->capaianKinerja->first(); @endphp
                         <tr class="hover:bg-brand-50/40">
                            @if ($loop->first)
                                 <td rowspan="{{ $jumlahIku }}" class="px-4 py-3 align-middle">

@@ -2,6 +2,13 @@
     $linkBase = 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
     $linkIdle = 'text-brand-100/70 hover:bg-white/5 hover:text-white';
     $linkActive = 'bg-brand-500 text-white shadow-card';
+
+    $sublinkBase = 'flex items-center gap-2 rounded-lg py-2 pl-9 pr-3 text-sm transition-colors';
+    $sublinkIdle = 'text-brand-100/60 hover:bg-white/5 hover:text-white';
+    $sublinkActive = 'bg-white/10 text-white font-medium';
+
+    $groupHeadBase = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
+    $isCapaianKinerja = request()->routeIs('validator.capaian-kinerja.*', 'validator.analisis-kinerja.*');
 @endphp
 
 <a href="{{ route('validator.dashboard') }}" class="{{ $linkBase }} {{ request()->routeIs('validator.dashboard') ? $linkActive : $linkIdle }}">
@@ -25,3 +32,19 @@
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
     Pelaporan Kegiatan
 </a>
+
+<!-- Capaian Kinerja -->
+<div x-data="{ open: {{ $isCapaianKinerja ? 'true' : 'false' }} }">
+    <button @click="open = !open" class="{{ $groupHeadBase }} {{ $isCapaianKinerja ? 'text-white' : $linkIdle }}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span class="flex-1 text-left">Capaian Kinerja</span>
+        <svg :class="open ? 'rotate-180' : ''" class="h-4 w-4 shrink-0 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+    </button>
+    <div x-show="open" x-collapse class="mt-1 space-y-1">
+        <a href="{{ route('validator.capaian-kinerja.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('validator.capaian-kinerja.*') ? $sublinkActive : $sublinkIdle }}">Capaian Kinerja</a>
+        <span class="{{ $sublinkBase }} cursor-not-allowed text-brand-100/30">
+            Analisis Kinerja
+            <span class="ml-auto rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-100/70">Segera</span>
+        </span>
+    </div>
+</div>

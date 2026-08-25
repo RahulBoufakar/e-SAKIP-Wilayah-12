@@ -1,6 +1,7 @@
 @php
     $isTargetKinerja = request()->routeIs('tim-kerja.target-kinerja.*', 'tim-kerja.rencana-aksi.*', 'tim-kerja.iku-lldikti.*');
-    
+    $isCapaianKinerja = request()->routeIs('tim-kerja.capaian-kinerja.*', 'tim-kerja.analisis-kinerja.*');
+
     $linkBase = 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
     $linkIdle = 'text-brand-100/70 hover:bg-white/5 hover:text-white';
     $linkActive = 'bg-brand-500 text-white shadow-card';

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('triwulan_id');
             $table->foreign('triwulan_id')->references('id')->on('triwulan')->restrictOnDelete();
             $table->foreignId('tahun_anggaran_id')->constrained('tahun_anggaran')->restrictOnDelete();
+            $table->decimal('target', 10, 2)->nullable();
+            $table->decimal('realisasi', 10, 2)->nullable();
             $table->enum('status', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamp('created_at')->useCurrent();

@@ -35,9 +35,9 @@ class Iku extends Model
         return $this->belongsTo(TimKerja::class);
     }
 
-    public function realisasis()
+    public function capaianKinerja()
     {
-        return $this->hasMany(Realisasi::class);
+        return $this->hasMany(CapaianKinerja::class);
     }
 
     public function getNomorAttribute(): string
