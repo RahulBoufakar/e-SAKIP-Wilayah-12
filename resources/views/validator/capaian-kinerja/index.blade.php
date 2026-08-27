@@ -55,7 +55,7 @@
                         <td class="px-4 py-3 text-center text-slate-600">{{ $c?->realisasi ?? '—' }}</td>
                         <td class="px-4 py-3 text-center">
                             @if ($isTriwulanAktif)
-                                <button type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Detail</button>
+                                <a href="{{ route('validator.capaian-kinerja.show', [$iku->id, $triwulanDipilih->id]) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Detail</a>
                             @else
                                 <button type="button" disabled class="cursor-not-allowed rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-300">Detail</button>
                             @endif

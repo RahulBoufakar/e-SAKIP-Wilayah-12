@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\TimKerja;
 
+use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
+use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class CapaianKinerjaController extends Controller
 {
@@ -54,5 +57,86 @@ class CapaianKinerjaController extends Controller
         }
 
         return view('tim-kerja.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+    }
+
+    public function show(Request $request, Iku $iku, Triwulan $triwulan)
+    {
+        $tahunAnggaranId = $this->activeTahunAnggaranId($request);
+        if (! $tahunAnggaranId) {
+            return $this->missingTahunAnggaran('tim-kerja.layout.app', 'tim-kerja.dashboard');
+        }
+
+        abort_unless($this->activeTimKerjaIds()->contains($iku->tim_kerja_id), 403);
+
+        $capaian = CapaianKinerja::firstOrCreate([
+            'iku_id' => $iku->id,
+            'triwulan_id' => $triwulan->id,
+            'tahun_anggaran_id' => $tahunAnggaranId,
+        ]);
+        $capaian->load('dokumen');
+
+        $formula = FormulaRegistry::resolve($iku->formula_kode);
+
+        return view('tim-kerja.capaian-kinerja.show', compact('iku', 'triwulan', 'capaian', 'formula'));
+    }
+
+    // PUT /tim-kerja/capaian-kinerja/{iku}/{triwulan}
+    public function update(Request $request, Iku $iku, Triwulan $triwulan)
+    {
+        $tahunAnggaranId = $this->activeTahunAnggaranId($request);
+        abort_unless($this->activeTimKerjaIds()->contains($iku->tim_kerja_id), 403);
+
+        $capaian = CapaianKinerja::firstOrCreate([
+            'iku_id' => $iku->id,
+            'triwulan_id' => $triwulan->id,
+            'tahun_anggaran_id' => $tahunAnggaranId,
+        ]);
+
+        if ($capaian->isFieldLocked()) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Data ini sedang terkunci dan tidak dapat diubah.']);
+        }
+
+        $formula = FormulaRegistry::resolve($iku->formula_kode);
+
+        if ($formula) {
+            $rules = collect($formula->variables())
+                ->mapWithKeys(fn ($v) => ["variabel.{$v['key']}" => 'required|numeric|min:0'])
+                ->all();
+            $data = $request->validate($rules);
+
+            $capaian->simpan([
+                'variabel' => $data['variabel'],
+                'realisasi' => $formula->calculate($data['variabel']),
+            ]);
+        } else {
+            $data = $request->validate(['realisasi' => 'required|numeric|min:0'], [
+                'realisasi.required' => 'Realisasi wajib diisi.',
+            ]);
+            $capaian->simpan($data);
+        }
+
+        return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian berhasil disimpan.']);
+    }
+
+    // PUT /tim-kerja/capaian-kinerja/{capaianKinerja}/kirim
+    public function kirim(CapaianKinerja $capaianKinerja)
+    {
+        abort_unless($this->activeTimKerjaIds()->contains($capaianKinerja->iku->tim_kerja_id), 403);
+
+        if (! $capaianKinerja->isDataLengkap()) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Lengkapi seluruh nilai variabel/realisasi sebelum mengirim untuk validasi.']);
+        }
+
+        if ($capaianKinerja->dokumen()->count() < 1) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Lampirkan minimal 1 dokumen bukti sebelum mengirim untuk validasi.']);
+        }
+
+        try {
+            $capaianKinerja->kirim();
+        } catch (\RuntimeException $e) {
+            return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
+        }
+
+        return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian Kinerja berhasil dikirim untuk validasi.']);
     }
 }

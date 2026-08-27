@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\TimKerja\CapaianKinerjaController;
+use App\Http\Controllers\TimKerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\DataProkerController;
 use App\Http\Controllers\TimKerja\DetailKegiatanController;
@@ -50,4 +51,11 @@ Route::middleware(['auth', 'role:tim_kerja'])
 
         // Capaian Kinerja
         Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
+        Route::get('capaian-kinerja/{iku}/{triwulan}', [CapaianKinerjaController::class, 'show'])->name('capaian-kinerja.show');
+        Route::put('capaian-kinerja/{capaianKinerja}/kirim', [CapaianKinerjaController::class, 'kirim'])->name('capaian-kinerja.kirim');
+        Route::put('capaian-kinerja/{iku}/{triwulan}', [CapaianKinerjaController::class, 'update'])->name('capaian-kinerja.update');
+        Route::post('capaian-kinerja/{capaianKinerja}/dokumen', [CapaianKinerjaDokumenController::class, 'store'])->name('capaian-kinerja.dokumen.store');
+        Route::delete('capaian-kinerja/dokumen/{dokumen}', [CapaianKinerjaDokumenController::class, 'destroy'])->name('capaian-kinerja.dokumen.destroy');
+        Route::get('capaian-kinerja/dokumen/{dokumen}/preview', [CapaianKinerjaDokumenController::class, 'preview'])->name('capaian-kinerja.dokumen.preview');
+        Route::get('capaian-kinerja/dokumen/{dokumen}/unduh', [CapaianKinerjaDokumenController::class, 'unduh'])->name('capaian-kinerja.dokumen.unduh');
     });

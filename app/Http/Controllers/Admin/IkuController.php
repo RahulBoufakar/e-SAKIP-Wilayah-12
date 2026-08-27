@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Controller;
 use App\Models\Iku;
 use App\Models\SasaranKegiatan;
 use App\Models\TimKerja;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class IkuController extends Controller
 {
@@ -30,6 +32,7 @@ class IkuController extends Controller
             'satuan' => 'required|string|max:20',
             'deskripsi_target' => 'nullable|string|max:255',
             'tim_kerja_id' => 'nullable|exists:tim_kerja,id',
+            'formula_kode' => ['nullable', Rule::in(FormulaRegistry::keys())],
         ], [
             'sasaran_kegiatan_id.required' => 'Sasaran Kegiatan wajib dipilih.',
             'sasaran_kegiatan_id.exists' => 'Sasaran Kegiatan tidak valid.',
@@ -41,6 +44,7 @@ class IkuController extends Controller
             'satuan.max' => 'Satuan tidak boleh lebih dari 20 karakter.',
             'deskripsi_target.max' => 'Deskripsi Target tidak boleh lebih dari 255 karakter.',
             'tim_kerja_id.exists' => 'Tim Kerja tidak valid.',
+            'formula_kode.in' => 'Formula tidak valid.',
         ]);
         $data['jenis'] = $jenis;
         Iku::create($data);
@@ -68,6 +72,7 @@ class IkuController extends Controller
             'target_pk' => 'required|numeric|min:1',
             'satuan' => 'required|string|max:20',
             'tim_kerja_id' => 'nullable|exists:tim_kerja,id',
+            'formula_kode' => ['nullable', Rule::in(FormulaRegistry::keys())],
             'deskripsi_target' => 'nullable|string|max:255',
         ], [
             'deskripsi.required' => 'Deskripsi wajib diisi.',
@@ -78,6 +83,7 @@ class IkuController extends Controller
             'satuan.max' => 'Satuan tidak boleh lebih dari 20 karakter.',
             'deskripsi_target.max' => 'Deskripsi Target tidak boleh lebih dari 255 karakter.',
             'tim_kerja_id.exists' => 'Tim Kerja tidak valid.',
+            'formula_kode.in' => 'Formula tidak valid.',
         ]);
         $iku->update($data);
 
