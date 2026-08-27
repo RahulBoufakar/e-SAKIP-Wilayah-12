@@ -83,7 +83,21 @@
                             @endforeach
                         </select>
                     </div>
-
+                    <div class="md:col-span-2">
+                        <label for="formula_kode" class="mb-1 block text-sm font-medium text-ink-900">
+                            Formula Perhitungan <span class="font-normal text-slate-400">(opsional)</span>
+                        </label>
+                        <select name="formula_kode" id="formula_kode" x-model="form.formula_kode"
+                                class="w-full rounded-lg border-slate-200 bg-white text-sm shadow-card focus:border-brand-500 focus:ring-brand-500">
+                            <option value="">— Input manual (tanpa formula) —</option>
+                            @foreach ($formulaOptions as $kode => $f)
+                                <option value="{{ $kode }}">{{ $f['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <template x-if="form.formula_kode">
+                            <p class="mt-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" x-text="formulaDescriptions[form.formula_kode]"></p>
+                        </template>
+                    </div>
                     <x-form.textarea
                         label="Deskripsi Target"
                         name="deskripsi_target"

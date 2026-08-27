@@ -19,16 +19,24 @@
                 tim: @js(old('tim', '')),
                 satuan: @js(old('satuan', '%')),
                 deskripsi_target: @js(old('deskripsi_target', '')),
-                tim_kerja_id: @js(old('tim_kerja_id', '')) 
+                tim_kerja_id: @js(old('tim_kerja_id', '')),
+                formula_kode: @js(old('formula_kode', ''))
+            },
+            formulaDescriptions: @js(collect($formulaOptions)->map(fn ($f) => $f['description'])),
+            formulaByNomor: @js(\App\Formulas\FormulaRegistry::nomorMap()),
+            predictedFormulaKode: @js($predictedFormulaKode ?? ''),
+            guessFormula(kode) {
+                const match = kode ? kode.match(/(\d+\.\d+)/) : null;
+                return match ? (this.formulaByNomor[match[1]] ?? '') : '';
             },
             openCreate() { 
                 this.mode = 'create'; 
-                this.form = { id: null, deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: '' }; 
+                this.form = { id: null, deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: '', formula_kode: this.predictedFormulaKode }; 
                 this.modalOpen = true;
             },
             openEdit(row) { 
                 this.mode = 'edit'; 
-                this.form = { id: row.id, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja_id }; 
+                this.form = { id: row.id, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja_id, formula_kode: row.formula_kode || this.guessFormula(row.kode) }; 
                 this.modalOpen = true;
             }
         }"

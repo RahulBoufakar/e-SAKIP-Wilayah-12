@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Validator\CapaianKinerjaDokumenController;
 use App\Http\Controllers\Validator\CapaianKinerjaController;
 use App\Http\Controllers\Validator\DashboardController;
 use App\Http\Controllers\Validator\DataProkerController;
@@ -40,5 +41,11 @@ Route::middleware(['auth', 'role:validator'])
 
         // Capaian Kinerja
         Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
+        Route::get('capaian-kinerja/{iku}/{triwulan}', [CapaianKinerjaController::class, 'show'])->name('capaian-kinerja.show');
+        Route::put('capaian-kinerja/{capaianKinerja}/setujui', [CapaianKinerjaController::class, 'setujui'])->name('capaian-kinerja.setujui');
+        Route::put('capaian-kinerja/{capaianKinerja}/tolak', [CapaianKinerjaController::class, 'tolak'])->name('capaian-kinerja.tolak');
+
+        Route::get('capaian-kinerja/dokumen/{dokumen}/preview', [CapaianKinerjaDokumenController::class, 'preview'])->name('capaian-kinerja.dokumen.preview');
+        Route::get('capaian-kinerja/dokumen/{dokumen}/unduh', [CapaianKinerjaDokumenController::class, 'unduh'])->name('capaian-kinerja.dokumen.unduh');
     });
     

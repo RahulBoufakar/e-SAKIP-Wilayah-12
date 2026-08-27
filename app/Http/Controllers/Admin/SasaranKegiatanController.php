@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -87,7 +88,16 @@ class SasaranKegiatanController extends Controller
             ->withQueryString();
 
         $timKerjaOptions = TimKerja::orderBy('nama_tim')->get(['id', 'nama_tim']);
+        $formulaOptions = FormulaRegistry::list();
 
-        return view('admin.target-kinerja.iku.index', compact('sasaran', 'ikuList', 'timKerjaOptions'));
+        // Prediksi nomor yang akan dipakai model saat IKU baru disimpan (lihat
+        // Iku::booted()), supaya dropdown formula bisa auto-terpilih sebelum submit.
+        $nomorSasaran = (int) str_replace('s.', '', $sasaran->kode);
+        $urutanBerikutnya = Iku::where('sasaran_kegiatan_id', $sasaran->id)->count() + 1;
+        $predictedFormulaKode = FormulaRegistry::resolveByNomor("{$nomorSasaran}.{$urutanBerikutnya}");
+
+        return view('admin.target-kinerja.iku.index', compact(
+            'sasaran', 'ikuList', 'timKerjaOptions', 'formulaOptions', 'predictedFormulaKode'
+        ));
     }
 }
