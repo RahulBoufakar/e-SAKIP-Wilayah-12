@@ -47,4 +47,9 @@ class Iku extends Model
 
         return $matches[1] ?? $this->kode;
     }
+
+    public function analisaKinerja()
+    {
+        return $this->hasMany(AnalisaKinerja::class);
+    }
 }

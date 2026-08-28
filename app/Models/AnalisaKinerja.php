@@ -10,7 +10,7 @@ class AnalisaKinerja extends Model
     use HasStatusPengiriman;
 
     protected $table = 'analisa_kinerja';
-    protected $fillable = ['iku_id', 'triwulan_id', 'tahun_anggaran_id', 'status', 'catatan_revisi'];
+    protected $fillable = ['iku_id', 'triwulan_id', 'tahun_anggaran_id', 'progress', 'kendala', 'tindak_lanjut', 'status', 'catatan_revisi'];
 
     public function iku()
     {

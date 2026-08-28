@@ -1,5 +1,6 @@
 @php
     $isTargetKinerja = request()->routeIs('tim-kerja.target-kinerja.*', 'tim-kerja.rencana-aksi.*', 'tim-kerja.iku-lldikti.*');
+    $isProgramKerja = request()->routeIs('tim-kerja.usulan-program-kerja.*', 'tim-kerja.data-proker.*', 'tim-kerja.kalender-proker.*', 'tim-kerja.pelaporan-kegiatan.*');
     $isCapaianKinerja = request()->routeIs('tim-kerja.capaian-kinerja.*', 'tim-kerja.analisis-kinerja.*');
 
     $linkBase = 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';

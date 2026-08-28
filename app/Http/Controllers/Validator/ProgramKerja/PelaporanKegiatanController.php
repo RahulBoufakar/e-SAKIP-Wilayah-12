@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Validator;
+namespace App\Http\Controllers\Validator\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
@@ -39,7 +39,7 @@ class PelaporanKegiatanController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('validator.pelaporan-kegiatan.index', compact(
+        return view('validator.program-kerja.pelaporan-kegiatan.index', compact(
             'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
         ));
     }
@@ -58,7 +58,7 @@ class PelaporanKegiatanController extends Controller
         $activeTahun = $tahunAnggaranId ? (int) TahunAnggaran::find($tahunAnggaranId)->tahun : null;
         $tab = $activeTahun !== null && $programKerja->usulanProgramKerja->tahun == $activeTahun ? 'berjalan' : 'h_plus_1';
 
-        return view('validator.pelaporan-kegiatan.show', compact('programKerja', 'laporan', 'tab'));
+        return view('validator.program-kerja.pelaporan-kegiatan.show', compact('programKerja', 'laporan', 'tab'));
     }
 
     // PUT /validator/pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/validasi

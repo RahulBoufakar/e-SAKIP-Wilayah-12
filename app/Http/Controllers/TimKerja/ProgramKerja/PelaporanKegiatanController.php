@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
@@ -52,7 +52,7 @@ class PelaporanKegiatanController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('tim-kerja.pelaporan-kegiatan.index', compact(
+        return view('tim-kerja.program-kerja.pelaporan-kegiatan.index', compact(
             'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
         ));
     }
@@ -75,7 +75,7 @@ class PelaporanKegiatanController extends Controller
             ->whereNotIn('nama_dokumen', DokumenLaporanKegiatan::DOKUMEN_STANDAR)
             ->values();
 
-        return view('tim-kerja.pelaporan-kegiatan.show', [
+        return view('tim-kerja.program-kerja.pelaporan-kegiatan.show', [
             'programKerja' => $programKerja,
             'laporan' => $laporan,
             'dokumenStandar' => DokumenLaporanKegiatan::DOKUMEN_STANDAR,

@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\Validator\CapaianKinerjaDokumenController;
+use App\Http\Controllers\Validator\AnalisaKinerjaController;
 use App\Http\Controllers\Validator\CapaianKinerjaController;
+use App\Http\Controllers\Validator\CapaianKinerjaDokumenController;
 use App\Http\Controllers\Validator\DashboardController;
-use App\Http\Controllers\Validator\DataProkerController;
+use App\Http\Controllers\Validator\ProgramKerja\DataProkerController;
 use App\Http\Controllers\Validator\DokumenLaporanKegiatanFileController;
-use App\Http\Controllers\Validator\KalenderProkerController;
-use App\Http\Controllers\Validator\PelaporanKegiatanController;
+use App\Http\Controllers\Validator\ProgramKerja\KalenderProkerController;
+use App\Http\Controllers\Validator\ProgramKerja\PelaporanKegiatanController;
 use App\Http\Controllers\Validator\UsulanProgramKerjaController;
 use App\Http\Controllers\Validator\UsulanProgramKerjaFileController;
 use Illuminate\Support\Facades\Route;
@@ -47,5 +48,9 @@ Route::middleware(['auth', 'role:validator'])
 
         Route::get('capaian-kinerja/dokumen/{dokumen}/preview', [CapaianKinerjaDokumenController::class, 'preview'])->name('capaian-kinerja.dokumen.preview');
         Route::get('capaian-kinerja/dokumen/{dokumen}/unduh', [CapaianKinerjaDokumenController::class, 'unduh'])->name('capaian-kinerja.dokumen.unduh');
+
+        // Analisa Kinerja
+        Route::get('analisa-kinerja', [AnalisaKinerjaController::class, 'index'])->name('analisa-kinerja.index');
+        Route::put('analisa-kinerja/{analisaKinerja}/validasi', [AnalisaKinerjaController::class, 'validasi'])->name('analisa-kinerja.validasi');
     });
     
