@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;

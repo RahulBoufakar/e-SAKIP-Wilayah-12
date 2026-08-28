@@ -87,6 +87,6 @@
             <div class="mt-4">{{ $usulanList->links() }}</div>
         @endif
 
-        @include('tim-kerja.usulan-program-kerja.modal-form')
+        @include('tim-kerja.program-kerja.usulan-program-kerja.modal-form')
     </div>
 @endsection

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
@@ -56,7 +56,7 @@ class UsulanProgramKerjaController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('tim-kerja.usulan-program-kerja.index', compact(
+        return view('tim-kerja.program-kerja.usulan-program-kerja.index', compact(
             'usulanList', 'ikuOptions', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
         ));
     }
@@ -107,7 +107,7 @@ class UsulanProgramKerjaController extends Controller
 
         $bulanIndo = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-        return view('tim-kerja.usulan-program-kerja.show', [
+        return view('tim-kerja.program-kerja.usulan-program-kerja.show', [
             'usulan' => $usulanProgramKerja,
             'bulanIndo' => $bulanIndo,
             'tab' => $tab,

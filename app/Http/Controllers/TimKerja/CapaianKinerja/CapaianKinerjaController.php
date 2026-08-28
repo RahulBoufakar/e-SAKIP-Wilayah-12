@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
 use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;

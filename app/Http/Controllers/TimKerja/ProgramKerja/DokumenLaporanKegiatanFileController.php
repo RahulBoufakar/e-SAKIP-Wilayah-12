@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Validator;
+namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\DokumenLaporanKegiatan;
 use Illuminate\Support\Facades\Storage;
@@ -9,9 +10,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DokumenLaporanKegiatanFileController extends Controller
 {
+    use ResolvesTimKerjaSession;
+
     public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
     {
-        abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('public')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
+        $this->authorizeAkses($dokumenLaporanKegiatan);
 
         return response()->json([
             'mime' => 'application/pdf',
@@ -21,11 +24,20 @@ class DokumenLaporanKegiatanFileController extends Controller
 
     public function unduh(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
-        abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('public')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
+        $this->authorizeAkses($dokumenLaporanKegiatan);
 
         return Storage::disk('public')->download(
             $dokumenLaporanKegiatan->file_dokumen,
             $dokumenLaporanKegiatan->nama_dokumen.'.pdf'
+        );
+    }
+
+    private function authorizeAkses(DokumenLaporanKegiatan $dokumen): void
+    {
+        abort_unless($dokumen->file_dokumen && Storage::disk('public')->exists($dokumen->file_dokumen), 404);
+        abort_unless(
+            $this->activeTimKerjaIds()->contains($dokumen->laporan->proker->usulanProgramKerja->iku->tim_kerja_id),
+            403
         );
     }
 }

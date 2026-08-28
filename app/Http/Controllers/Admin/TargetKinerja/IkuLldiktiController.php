@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\TargetKinerja;
 
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
@@ -10,7 +10,7 @@ use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
 
-class CapaianKinerjaController extends Controller
+class IkuLldiktiController extends Controller
 {
     // GET /admin/iku-lldikti — Admin boleh pilih & edit Target di Triwulan mana pun
     public function index(Request $request)

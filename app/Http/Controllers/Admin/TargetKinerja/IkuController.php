@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\TargetKinerja;
 
 use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
