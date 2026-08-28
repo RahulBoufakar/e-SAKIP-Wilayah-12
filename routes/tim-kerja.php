@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Controllers\TimKerja\AnalisaKinerjaController;
 use App\Http\Controllers\TimKerja\CapaianKinerjaController;
 use App\Http\Controllers\TimKerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\TimKerja\DashboardController;
-use App\Http\Controllers\TimKerja\DataProkerController;
+use App\Http\Controllers\TimKerja\ProgramKerja\DataProkerController;
 use App\Http\Controllers\TimKerja\DetailKegiatanController;
 use App\Http\Controllers\TimKerja\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\TimKerja\IkuLldiktiController;
-use App\Http\Controllers\TimKerja\KalenderProkerController;
-use App\Http\Controllers\TimKerja\PelaporanKegiatanController;
+use App\Http\Controllers\TimKerja\ProgramKerja\KalenderProkerController;
+use App\Http\Controllers\TimKerja\ProgramKerja\PelaporanKegiatanController;
 use App\Http\Controllers\TimKerja\RencanaAksiController;
 use App\Http\Controllers\TimKerja\TargetKinerjaController;
 use App\Http\Controllers\TimKerja\UsulanProgramKerjaController;
@@ -58,4 +59,8 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::delete('capaian-kinerja/dokumen/{dokumen}', [CapaianKinerjaDokumenController::class, 'destroy'])->name('capaian-kinerja.dokumen.destroy');
         Route::get('capaian-kinerja/dokumen/{dokumen}/preview', [CapaianKinerjaDokumenController::class, 'preview'])->name('capaian-kinerja.dokumen.preview');
         Route::get('capaian-kinerja/dokumen/{dokumen}/unduh', [CapaianKinerjaDokumenController::class, 'unduh'])->name('capaian-kinerja.dokumen.unduh');
+
+        // Analisa Kinerja
+        Route::get('analisa-kinerja', [AnalisaKinerjaController::class, 'index'])->name('analisa-kinerja.index');
+        Route::put('analisa-kinerja/{iku}/{triwulan}', [AnalisaKinerjaController::class, 'storeOrUpdate'])->name('analisa-kinerja.store-or-update');
     });

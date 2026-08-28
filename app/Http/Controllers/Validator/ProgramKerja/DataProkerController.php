@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Validator;
+namespace App\Http\Controllers\Validator\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
@@ -41,7 +41,7 @@ class DataProkerController extends Controller
 
         $bulanIndo = self::BULAN_INDO;
 
-        return view('validator.data-proker.index', compact(
+        return view('validator.program-kerja.data-proker.index', compact(
             'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'bulanIndo'
         ));
     }

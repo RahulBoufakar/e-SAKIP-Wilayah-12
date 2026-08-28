@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
@@ -79,7 +79,7 @@ class KalenderProkerController extends Controller
 
         $bulanIndo = self::BULAN_INDO;
 
-        return view('tim-kerja.kalender-proker.index', compact(
+        return view('tim-kerja.program-kerja.kalender-proker.index', compact(
             'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'tampilkanSemua', 'bulanIndo', 'prokerPerIkuBulan'
         ));
     }
