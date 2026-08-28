@@ -9,7 +9,7 @@
 
     $groupHeadBase = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
     $isProgramKerja = request()->routeIs('validator.usulan-program-kerja.*', 'validator.data-proker.*', 'validator.kalender-proker.*', 'validator.pelaporan-kegiatan.*');
-    $isCapaianKinerja = request()->routeIs('validator.capaian-kinerja.*', 'validator.analisis-kinerja.*');
+    $isCapaianKinerja = request()->routeIs('validator.capaian-kinerja.*', 'validator.analisa-kinerja.*', 'validator.analisis-kinerja.*');
 @endphp
 
 <a href="{{ route('validator.dashboard') }}" class="{{ $linkBase }} {{ request()->routeIs('validator.dashboard') ? $linkActive : $linkIdle }}">

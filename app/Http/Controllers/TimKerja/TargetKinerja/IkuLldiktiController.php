@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\TargetKinerja;
 
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -27,6 +27,6 @@ class IkuLldiktiController extends Controller
             ->orderBy('kode')
             ->get();
 
-        return view('tim-kerja.iku-lldikti.index', compact('ikuList', 'timKerjaIds'));
+        return view('tim-kerja.target-kinerja.iku-lldikti.index', compact('ikuList', 'timKerjaIds'));
     }
 }

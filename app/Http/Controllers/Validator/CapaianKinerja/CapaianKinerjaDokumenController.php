@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Validator;
+namespace App\Http\Controllers\Validator\CapaianKinerja;
 
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerjaDokumen;

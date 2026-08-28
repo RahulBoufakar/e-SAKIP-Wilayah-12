@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Validator;
+namespace App\Http\Controllers\Validator\CapaianKinerja;
 
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -47,7 +47,7 @@ class AnalisaKinerjaController extends Controller
                 ->get();
         }
 
-        return view('validator.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        return view('validator.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
     }
 
     // PUT /validator/analisa-kinerja/{analisaKinerja}/validasi

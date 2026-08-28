@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Validator;
+namespace App\Http\Controllers\Validator\ProgramKerja;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
@@ -45,7 +45,7 @@ class UsulanProgramKerjaController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('validator.usulan-program-kerja.index', compact(
+        return view('validator.program-kerja.usulan-program-kerja.index', compact(
             'usulanList', 'status', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
         ));
     }
@@ -61,7 +61,7 @@ class UsulanProgramKerjaController extends Controller
 
         $bulanIndo = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-        return view('validator.usulan-program-kerja.show', [
+        return view('validator.program-kerja.usulan-program-kerja.show', [
             'usulan' => $usulanProgramKerja,
             'bulanIndo' => $bulanIndo,
             'tab' => $tab,

@@ -1,15 +1,15 @@
 <?php
 
-use App\Http\Controllers\Validator\AnalisaKinerjaController;
-use App\Http\Controllers\Validator\CapaianKinerjaController;
-use App\Http\Controllers\Validator\CapaianKinerjaDokumenController;
+use App\Http\Controllers\Validator\CapaianKinerja\AnalisaKinerjaController;
+use App\Http\Controllers\Validator\CapaianKinerja\CapaianKinerjaController;
+use App\Http\Controllers\Validator\CapaianKinerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\Validator\DashboardController;
 use App\Http\Controllers\Validator\ProgramKerja\DataProkerController;
-use App\Http\Controllers\Validator\DokumenLaporanKegiatanFileController;
+use App\Http\Controllers\Validator\ProgramKerja\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\Validator\ProgramKerja\KalenderProkerController;
 use App\Http\Controllers\Validator\ProgramKerja\PelaporanKegiatanController;
-use App\Http\Controllers\Validator\UsulanProgramKerjaController;
-use App\Http\Controllers\Validator\UsulanProgramKerjaFileController;
+use App\Http\Controllers\Validator\ProgramKerja\UsulanProgramKerjaController;
+use App\Http\Controllers\Validator\ProgramKerja\UsulanProgramKerjaFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:validator'])

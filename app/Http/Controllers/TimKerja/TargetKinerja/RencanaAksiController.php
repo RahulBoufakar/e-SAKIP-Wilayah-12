@@ -1,17 +1,18 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\TargetKinerja;
 
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
-use App\Models\SasaranKegiatan;
+use App\Models\Iku;
+use App\Models\Triwulan;
 use Illuminate\Http\Request;
 
-class TargetKinerjaController extends Controller
+class RencanaAksiController extends Controller
 {
     use ResolvesTimKerjaSession;
 
-    // GET /tim-kerja/target-kinerja — baca-saja, IKU difilter ke Tim Kerja user login
+    // GET /tim-kerja/rencana-aksi — baca-saja, IKU difilter ke Tim Kerja user login
     public function index(Request $request)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
@@ -28,14 +29,14 @@ class TargetKinerjaController extends Controller
             ]);
         }
 
-        $sasaranList = SasaranKegiatan::with(['iku' => function ($q) use ($timKerjaIds) {
-                $q->whereIn('tim_kerja_id', $timKerjaIds)->orderBy('kode');
-            }])
-            ->where('tahun_anggaran_id', $tahunAnggaranId)
-            ->whereHas('iku', fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds))
+        $triwulanList = Triwulan::orderBy('urutan')->get();
+
+        $ikuList = Iku::with('rencanaAksi')
+            ->whereIn('tim_kerja_id', $timKerjaIds)
+            ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
             ->orderBy('kode')
             ->get();
 
-        return view('tim-kerja.target-kinerja.index', compact('sasaranList'));
+        return view('tim-kerja.target-kinerja.rencana-aksi.index', compact('ikuList', 'triwulanList'));
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja;
+namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -55,7 +55,7 @@ class AnalisaKinerjaController extends Controller
         }
         // dd($ikuList);
 
-        return view('tim-kerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        return view('tim-kerja.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
     }
 
     // PUT /tim-kerja/analisa-kinerja/{iku}/{triwulan}

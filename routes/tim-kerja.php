@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Controllers\TimKerja\AnalisaKinerjaController;
-use App\Http\Controllers\TimKerja\CapaianKinerjaController;
-use App\Http\Controllers\TimKerja\CapaianKinerjaDokumenController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\AnalisaKinerjaController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DataProkerController;
-use App\Http\Controllers\TimKerja\DetailKegiatanController;
-use App\Http\Controllers\TimKerja\DokumenLaporanKegiatanFileController;
-use App\Http\Controllers\TimKerja\IkuLldiktiController;
+use App\Http\Controllers\TimKerja\ProgramKerja\DetailKegiatanController;
+use App\Http\Controllers\TimKerja\ProgramKerja\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\TimKerja\ProgramKerja\KalenderProkerController;
 use App\Http\Controllers\TimKerja\ProgramKerja\PelaporanKegiatanController;
-use App\Http\Controllers\TimKerja\RencanaAksiController;
-use App\Http\Controllers\TimKerja\TargetKinerjaController;
-use App\Http\Controllers\TimKerja\UsulanProgramKerjaController;
-use App\Http\Controllers\TimKerja\UsulanProgramKerjaFileController;
+use App\Http\Controllers\TimKerja\ProgramKerja\UsulanProgramKerjaController;
+use App\Http\Controllers\TimKerja\ProgramKerja\UsulanProgramKerjaFileController;
+use App\Http\Controllers\TimKerja\TargetKinerja\IkuLldiktiController;
+use App\Http\Controllers\TimKerja\TargetKinerja\RencanaAksiController;
+use App\Http\Controllers\TimKerja\TargetKinerja\TargetKinerjaController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:tim_kerja'])
