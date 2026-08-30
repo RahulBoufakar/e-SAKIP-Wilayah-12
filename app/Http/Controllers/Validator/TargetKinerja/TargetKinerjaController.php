@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja\TargetKinerja;
+namespace App\Http\Controllers\Validator\TargetKinerja;
 
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -11,13 +11,12 @@ class TargetKinerjaController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
 
-    // GET /tim-kerja/target-kinerja — baca-saja, informasi umum: seluruh IKU
-    // seluruh Tim Kerja untuk tahun anggaran aktif (tidak difilter ke tim sendiri).
+    // GET /validator/target-kinerja — baca-saja, seluruh IKU & Tim Kerja penanggung jawab
     public function index(Request $request)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
         if (! $tahunAnggaranId) {
-            return $this->missingTahunAnggaran('tim-kerja.layout.app', 'tim-kerja.dashboard');
+            return $this->missingTahunAnggaran('validator.layout.app', 'validator.dashboard');
         }
 
         $sasaranList = SasaranKegiatan::with(['iku.timKerja'])
@@ -25,6 +24,6 @@ class TargetKinerjaController extends Controller
             ->orderBy('kode')
             ->get();
 
-        return view('tim-kerja.target-kinerja.index', compact('sasaranList'));
+        return view('validator.target-kinerja.index', compact('sasaranList'));
     }
 }

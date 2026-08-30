@@ -1,4 +1,4 @@
-@extends('tim-kerja.layout.app')
+@extends('validator.layout.app')
 
 @section('title', 'Target Kinerja')
 @section('subtitle', 'Seluruh IKU dan Tim Kerja penanggung jawab tahun anggaran berjalan')

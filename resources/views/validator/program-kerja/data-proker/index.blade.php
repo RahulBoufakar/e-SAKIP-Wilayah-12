@@ -30,8 +30,9 @@
                     <th class="w-28 px-3 py-2.5 font-semibold">Tim Kerja</th>
                     <th class="w-48 px-3 py-2.5 font-semibold">Nama Kegiatan / Proker</th>
                     <th class="w-24 px-3 py-2.5 font-semibold">IKU / IKK</th>
+                    <th class="w-36 px-3 py-2.5 font-semibold">Jenis Kegiatan</th>
                     <th class="w-48 px-3 py-2.5 font-semibold">Permasalahan</th>
-                    <th class="w-28 px-3 py-2.5 text-right font-semibold">Total Anggaran</th>
+                    <th class="w-32 whitespace-nowrap px-3 py-2.5 text-right font-semibold">Total Anggaran</th>
                     <th class="w-28 px-3 py-2.5 text-center font-semibold">Aksi</th>
                 </tr>
             </thead>
@@ -48,31 +49,27 @@
                                 <x-truncate-cell :id="'iku-'.$row->id" :short="$row->iku->kode ?? '—'" :text="$row->iku->deskripsi ?? '—'" />
                             </span>
                         </td>
+                        <td class="px-3 py-2">
+                            @if ($detail && $detail->jenis_kegiatan)
+                                <span class="inline-flex items-center rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                                    {{ ucwords(str_replace('_', ' ', $detail->jenis_kegiatan)) }}
+                                </span>
+                            @else
+                                <span class="text-[11px] italic text-slate-400">Belum divalidasi</span>
+                            @endif
+                        </td>
                         <td class="max-w-[12rem] px-3 py-2">
                             <x-truncate-cell :id="'masalah-'.$row->id" :text="$row->permasalahan ?: '—'" />
                         </td>
-                        <td class="px-3 py-2 text-right text-slate-600">{{ $detail ? 'Rp '.number_format($detail->anggaran, 0, ',', '.') : '—' }}</td>
+                        <td class="whitespace-nowrap px-3 py-2 text-right text-slate-600">{{ $detail ? 'Rp '.number_format($detail->anggaran, 0, ',', '.') : '—' }}</td>
                         <td class="px-3 py-2 text-center">
                             <div x-data class="flex items-center justify-center gap-1.5">
                                 <button type="button" @click="$refs['detail-{{ $row->id }}'].showModal()" class="rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100">Detail</button>
 
                                 {{-- Validasi: khusus Validator --}}
-                                <button type="button" @click="$refs['validasi-{{ $row->id }}'].showModal()" class="rounded-lg px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50">Validasi</button>
-
-                                <dialog x-ref="detail-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-md rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
-                                    <div class="p-6">
-                                        <h3 class="text-sm font-bold text-ink-900">Detail Proker — {{ $row->programKerja->kode_proker ?? '—' }}</h3>
-                                        <div class="mt-4 space-y-2 text-xs">
-                                            <p><span class="font-medium text-ink-900">Tempat Pelaksanaan:</span> <span class="text-slate-600">{{ $detail->tempat_pelaksanaan ?? '—' }}</span></p>
-                                            <p><span class="font-medium text-ink-900">Bentuk Kegiatan:</span> <span class="text-slate-600">{{ $detail->bentuk_kegiatan ?? '—' }}</span></p>
-                                            <p><span class="font-medium text-ink-900">Bulan Kegiatan:</span> <span class="text-slate-600">{{ $detail ? collect($detail->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') : '—' }}</span></p>
-                                            <p><span class="font-medium text-ink-900">Jenis Kegiatan:</span> <span class="text-slate-600">{{ $detail && $detail->jenis_kegiatan ? ucwords(str_replace('_', ' ', $detail->jenis_kegiatan)) : 'Belum divalidasi' }}</span></p>
-                                        </div>
-                                        <div class="mt-5 flex justify-end">
-                                            <button type="button" @click="$refs['detail-{{ $row->id }}'].close()" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100">Tutup</button>
-                                        </div>
-                                    </div>
-                                </dialog>
+                                @if ($detail)
+                                    <button type="button" @click="$refs['validasi-{{ $row->id }}'].showModal()" class="rounded-lg px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-50">Validasi</button>
+                                @endif
 
                                 <dialog x-ref="detail-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-lg rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
                                     <div class="p-6">
@@ -94,11 +91,6 @@
                                                     <td class="py-1.5 text-left align-top font-medium text-ink-900">Bulan Kegiatan</td>
                                                     <td class="py-1.5 text-left align-top text-slate-400">:</td>
                                                     <td class="py-1.5 text-left align-top text-slate-600">{{ $detail ? collect($detail->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') : '—' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="py-1.5 text-left align-top font-medium text-ink-900">Jenis Kegiatan</td>
-                                                    <td class="py-1.5 text-left align-top text-slate-400">:</td>
-                                                    <td class="py-1.5 text-left align-top text-slate-600">{{ $detail && $detail->jenis_kegiatan ? ucwords(str_replace('_', ' ', $detail->jenis_kegiatan)) : 'Belum divalidasi' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="py-1.5 text-left align-top font-medium text-ink-900">File KAK (PDF)</td>
@@ -140,12 +132,38 @@
                                         </div>
                                     </div>
                                 </dialog>
+
+                                @if ($detail)
+                                    <dialog x-ref="validasi-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-sm rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
+                                        <div class="p-6">
+                                            <h3 class="text-sm font-bold text-ink-900">Validasi Jenis Kegiatan</h3>
+                                            <p class="mt-1 text-xs text-slate-400">{{ $row->programKerja->kode_proker ?? '—' }} — {{ $row->nama_usulan }}</p>
+
+                                            <form method="POST" action="{{ route('validator.data-proker.jenis-kegiatan.update', $detail->id) }}" class="mt-4">
+                                                @csrf
+                                                @method('PUT')
+
+                                                <label class="block text-sm font-medium text-ink-900">Jenis Kegiatan</label>
+                                                <select name="jenis_kegiatan" class="mt-1.5 w-full rounded-lg border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:ring-brand-500">
+                                                    <option value="" @selected(is_null($detail->jenis_kegiatan))>— Belum divalidasi —</option>
+                                                    <option value="kunjungan_lapangan" @selected($detail->jenis_kegiatan === 'kunjungan_lapangan')>Kunjungan Lapangan</option>
+                                                    <option value="lainnya" @selected($detail->jenis_kegiatan === 'lainnya')>Lainnya</option>
+                                                </select>
+
+                                                <div class="mt-5 flex justify-end gap-3">
+                                                    <button type="button" @click="$refs['validasi-{{ $row->id }}'].close()" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                                                    <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </dialog>
+                                @endif
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">
+                        <td colspan="7" class="px-4 py-12 text-center text-sm text-slate-400">
                             Belum ada Data Proker yang disetujui pada tahun ini.
                         </td>
                     </tr>

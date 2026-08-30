@@ -10,6 +10,9 @@ use App\Http\Controllers\Validator\ProgramKerja\KalenderProkerController;
 use App\Http\Controllers\Validator\ProgramKerja\PelaporanKegiatanController;
 use App\Http\Controllers\Validator\ProgramKerja\UsulanProgramKerjaController;
 use App\Http\Controllers\Validator\ProgramKerja\UsulanProgramKerjaFileController;
+use App\Http\Controllers\Validator\TargetKinerja\IkuLldiktiController;
+use App\Http\Controllers\Validator\TargetKinerja\RencanaAksiController;
+use App\Http\Controllers\Validator\TargetKinerja\TargetKinerjaController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:validator'])
@@ -18,6 +21,12 @@ Route::middleware(['auth', 'role:validator'])
     ->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+        //Target Kinerja
+        Route::get('target-kinerja', [TargetKinerjaController::class, 'index'])->name('target-kinerja.index');
+        Route::get('iku-lldikti', [IkuLldiktiController::class, 'index'])->name('iku-lldikti.index');
+        Route::get('rencana-aksi', [RencanaAksiController::class, 'index'])->name('rencana-aksi.index');
+
+        // Usulan Program Kerja
         Route::get('usulan-program-kerja', [UsulanProgramKerjaController::class, 'index'])->name('usulan-program-kerja.index');
         Route::get('usulan-program-kerja/{usulanProgramKerja}', [UsulanProgramKerjaController::class, 'show'])->name('usulan-program-kerja.show');
         Route::put('usulan-program-kerja/{usulanProgramKerja}/setujui', [UsulanProgramKerjaController::class, 'setujui'])->name('usulan-program-kerja.setujui');

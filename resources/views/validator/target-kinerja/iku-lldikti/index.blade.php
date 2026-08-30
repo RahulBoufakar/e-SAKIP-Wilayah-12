@@ -1,4 +1,4 @@
-@extends('tim-kerja.layout.app')
+@extends('validator.layout.app')
 
 @section('title', 'IKU LLDIKTI — Target & Realisasi')
 @section('subtitle', 'Tampilan baca-saja, dapat berpindah Triwulan')
@@ -36,11 +36,8 @@
                     @forelse ($sasaranList as $sasaran)
                         @php $jumlahIku = $sasaran->iku->count(); @endphp
                         @forelse ($sasaran->iku as $iku)
-                            @php
-                                $r = $iku->capaianKinerja->first();
-                                $isTimSaya = $timKerjaIds->contains($iku->tim_kerja_id);
-                            @endphp
-                            <tr class="{{ $isTimSaya ? 'bg-brand-50/60' : '' }} hover:bg-brand-50/40">
+                            @php $r = $iku->capaianKinerja->first(); @endphp
+                            <tr class="hover:bg-brand-50/40">
                                @if ($loop->first)
                                     <td rowspan="{{ $jumlahIku }}" class="px-4 py-3 align-middle">
                                         <div class="flex items-center gap-1.5">
@@ -53,9 +50,6 @@
                                     <div class="flex items-center gap-1.5">
                                         <span class="shrink-0 font-mono text-xs font-semibold text-brand-700">{{ $iku->kode }}</span>
                                         <span class="min-w-0 max-w-[320px] break-words text-ink-900">{{ $iku->deskripsi }}</span>
-                                        @if ($isTimSaya)
-                                            <span class="shrink-0 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-semibold text-white">Tim Saya</span>
-                                        @endif
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-center text-slate-600">{{ rtrim(rtrim(number_format($iku->target_pk, 2, ',', '.'), '0'), ',') }}</td>
