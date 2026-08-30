@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\TimKerja\TargetKinerja;
+namespace App\Http\Controllers\Validator\TargetKinerja;
 
-use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
+use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
 use App\Models\SasaranKegiatan;
 use App\Models\Triwulan;
@@ -11,19 +11,15 @@ use Illuminate\Http\Request;
 
 class IkuLldiktiController extends Controller
 {
-    use ResolvesTimKerjaSession;
+    use ResolvesActiveTahunAnggaran;
 
-    // GET /tim-kerja/iku-lldikti?triwulan=TW1..TW4 — seluruh IKU tahun anggaran
-    // aktif (tidak difilter tim), baris milik Tim Kerja user login di-highlight;
-    // dapat berpindah Triwulan. Struktur tabel disamakan dengan tampilan Validator.
+    // GET /validator/iku-lldikti?triwulan=TW1..TW4 — baca-saja, dapat berpindah Triwulan
     public function index(Request $request)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
         if (! $tahunAnggaranId) {
-            return $this->missingTahunAnggaran('tim-kerja.layout.app', 'tim-kerja.dashboard');
+            return $this->missingTahunAnggaran('validator.layout.app', 'validator.dashboard');
         }
-
-        $timKerjaIds = $this->activeTimKerjaIds();
 
         $triwulanList = Triwulan::orderBy('urutan')->get();
 
@@ -39,7 +35,7 @@ class IkuLldiktiController extends Controller
 
         if ($triwulanDipilih) {
             $sasaranList = SasaranKegiatan::with(['iku' => function ($q) use ($triwulanDipilih, $tahunAnggaranId) {
-                    $q->with(['capaianKinerja' => fn ($c) => $c->where('triwulan_id', $triwulanDipilih->id)
+                    $q->with(['timKerja', 'capaianKinerja' => fn ($c) => $c->where('triwulan_id', $triwulanDipilih->id)
                         ->where('tahun_anggaran_id', $tahunAnggaranId)])
                     ->orderBy('kode');
                 }])
@@ -48,6 +44,6 @@ class IkuLldiktiController extends Controller
                 ->get();
         }
 
-        return view('tim-kerja.target-kinerja.iku-lldikti.index', compact('sasaranList', 'triwulanList', 'triwulanDipilih', 'timKerjaIds'));
+        return view('validator.target-kinerja.iku-lldikti.index', compact('sasaranList', 'triwulanList', 'triwulanDipilih'));
     }
 }

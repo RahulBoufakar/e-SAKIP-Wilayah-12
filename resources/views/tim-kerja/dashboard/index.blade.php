@@ -60,8 +60,8 @@
             Capaian vs Target per IKU @if ($triwulanAktif) ({{ $triwulanAktif->triwulan->kode }}) @endif
         </p>
         @if ($ikuCapaianChart->isNotEmpty())
-            <div class="mt-4">
-                <canvas id="capaianPerIkuChart" height="260"></canvas>
+            <div class="mt-4 max-w-4xl">
+                <canvas id="capaianPerIkuChart" height="180" class="mx-auto w-full"></canvas>
             </div>
         @else
             <p class="mt-4 text-sm text-slate-400">Belum ada data capaian untuk triwulan berjalan.</p>
@@ -102,18 +102,22 @@
 
 @push('scripts')
 <script>
-    @if ($ikuCapaianChart->isNotEmpty())
-    new Chart(document.getElementById('capaianPerIkuChart'), {
-        type: 'bar',
-        data: {
-            labels: @json($ikuCapaianChart->pluck('kode')),
-            datasets: [
-                { label: 'Target', data: @json($ikuCapaianChart->pluck('target')), backgroundColor: '#22969c' },
-                { label: 'Realisasi', data: @json($ikuCapaianChart->pluck('realisasi')), backgroundColor: '#3fb5b8' },
-            ],
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+    // Dibungkus DOMContentLoaded: <script type="module"> dari Vite (yang men-set
+    // window.Chart) dijamin selesai dieksekusi sebelum event DOMContentLoaded.
+    document.addEventListener('DOMContentLoaded', function () {
+        @if ($ikuCapaianChart->isNotEmpty())
+        new Chart(document.getElementById('capaianPerIkuChart'), {
+            type: 'bar',
+            data: {
+                labels: @json($ikuCapaianChart->pluck('kode')),
+                datasets: [
+                    { label: 'Target', data: @json($ikuCapaianChart->pluck('target')), backgroundColor: '#22969c' },
+                    { label: 'Realisasi', data: @json($ikuCapaianChart->pluck('realisasi')), backgroundColor: '#3fb5b8' },
+                ],
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+        });
+        @endif
     });
-    @endif
 </script>
 @endpush

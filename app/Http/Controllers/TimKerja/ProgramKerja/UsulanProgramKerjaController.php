@@ -69,8 +69,7 @@ class UsulanProgramKerjaController extends Controller
         if ($timKerjaIds->isEmpty()) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Anda belum ditugaskan ke Tim Kerja manapun.']);
         }
-
-        $$data = $request->validate([
+        $data = $request->validate([
             'iku_id' => [
                 'required',
                 Rule::exists('iku', 'id')->where(fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds)),

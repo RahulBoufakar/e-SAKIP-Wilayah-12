@@ -122,57 +122,63 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-    new Chart(document.getElementById('targetRealisasiChart'), {
-        type: 'bar',
-        data: {
-            labels: @json($triwulanChartLabels),
-            datasets: [
-                { label: 'Target', data: @json($targetChartData), backgroundColor: '#22969c' },
-                { label: 'Realisasi', data: @json($realisasiChartData), backgroundColor: '#3fb5b8' },
-            ],
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
-    });
+    // Dibungkus DOMContentLoaded, bukan dijalankan langsung: <script type="module">
+    // dari Vite (yang men-set window.Chart) dijamin oleh spesifikasi HTML selalu
+    // selesai dieksekusi SEBELUM event DOMContentLoaded ditembakkan. Data PHP
+    // disuntikkan via @json() di dalam <script>, bukan di atribut HTML, sehingga
+    // aman dari isu escaping tanda kutip/karakter khusus.
+    document.addEventListener('DOMContentLoaded', function () {
+        new Chart(document.getElementById('targetRealisasiChart'), {
+            type: 'bar',
+            data: {
+                labels: @json($triwulanChartLabels),
+                datasets: [
+                    { label: 'Target', data: @json($targetChartData), backgroundColor: '#22969c' },
+                    { label: 'Realisasi', data: @json($realisasiChartData), backgroundColor: '#3fb5b8' },
+                ],
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+        });
 
-    new Chart(document.getElementById('sebaranTimChart'), {
-        type: 'bar',
-        data: {
-            labels: @json($sebaranIkuPerTim->keys()),
-            datasets: [
-                { label: 'Jumlah IKU', data: @json($sebaranIkuPerTim->values()), backgroundColor: '#17777e' },
-            ],
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            plugins: { legend: { display: false } },
-        },
-    });
+        new Chart(document.getElementById('sebaranTimChart'), {
+            type: 'bar',
+            data: {
+                labels: @json($sebaranIkuPerTim->keys()),
+                datasets: [
+                    { label: 'Jumlah IKU', data: @json($sebaranIkuPerTim->values()), backgroundColor: '#17777e' },
+                ],
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } },
+            },
+        });
 
-    @if ($trenTahunLabels->isNotEmpty())
-    new Chart(document.getElementById('trenChart'), {
-        type: 'line',
-        data: {
-            labels: @json($trenTahunLabels),
-            datasets: [
-                {
-                    label: 'Jumlah Mahasiswa',
-                    data: @json($trenTahunLabels->map(fn ($t) => $trenMahasiswa[$t] ?? 0)),
-                    borderColor: '#22969c',
-                    tension: 0.3,
-                },
-                {
-                    label: 'Jumlah PTS',
-                    data: @json($trenTahunLabels->map(fn ($t) => $trenPts[$t] ?? 0)),
-                    borderColor: '#155f66',
-                    tension: 0.3,
-                },
-            ],
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+        @if ($trenTahunLabels->isNotEmpty())
+        new Chart(document.getElementById('trenChart'), {
+            type: 'line',
+            data: {
+                labels: @json($trenTahunLabels),
+                datasets: [
+                    {
+                        label: 'Jumlah Mahasiswa',
+                        data: @json($trenTahunLabels->map(fn ($t) => $trenMahasiswa[$t] ?? 0)),
+                        borderColor: '#22969c',
+                        tension: 0.3,
+                    },
+                    {
+                        label: 'Jumlah PTS',
+                        data: @json($trenTahunLabels->map(fn ($t) => $trenPts[$t] ?? 0)),
+                        borderColor: '#155f66',
+                        tension: 0.3,
+                    },
+                ],
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
+        });
+        @endif
     });
-    @endif
 </script>
 @endpush
