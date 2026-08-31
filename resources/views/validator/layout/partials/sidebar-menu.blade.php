@@ -44,6 +44,10 @@
         <a href="{{ route('validator.data-proker.index', ['tahun' => 'berjalan']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('validator.data-proker.*') ? $sublinkActive : $sublinkIdle }}">Data Proker</a>
         <a href="{{ route('validator.kalender-proker.index', ['tahun' => 'berjalan']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('validator.kalender-proker.*') ? $sublinkActive : $sublinkIdle }}">Kalender Proker</a>
         <a href="{{ route('validator.pelaporan-kegiatan.index', ['tahun' => 'berjalan']) }}" class="{{ $sublinkBase }} {{ request()->routeIs('validator.pelaporan-kegiatan.*') ? $sublinkActive : $sublinkIdle }}">Pelaporan Kegiatan</a>
+        <a href="{{ route('validator.pts-tagging.index') }}" class="{{ $linkBase }} {{ request()->routeIs('validator.pts-tagging.*') ? $linkActive : $linkIdle }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" /></svg>
+            Tagging PTS
+        </a>
     </div>
 </div>
 

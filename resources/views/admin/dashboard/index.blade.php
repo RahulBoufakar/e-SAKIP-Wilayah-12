@@ -123,11 +123,6 @@
 
 @push('scripts')
 <script>
-    // Dibungkus DOMContentLoaded, bukan dijalankan langsung: <script type="module">
-    // dari Vite (yang men-set window.Chart) dijamin oleh spesifikasi HTML selalu
-    // selesai dieksekusi SEBELUM event DOMContentLoaded ditembakkan. Data PHP
-    // disuntikkan via @json() di dalam <script>, bukan di atribut HTML, sehingga
-    // aman dari isu escaping tanda kutip/karakter khusus.
     document.addEventListener('DOMContentLoaded', function () {
         new Chart(document.getElementById('targetRealisasiChart'), {
             type: 'bar',

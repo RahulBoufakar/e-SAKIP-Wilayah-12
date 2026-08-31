@@ -10,6 +10,7 @@ use App\Http\Controllers\Validator\ProgramKerja\KalenderProkerController;
 use App\Http\Controllers\Validator\ProgramKerja\PelaporanKegiatanController;
 use App\Http\Controllers\Validator\ProgramKerja\UsulanProgramKerjaController;
 use App\Http\Controllers\Validator\ProgramKerja\UsulanProgramKerjaFileController;
+use App\Http\Controllers\Validator\ProgramKerja\PtsTaggingController;
 use App\Http\Controllers\Validator\TargetKinerja\IkuLldiktiController;
 use App\Http\Controllers\Validator\TargetKinerja\RencanaAksiController;
 use App\Http\Controllers\Validator\TargetKinerja\TargetKinerjaController;
@@ -48,6 +49,9 @@ Route::middleware(['auth', 'role:validator'])
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/preview', [DokumenLaporanKegiatanFileController::class, 'preview'])->name('pelaporan-kegiatan.dokumen.preview');
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/unduh', [DokumenLaporanKegiatanFileController::class, 'unduh'])->name('pelaporan-kegiatan.dokumen.unduh');
         Route::put('pelaporan-kegiatan/{laporanKegiatan}/toggle-kunci', [PelaporanKegiatanController::class, 'toggleKunci'])->name('pelaporan-kegiatan.toggle-kunci');
+
+        // Tagging PTS
+        Route::get('pts-tagging', [PtsTaggingController::class, 'index'])->name('pts-tagging.index');
 
         // Capaian Kinerja
         Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
