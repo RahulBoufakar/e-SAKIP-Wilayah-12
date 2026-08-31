@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ContextController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MasterData\PtsController;
 use App\Http\Controllers\Admin\MasterData\TimKerjaController;
 use App\Http\Controllers\Admin\MasterData\UserController;
 use App\Http\Controllers\Admin\TargetKinerja\IkuController;
@@ -29,6 +30,13 @@ Route::middleware(['auth', 'role:admin'])
 
         // Master Data
         Route::prefix('master-data')->name('master-data.')->group(function () {
+            //CRUD untuk PTS, Tim Kerja, User
+            Route::get('pts', [PtsController::class, 'index'])->name('pts.index');
+            Route::post('pts', [PtsController::class, 'store'])->name('pts.store');
+            Route::put('pts/{pts}', [PtsController::class, 'update'])->name('pts.update');
+            Route::delete('pts/{pts}', [PtsController::class, 'destroy'])->name('pts.destroy');
+        
+
             Route::get('tim-kerja', [TimKerjaController::class, 'index'])->name('tim-kerja.index');
             Route::post('tim-kerja', [TimKerjaController::class, 'store'])->name('tim-kerja.store');
             Route::put('tim-kerja/{timKerja}', [TimKerjaController::class, 'update'])->name('tim-kerja.update');

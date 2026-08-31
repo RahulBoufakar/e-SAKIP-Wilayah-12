@@ -58,7 +58,7 @@
 
                                 {{-- Tag PTS: khusus Tim Kerja, visibility-only, belum ada logika aksi --}}
                                 @if ($detail && $detail->jenis_kegiatan === 'kunjungan_lapangan')
-                                    <button type="button" class="rounded-lg bg-brand-50 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100">Tag PTS</button>
+                                    <button type="button" @click="$refs['tag-pts-{{ $row->id }}'].showModal()" class="rounded-lg bg-brand-50 px-2 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100">Tag PTS</button>
                                 @endif
 
                                 <dialog x-ref="detail-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-lg rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
@@ -127,6 +127,36 @@
                                         </div>
                                     </div>
                                 </dialog>
+                                @if ($detail && $detail->jenis_kegiatan === 'kunjungan_lapangan')
+                                    <dialog x-ref="tag-pts-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-sm rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
+                                        <div class="p-6">
+                                            <h3 class="text-sm font-bold text-ink-900">Tagging PTS</h3>
+                                            <p class="mt-1 text-xs text-slate-400">{{ $row->programKerja->kode_proker ?? '—' }} — {{ $row->nama_usulan }}</p>
+
+                                            <form method="POST" action="{{ route('tim-kerja.data-proker.tag-pts', $row->id) }}" class="mt-4">
+                                                @csrf
+                                                @method('PUT')
+
+                                                <div class="max-h-64 space-y-1.5 overflow-y-auto">
+                                                    @forelse ($ptsOptions as $pts)
+                                                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                                                            <input type="checkbox" name="pts_id[]" value="{{ $pts->id }}" @checked($row->pts->contains('id', $pts->id))>
+                                                            <span class="font-mono text-xs font-semibold text-brand-700">{{ $pts->kode_pts }}</span>
+                                                            <span class="min-w-0 flex-1 truncate">{{ $pts->nama_pts }}</span>
+                                                        </label>
+                                                    @empty
+                                                        <p class="text-xs text-slate-400">Belum ada data PTS.</p>
+                                                    @endforelse
+                                                </div>
+
+                                                <div class="mt-5 flex justify-end gap-3">
+                                                    <button type="button" @click="$refs['tag-pts-{{ $row->id }}'].close()" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                                                    <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </dialog>
+                                @endif
                             </div>
                         </td>
                     </tr>

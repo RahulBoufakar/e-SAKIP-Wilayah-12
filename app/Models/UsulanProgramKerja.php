@@ -41,6 +41,11 @@ class UsulanProgramKerja extends Model
         return $this->hasOne(DetailKegiatan::class, 'usulan_program_kerja_id');
     }
 
+    public function pts()
+    {
+        return $this->belongsToMany(Pts::class, 'usulan_program_kerja_pts');
+    }
+
     /** Simpan sebagai draft (dipakai Tim Kerja saat masih bisa diedit). */
     public function simpan(array $data): static
     {

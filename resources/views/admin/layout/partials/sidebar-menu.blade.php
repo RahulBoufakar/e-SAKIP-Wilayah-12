@@ -12,6 +12,7 @@
     </button>
     <div x-show="open" x-collapse class="mt-1 space-y-1">
         <a href="{{ route('admin.master-data.tim-kerja.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('admin.master-data.tim-kerja.*') ? $sublinkActive : $sublinkIdle }}">Tim Kerja</a>
+        <a href="{{ route('admin.master-data.pts.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('admin.master-data.pts.*') ? $sublinkActive : $sublinkIdle }}">Data PTS</a>
         <a href="{{ route('admin.master-data.user.index') }}" class="{{ $sublinkBase }} {{ request()->routeIs('admin.master-data.user.*') ? $sublinkActive : $sublinkIdle }}">User</a>
     </div>
 </div>
