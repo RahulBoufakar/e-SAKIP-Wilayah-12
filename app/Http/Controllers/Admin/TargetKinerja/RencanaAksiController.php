@@ -19,6 +19,8 @@ class RencanaAksiController extends Controller
     // Alpine tidak boleh fetch data).
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Iku::class);
+
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
         if (! $tahunAnggaranId) {
             return $this->missingTahunAnggaran();
@@ -40,6 +42,8 @@ class RencanaAksiController extends Controller
     // Field form: uraian[{triwulan_id}] agar tidak bergantung asumsi id 1-4.
     public function update(Request $request, Iku $iku)
     {
+        $this->authorize('manageRencanaAksi', $iku);
+
         $data = $request->validate([
             'uraian' => 'nullable|array',
             'uraian.*' => 'nullable|string',

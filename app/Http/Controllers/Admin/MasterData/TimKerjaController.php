@@ -15,6 +15,8 @@ class TimKerjaController extends Controller
     // GET /admin/master-data/tim-kerja (FR-M1)
     public function index(Request $request)
     {
+        $this->authorize('viewAny', TimKerja::class);
+
         $timKerja = TimKerja::when($request->filled('search'), fn ($q) => $q->where('nama_tim', 'like', '%'.$request->search.'%'))
             ->orderBy('nama_tim')
             ->paginate(15)
@@ -26,6 +28,8 @@ class TimKerjaController extends Controller
     // POST /admin/master-data/tim-kerja (FR-M1)
     public function store(Request $request)
     {
+        $this->authorize('create', TimKerja::class);
+
         $data = $request->validate([
             'nama_tim' => 'required|string|max:100|unique:tim_kerja,nama_tim',
         ], [
@@ -41,6 +45,8 @@ class TimKerjaController extends Controller
     // PUT /admin/master-data/tim-kerja/{id} (FR-M1)
     public function update(Request $request, TimKerja $timKerja)
     {
+        $this->authorize('update', $timKerja);
+
         $data = $request->validate([
             'nama_tim' => ['required', 'string', 'max:100', Rule::unique('tim_kerja', 'nama_tim')->ignore($timKerja->id)],
         ], [
@@ -56,6 +62,8 @@ class TimKerjaController extends Controller
     // DELETE /admin/master-data/tim-kerja/{id} (FR-M2: block jika dipakai users/ikk — D-6)
     public function destroy(TimKerja $timKerja)
     {
+        $this->authorize('delete', $timKerja);
+
         return $this->deleteOrBlock(
             fn () => $timKerja->delete(),
             'Tim Kerja ini masih digunakan oleh User atau IKK, tidak dapat dihapus.'

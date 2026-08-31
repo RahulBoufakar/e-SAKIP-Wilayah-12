@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\TargetKinerja;
 
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
+use App\Models\Iku;
 use App\Models\SasaranKegiatan;
 use App\Models\TahunAnggaran;
 use App\Models\Triwulan;
@@ -15,6 +16,8 @@ class IkuLldiktiController extends Controller
     // GET /admin/iku-lldikti — Admin boleh pilih & edit Target di Triwulan mana pun
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Iku::class);
+
         $tahunAnggaranId = $request->session()->get('tahun_anggaran_id')
             ?: optional(TahunAnggaran::orderByDesc('tahun')->first())->id;
 
@@ -49,6 +52,8 @@ class IkuLldiktiController extends Controller
     // hanya Triwulan yang sedang aktif.
     public function updateTarget(Request $request)
     {
+        $this->authorize('manageTarget', Iku::class);
+
         $data = $request->validate([
             'iku_id' => 'required|exists:iku,id',
             'triwulan_id' => 'required|exists:triwulan,id',

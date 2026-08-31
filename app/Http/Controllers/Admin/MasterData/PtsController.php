@@ -14,6 +14,8 @@ class PtsController extends Controller
     // GET /admin/master-data/pts
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Pts::class);
+
         $ptsList = Pts::when($request->filled('search'), function ($q) use ($request) {
                 $q->where('nama_pts', 'like', '%'.$request->search.'%')
                     ->orWhere('kode_pts', 'like', '%'.$request->search.'%');
@@ -28,6 +30,8 @@ class PtsController extends Controller
     // POST /admin/master-data/pts
     public function store(Request $request)
     {
+        $this->authorize('create', Pts::class);
+
         $data = $this->validated($request);
         Pts::create($data);
 
@@ -37,6 +41,8 @@ class PtsController extends Controller
     // PUT /admin/master-data/pts/{pts}
     public function update(Request $request, Pts $pts)
     {
+        $this->authorize('update', $pts);
+
         $data = $this->validated($request, $pts);
         $pts->update($data);
 
@@ -46,6 +52,8 @@ class PtsController extends Controller
     // DELETE /admin/master-data/pts/{pts}
     public function destroy(Pts $pts)
     {
+        $this->authorize('delete', $pts);
+
         return $this->deleteOrBlock(
             fn () => $pts->delete(),
             'Data PTS ini masih ditagging pada Program Kerja, tidak dapat dihapus.'
