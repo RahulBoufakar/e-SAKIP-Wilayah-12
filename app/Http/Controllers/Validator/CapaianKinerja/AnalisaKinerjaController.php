@@ -9,6 +9,7 @@ use App\Models\Iku;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -53,11 +54,8 @@ class AnalisaKinerjaController extends Controller
     // PUT /validator/analisa-kinerja/{analisaKinerja}/validasi
     public function validasi(Request $request, AnalisaKinerja $analisaKinerja)
     {
-        $triwulanAktifStatus = TriwulanStatus::where('tahun_anggaran_id', $analisaKinerja->tahun_anggaran_id)
-            ->where('status', 'aktif')
-            ->first();
-        if (! $triwulanAktifStatus || $triwulanAktifStatus->triwulan_id !== $analisaKinerja->triwulan_id) {
-            return back()->with('feedback', ['type' => 'error', 'message' => 'Analisis Kinerja hanya dapat divalidasi pada Triwulan yang sedang aktif.']);
+        if (Auth::user()->cannot('validasi', $analisaKinerja)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Analisis Kinerja hanya dapat divalidasi saat berstatus menunggu validasi pada Triwulan yang sedang aktif.']);
         }
 
         $validator = Validator::make($request->all(), [
