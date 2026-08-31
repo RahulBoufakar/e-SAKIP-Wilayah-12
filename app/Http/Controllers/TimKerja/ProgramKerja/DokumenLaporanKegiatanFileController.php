@@ -35,9 +35,6 @@ class DokumenLaporanKegiatanFileController extends Controller
     private function authorizeAkses(DokumenLaporanKegiatan $dokumen): void
     {
         abort_unless($dokumen->file_dokumen && Storage::disk('public')->exists($dokumen->file_dokumen), 404);
-        abort_unless(
-            $this->activeTimKerjaIds()->contains($dokumen->laporan->proker->usulanProgramKerja->iku->tim_kerja_id),
-            403
-        );
+        $this->authorize('view', $dokumen->laporan->proker);
     }
 }

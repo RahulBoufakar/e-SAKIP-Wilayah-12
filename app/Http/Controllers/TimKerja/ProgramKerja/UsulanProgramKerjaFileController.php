@@ -53,7 +53,7 @@ class UsulanProgramKerjaFileController extends Controller
 
     private function resolveFilePath(UsulanProgramKerja $usulanProgramKerja, string $field): string
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('view', $usulanProgramKerja);
 
         $column = self::FIELD_MAP[$field] ?? null;
         abort_unless($column, 404);

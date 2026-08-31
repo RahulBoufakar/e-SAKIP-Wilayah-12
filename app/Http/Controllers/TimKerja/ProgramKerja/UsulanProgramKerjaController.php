@@ -96,7 +96,7 @@ class UsulanProgramKerjaController extends Controller
     // GET /tim-kerja/usulan-program-kerja/{usulanProgramKerja}
     public function show(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('view', $usulanProgramKerja);
 
         $usulanProgramKerja->load(['iku', 'detailKegiatan']);
 
@@ -116,7 +116,7 @@ class UsulanProgramKerjaController extends Controller
     // PUT /tim-kerja/usulan-program-kerja/{usulanProgramKerja}
     public function update(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('update', $usulanProgramKerja);
 
         if ($usulanProgramKerja->isFieldLocked()) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini sedang terkunci dan tidak dapat diubah.']);
@@ -153,7 +153,7 @@ class UsulanProgramKerjaController extends Controller
     // PUT /tim-kerja/usulan-program-kerja/{usulanProgramKerja}/kirim
     public function kirim(UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('update', $usulanProgramKerja);
 
         if (! $usulanProgramKerja->can_kirim) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Lengkapi file KAK, RAB PDF, RAB Excel, dan Detail Kegiatan sebelum mengirim.']);

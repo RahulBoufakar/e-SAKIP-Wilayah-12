@@ -40,4 +40,12 @@ class IkuPolicy
     {
         return $user->hasRole('admin');
     }
+
+    // Dipakai Tim Kerja: CapaianKinerjaController & AnalisaKinerjaController (show/update/kirim/storeOrUpdate)
+    public function manageKinerja(User $user, Iku $iku): bool
+    {
+        return $user->hasRole('tim_kerja')
+            && $iku->tim_kerja_id !== null
+            && $user->timKerja()->whereKey($iku->tim_kerja_id)->exists();
+    }
 }

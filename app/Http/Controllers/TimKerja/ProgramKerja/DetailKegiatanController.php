@@ -16,7 +16,7 @@ class DetailKegiatanController extends Controller
     // PUT /tim-kerja/usulan-program-kerja/{usulanProgramKerja}/detail
     public function storeOrUpdate(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('update', $usulanProgramKerja);
 
         if ($usulanProgramKerja->isFieldLocked()) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini sedang terkunci dan tidak dapat diubah.']);
