@@ -93,10 +93,10 @@
                                                     <td class="py-1.5 text-left align-top text-slate-600">{{ $detail ? collect($detail->bulan_kegiatan)->map(fn ($b) => $bulanIndo[$b])->join(', ') : '—' }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td class="py-1.5 text-left align-top font-medium text-ink-900">File KAK (PDF)</td>
+                                                    <td class="py-1.5 text-left align-top font-medium text-ink-900">File KAK/TOR (PDF)</td>
                                                     <td class="py-1.5 text-left align-top text-slate-400">:</td>
                                                     <td class="py-1.5 text-left align-top">
-                                                        <x-file-preview id="kak-{{ $row->id }}" label="File KAK (PDF)" :url="$row->file_kak_pdf"
+                                                        <x-file-preview id="kak-{{ $row->id }}" label="File KAK/TOR (PDF)" :url="$row->file_kak_pdf"
                                                             :preview-url="route('validator.usulan-program-kerja.file.preview', [$row->id, 'kak'])"
                                                             :download-url="route('validator.usulan-program-kerja.file.unduh', [$row->id, 'kak'])"
                                                             :hide-label="true" />

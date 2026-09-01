@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MasterData\PtsController;
 use App\Http\Controllers\Admin\MasterData\TimKerjaController;
 use App\Http\Controllers\Admin\MasterData\UserController;
+use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\TargetKinerja\IkuController;
 use App\Http\Controllers\Admin\TargetKinerja\IkuLldiktiController;
 use App\Http\Controllers\Admin\TargetKinerja\RencanaAksiController;
@@ -90,4 +91,10 @@ Route::middleware(['auth', 'role:admin'])
             // FR-34: hanya halaman placeholder, sengaja tidak ada route POST aktif
             Route::get('sinkronisasi', [SinkronisasiController::class, 'index'])->name('sinkronisasi.index');
         });
+
+        Route::get('pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
+        Route::put('pengaturan/aplikasi', [PengaturanController::class, 'updateAplikasi'])->name('pengaturan.aplikasi.update');
+        Route::put('pengaturan/template/{kode}', [PengaturanController::class, 'updateTemplate'])->name('pengaturan.template.update');
+        Route::get('pengaturan/template/{kode}/preview', [PengaturanController::class, 'previewTemplate'])->name('pengaturan.template.preview');
+        Route::get('pengaturan/template/{kode}/unduh', [PengaturanController::class, 'unduhTemplate'])->name('pengaturan.template.unduh');
     });

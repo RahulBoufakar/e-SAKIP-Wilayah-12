@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\Iku;
 use App\Models\TahunAnggaran;
+use App\Models\TemplateDokumen;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -96,7 +97,7 @@ class UsulanProgramKerjaController extends Controller
     // GET /tim-kerja/usulan-program-kerja/{usulanProgramKerja}
     public function show(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorize('view', $usulanProgramKerja);
+        // $this->authorizeAksesUsulan($usulanProgramKerja);
 
         $usulanProgramKerja->load(['iku', 'detailKegiatan']);
 
@@ -105,11 +106,13 @@ class UsulanProgramKerjaController extends Controller
         $tab = $activeTahun !== null && $usulanProgramKerja->tahun == $activeTahun ? 'berjalan' : 'h_plus_1';
 
         $bulanIndo = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $templateList = TemplateDokumen::whereNotNull('file')->get();
 
         return view('tim-kerja.program-kerja.usulan-program-kerja.show', [
             'usulan' => $usulanProgramKerja,
             'bulanIndo' => $bulanIndo,
             'tab' => $tab,
+            'templateList' => $templateList,
         ]);
     }
 
@@ -131,7 +134,7 @@ class UsulanProgramKerjaController extends Controller
             'file_rab_excel' => 'nullable|file|mimes:xls,xlsx|max:10240',
         ], [
             'nama_usulan.required' => 'Nama Usulan wajib diisi.',
-            'file_kak_pdf.mimes' => 'File KAK harus berformat PDF.',
+            'file_kak_pdf.mimes' => 'File KAK/TOR harus berformat PDF.',
             'file_rab_pdf.mimes' => 'File RAB harus berformat PDF.',
             'file_rab_excel.mimes' => 'File RAB Excel harus berformat XLS/XLSX.',
         ]);
