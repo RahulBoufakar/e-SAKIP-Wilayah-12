@@ -14,6 +14,8 @@ class TahunAnggaranController extends Controller
     // GET /admin/tools/tahun
     public function index(Request $request)
     {
+        $this->authorize('viewAny', TahunAnggaran::class);
+
         $tahunList = TahunAnggaran::when($request->filled('search'), fn ($q) => $q->where('tahun', 'like', '%'.$request->search.'%'))
             ->orderByDesc('tahun')
             ->paginate(15)
@@ -25,6 +27,8 @@ class TahunAnggaranController extends Controller
     // POST /admin/tools/tahun (FR-23)
     public function store(Request $request)
     {
+        $this->authorize('create', TahunAnggaran::class);
+
         $data = $request->validate([
             'tahun' => 'required|integer|digits:4|unique:tahun_anggaran,tahun',
         ], [
@@ -42,6 +46,8 @@ class TahunAnggaranController extends Controller
     // DELETE /admin/tools/tahun/{id} (FR-24, FR-26: Confirmation Prompt wajib di frontend)
     public function destroy(TahunAnggaran $tahun)
     {
+        $this->authorize('delete', TahunAnggaran::class);
+
         return $this->deleteOrBlock(
             fn () => $tahun->delete(),
             'Tahun anggaran ini masih memiliki data Sasaran Kegiatan/Jumlah Mahasiswa/Jumlah PTS, tidak dapat dihapus.'

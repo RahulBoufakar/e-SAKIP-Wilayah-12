@@ -60,7 +60,7 @@ class PelaporanKegiatanController extends Controller
     // GET /tim-kerja/pelaporan-kegiatan/{programKerja}
     public function show(Request $request, ProgramKerja $programKerja)
     {
-        $this->authorizeAksesProker($programKerja);
+        $this->authorize('view', $programKerja);
 
         $laporan = LaporanKegiatan::firstOrCreate(['proker_id' => $programKerja->id]);
         $laporan->load('dokumen');

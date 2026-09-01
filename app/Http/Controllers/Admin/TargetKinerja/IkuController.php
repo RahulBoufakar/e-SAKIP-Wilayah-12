@@ -18,6 +18,8 @@ class IkuController extends Controller
     // POST /admin/iku — buat IKU atau IKK, dibedakan field 'jenis' pada form
     public function store(Request $request)
     {
+        $this->authorize('create', Iku::class);
+
         $jenis = $request->validate([
             'jenis' => 'required|in:IKU,IKK',
         ], [
@@ -56,6 +58,8 @@ class IkuController extends Controller
     // PUT /admin/iku/{iku} — update IKU maupun IKK (jenis & sasaran_kegiatan_id tidak berubah)
     public function update(Request $request, Iku $iku)
     {
+        $this->authorize('update', Iku::class);
+
         $jenis = $request->validate([
             'jenis' => 'required|in:IKU,IKK',
         ], [
@@ -94,6 +98,8 @@ class IkuController extends Controller
     // DELETE /admin/iku/{iku}
     public function destroy(Iku $iku)
     {
+        $this->authorize('delete', Iku::class);
+
         $label = $iku->jenis === 'IKK' ? 'IKK' : 'IKU';
         return $this->deleteOrBlock(
             fn () => $iku->delete(),

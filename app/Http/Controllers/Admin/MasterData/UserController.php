@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TimKerja;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -14,6 +15,8 @@ class UserController extends Controller
     // GET /admin/master-data/user (FR-M3)
     public function index(Request $request)
     {
+        $this->authorize('viewAny', User::class);
+
         $users = User::with('timKerja')
                 // ->withoutRole('admin')
                 ->when($request->filled('search'), function ($q) use ($request) {
@@ -34,6 +37,8 @@ class UserController extends Controller
     // POST /admin/master-data/user (FR-M3/FR-M4)
     public function store(Request $request)
     {
+        $this->authorize('create', User::class);
+
         $data = $this->validated($request);
         $user = User::create([
             'name' => $data['name'],
@@ -49,6 +54,8 @@ class UserController extends Controller
     // PUT /admin/master-data/user/{id} (FR-M4: password opsional saat edit)
     public function update(Request $request, User $user)
     {
+        $this->authorize('update', $user);
+
         $data = $this->validated($request, $user);
 
         $user->name = $data['name'];
@@ -70,7 +77,7 @@ class UserController extends Controller
     // DELETE /admin/master-data/user/{id} (FR-M3)
     public function destroy(User $user)
     {
-        if( $user->hasRole('admin')){
+       if (Auth::user()->cannot('delete', $user)) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'User Admin tidak dapat dihapus']);
         }
 

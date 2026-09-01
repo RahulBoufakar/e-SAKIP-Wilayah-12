@@ -10,6 +10,7 @@ use App\Models\Iku;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -72,6 +73,10 @@ class CapaianKinerjaController extends Controller
     // PUT /validator/capaian-kinerja/{capaianKinerja}/setujui
     public function setujui(CapaianKinerja $capaianKinerja)
     {
+        if (Auth::user()->cannot('approve', $capaianKinerja)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Capaian Kinerja tidak dapat disetujui pada status/kelengkapan data saat ini.']);
+        }
+
         try {
             $capaianKinerja->setujui();
         } catch (RuntimeException $e) {
@@ -81,9 +86,11 @@ class CapaianKinerjaController extends Controller
         return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian Kinerja disetujui.']);
     }
 
-    // PUT /validator/capaian-kinerja/{capaianKinerja}/tolak
     public function tolak(Request $request, CapaianKinerja $capaianKinerja)
     {
+        if (Auth::user()->cannot('reject', $capaianKinerja)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Capaian Kinerja tidak dapat ditolak pada status saat ini.']);
+        }
         $data = $request->validate([
             'catatan_revisi' => 'required|string',
         ], [

@@ -71,6 +71,10 @@ class UsulanProgramKerjaController extends Controller
     // PUT /validator/usulan-program-kerja/{usulanProgramKerja}/setujui
     public function setujui(UsulanProgramKerja $usulanProgramKerja)
     {
+        if (Auth::user()->cannot('approve', $usulanProgramKerja)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini tidak dapat disetujui pada status saat ini.']);
+        }
+
         try {
             $usulanProgramKerja->setujui(Auth::id());
         } catch (RuntimeException $e) {
@@ -83,6 +87,10 @@ class UsulanProgramKerjaController extends Controller
     // PUT /validator/usulan-program-kerja/{usulanProgramKerja}/tolak
     public function tolak(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
+        if (Auth::user()->cannot('reject', $usulanProgramKerja)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini tidak dapat ditolak pada status saat ini.']);
+        }
+
         $data = $request->validate([
             'catatan_revisi' => 'required|string',
         ], [

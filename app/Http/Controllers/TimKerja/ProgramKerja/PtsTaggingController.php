@@ -16,7 +16,7 @@ class PtsTaggingController extends Controller
     // PUT /tim-kerja/data-proker/{usulanProgramKerja}/tag-pts
     public function storeOrUpdate(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('update', $usulanProgramKerja);
 
         abort_unless($usulanProgramKerja->detailKegiatan?->jenis_kegiatan === 'kunjungan_lapangan', 403);
 

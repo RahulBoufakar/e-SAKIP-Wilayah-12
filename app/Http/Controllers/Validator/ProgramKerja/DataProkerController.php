@@ -9,6 +9,7 @@ use App\Models\DetailKegiatan;
 use App\Models\TahunAnggaran;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DataProkerController extends Controller
 {
@@ -49,6 +50,10 @@ class DataProkerController extends Controller
     // PUT /validator/data-proker/detail-kegiatan/{detailKegiatan}/jenis-kegiatan
     public function updateJenisKegiatan(Request $request, DetailKegiatan $detailKegiatan)
     {
+        if (Auth::user()->cannot('updateJenisKegiatan', $detailKegiatan)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Anda tidak memiliki izin untuk memvalidasi Jenis Kegiatan ini.']);
+        }
+
         $data = $request->validate([
             'jenis_kegiatan' => 'nullable|in:kunjungan_lapangan,lainnya',
         ], [

@@ -19,6 +19,8 @@ class SasaranKegiatanController extends Controller
     // GET /admin/target-kinerja (FR-01)
     public function index(Request $request)
     {
+        $this->authorize('viewAny', SasaranKegiatan::class);
+
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
         if (! $tahunAnggaranId) {
             return $this->missingTahunAnggaran();
@@ -36,6 +38,8 @@ class SasaranKegiatanController extends Controller
     // POST /admin/target-kinerja (FR-02, FR-03: kode auto-generate di model)
     public function store(Request $request)
     {
+        $this->authorize('create', SasaranKegiatan::class);
+
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
         if (! $tahunAnggaranId) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Tahun anggaran belum tersedia.']);
@@ -57,6 +61,8 @@ class SasaranKegiatanController extends Controller
     // PUT /admin/target-kinerja/{id} (FR-04)
     public function update(Request $request, SasaranKegiatan $sasaran)
     {
+        $this->authorize('update', $sasaran);
+
         $data = $request->validate([
             'nama_sasaran' => 'required|string|max:255',
         ], [
@@ -71,6 +77,8 @@ class SasaranKegiatanController extends Controller
     // DELETE /admin/target-kinerja/{id} (block jika masih ada IKU anak — ERD D-5)
     public function destroy(SasaranKegiatan $sasaran)
     {
+        $this->authorize('delete', $sasaran);
+
         return $this->deleteOrBlock(
             fn () => $sasaran->delete(),
             'Sasaran Kegiatan ini masih memiliki IKU, tidak dapat dihapus.'
@@ -80,6 +88,8 @@ class SasaranKegiatanController extends Controller
     // GET /admin/target-kinerja/{id} -> halaman Detail (FR-05)
     public function show(SasaranKegiatan $sasaran, Request $request)
     {
+        $this->authorize('show', $sasaran);
+
         $ikuList = Iku::with('timKerja')
             ->where('sasaran_kegiatan_id', $sasaran->id)
             ->when($request->filled('search'), fn ($q) => $q->where('deskripsi', 'like', '%'.$request->search.'%'))

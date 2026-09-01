@@ -74,6 +74,6 @@ class CapaianKinerjaDokumenController extends Controller
 
     private function authorizeAkses(CapaianKinerja $capaianKinerja): void
     {
-        abort_unless($this->activeTimKerjaIds()->contains($capaianKinerja->iku->tim_kerja_id), 403);
+        $this->authorize('manageKinerja', $capaianKinerja->iku);
     }
 }

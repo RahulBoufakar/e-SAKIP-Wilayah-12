@@ -66,7 +66,7 @@ class CapaianKinerjaController extends Controller
             return $this->missingTahunAnggaran('tim-kerja.layout.app', 'tim-kerja.dashboard');
         }
 
-        abort_unless($this->activeTimKerjaIds()->contains($iku->tim_kerja_id), 403);
+        $this->authorize('manageKinerja', $iku);
 
         $capaian = CapaianKinerja::firstOrCreate([
             'iku_id' => $iku->id,
@@ -84,7 +84,7 @@ class CapaianKinerjaController extends Controller
     public function update(Request $request, Iku $iku, Triwulan $triwulan)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
-        abort_unless($this->activeTimKerjaIds()->contains($iku->tim_kerja_id), 403);
+        $this->authorize('manageKinerja', $iku);
 
         $capaian = CapaianKinerja::firstOrCreate([
             'iku_id' => $iku->id,
@@ -121,7 +121,7 @@ class CapaianKinerjaController extends Controller
     // PUT /tim-kerja/capaian-kinerja/{capaianKinerja}/kirim
     public function kirim(CapaianKinerja $capaianKinerja)
     {
-        abort_unless($this->activeTimKerjaIds()->contains($capaianKinerja->iku->tim_kerja_id), 403);
+         $this->authorize('manageKinerja', $capaianKinerja->iku);
 
         if (! $capaianKinerja->isDataLengkap()) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Lengkapi seluruh nilai variabel/realisasi sebelum mengirim untuk validasi.']);

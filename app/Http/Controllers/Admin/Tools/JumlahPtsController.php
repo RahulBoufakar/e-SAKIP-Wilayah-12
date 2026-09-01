@@ -12,6 +12,8 @@ class JumlahPtsController extends Controller
     // GET /admin/tools/jumlah-pts
     public function index()
     {
+        $this->authorize('viewAny', JumlahPts::class);
+
         $data = JumlahPts::with('tahunAnggaran')->orderByDesc('id')->paginate(15);
         $tahunOptions = TahunAnggaran::orderByDesc('tahun')->get(['id', 'tahun']);
 
@@ -21,6 +23,8 @@ class JumlahPtsController extends Controller
     // POST /admin/tools/jumlah-pts (FR-31)
     public function store(Request $request)
     {
+        $this->authorize('create', JumlahPts::class);
+
         $data = $request->validate([
             'tahun_anggaran_id' => 'required|exists:tahun_anggaran,id',
             'jumlah' => 'required|integer|min:0',
@@ -41,6 +45,8 @@ class JumlahPtsController extends Controller
     // DELETE /admin/tools/jumlah-pts/{id} (FR-31/FR-32: Confirmation Prompt wajib di frontend)
     public function destroy(JumlahPts $jumlahPts)
     {
+
+        $this->authorize('delete', $jumlahPts);
         $jumlahPts->delete();
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data Jumlah PTS berhasil dihapus.']);

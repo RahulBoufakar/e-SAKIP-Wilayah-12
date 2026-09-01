@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\TahunAnggaran;
-use App\Models\UsulanProgramKerja;
 
 trait GatesUsulanProgramKerja
 {
@@ -18,11 +17,5 @@ trait GatesUsulanProgramKerja
         $tahun = TahunAnggaran::find($tahunAnggaranId)?->tahun;
 
         return $tahun && TahunAnggaran::where('tahun', $tahun + 1)->exists();
-    }
-
-    /** Pastikan usulan milik IKU dari Tim Kerja user yang sedang login. */
-    protected function authorizeAksesUsulan(UsulanProgramKerja $usulan): void
-    {
-        abort_unless($this->activeTimKerjaIds()->contains($usulan->iku->tim_kerja_id), 403);
     }
 }

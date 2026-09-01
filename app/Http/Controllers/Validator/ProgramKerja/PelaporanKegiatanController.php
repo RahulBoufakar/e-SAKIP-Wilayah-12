@@ -10,6 +10,7 @@ use App\Models\LaporanKegiatan;
 use App\Models\ProgramKerja;
 use App\Models\TahunAnggaran;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -64,8 +65,9 @@ class PelaporanKegiatanController extends Controller
     // PUT /validator/pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/validasi
     public function validasi(Request $request, DokumenLaporanKegiatan $dokumenLaporanKegiatan)
     {
-        abort_unless($dokumenLaporanKegiatan->file_dokumen, 404);
-        abort_if($dokumenLaporanKegiatan->laporan->is_locked, 403, 'Laporan ini sudah dikunci, status validasi tidak dapat diubah.');
+        if (Auth::user()->cannot('validasi', $dokumenLaporanKegiatan)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Dokumen ini tidak dapat divalidasi (belum ada file, atau laporan sudah dikunci).']);
+        }
 
         $validator = Validator::make($request->all(), [
             'status_validasi' => ['required', Rule::in(['menunggu_validasi', 'disetujui', 'ditolak'])],
@@ -92,6 +94,10 @@ class PelaporanKegiatanController extends Controller
     // PUT /validator/pelaporan-kegiatan/{laporanKegiatan}/toggle-kunci
     public function toggleKunci(LaporanKegiatan $laporanKegiatan)
     {
+        if (Auth::user()->cannot('toggleLock', $laporanKegiatan)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Anda tidak memiliki izin untuk mengubah status kunci laporan ini.']);
+        }
+
         $laporanKegiatan->update(['is_locked' => ! $laporanKegiatan->is_locked]);
 
         return back()->with('feedback', [

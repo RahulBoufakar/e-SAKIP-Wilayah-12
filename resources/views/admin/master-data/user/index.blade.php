@@ -87,9 +87,9 @@
                             <td class="px-5 py-3">
                                 <div class="flex items-center justify-end gap-2">
                                     <button @click="openEdit(@js($row))" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Edit</button>
-                                    @unlessrole('admin')
+                                    @can('delete', $row)
                                         <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
-                                    @endunlessrole
+                                    @endcan
                                 </div>
                                 @include('admin.layout.confirm-delete', [
                                     'refName' => 'confirm-'.$row->id,

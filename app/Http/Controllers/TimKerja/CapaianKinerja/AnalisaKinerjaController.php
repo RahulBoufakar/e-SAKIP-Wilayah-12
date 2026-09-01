@@ -62,7 +62,7 @@ class AnalisaKinerjaController extends Controller
     public function storeOrUpdate(Request $request, Iku $iku, Triwulan $triwulan)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
-        abort_unless($this->activeTimKerjaIds()->contains($iku->tim_kerja_id), 403);
+        $this->authorize('manageKinerja', $iku);
 
         // Rule sama seperti Capaian Kinerja: hanya boleh isi/revisi di Triwulan aktif.
         $triwulanAktifStatus = TriwulanStatus::where('tahun_anggaran_id', $tahunAnggaranId)
