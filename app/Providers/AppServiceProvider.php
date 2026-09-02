@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\PengaturanAplikasi;
+use App\View\Composers\ContextBarComposer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
@@ -38,5 +39,12 @@ class AppServiceProvider extends ServiceProvider
                 fn () => PengaturanAplikasi::current()
             ));
         });
+
+        View::composer([
+            'admin.layout.navbar',
+            'tim-kerja.layout.navbar',
+            'validator.layout.navbar',
+        ], ContextBarComposer::class);
+        
     }
 }

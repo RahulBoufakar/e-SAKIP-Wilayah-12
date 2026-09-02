@@ -44,6 +44,7 @@
                     Email
                 </label>
                 <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                       placeholder="Masukkan email Anda"
                        class="block w-full px-3 py-2 bg-slate-800/40 border border-white/60 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition">
                 @error('email')
                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
@@ -56,6 +57,7 @@
                     Password
                 </label>
                 <input id="password" type="password" name="password" required autocomplete="current-password"
+                       placeholder="Masukkan password Anda"
                        class="block w-full px-3 py-2 bg-slate-800/40 border border-white/60 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition">
                 @error('password')
                     <p class="mt-1 text-xs text-red-300">{{ $message }}</p>

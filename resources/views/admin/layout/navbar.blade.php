@@ -1,19 +1,24 @@
-@php
-    // Context bar bersifat read-only/navigasi (Desain Sistem §2), bukan bagian dari
-    // logika create/update/delete — query ringan langsung di partial ini supaya tidak
-    // perlu menambah compact() di setiap controller index() yang sudah ada.
-    $ctxTahunList = \App\Models\TahunAnggaran::orderByDesc('tahun')->get(['id', 'tahun']);
-    $ctxTahunAktifId = session('tahun_anggaran_id') ?? $ctxTahunList->first()?->id;
-    $ctxTriwulanAktif = $ctxTahunAktifId
-        ? \App\Models\TriwulanStatus::with('triwulan')->where('tahun_anggaran_id', $ctxTahunAktifId)->where('status', 'aktif')->first()
-        : null;
-@endphp
+<header class="sticky top-0 z-30 flex h-20 shrink-0 items-center gap-4 bg-gray-300 px-4 sm:px-6 lg:px-8 shadow-sm">
 
-<header class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
+    {{-- Tombol Toggle Sidebar (Desktop) --}}
+    <button
+        @click="desktopCollapsed = !desktopCollapsed"
+        class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-gray-200 hover:text-[#0b3168] lg:flex"
+        :title="desktopCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+            <rect width="18" height="18" x="3" y="3" rx="2" />
+            <path d="M9 3v18" />
+            <path x-show="!desktopCollapsed" d="m16 15-3-3 3-3" />
+            <path x-show="desktopCollapsed" d="m14 9 3 3-3 3" />
+        </svg>
+    </button>
+
+    {{-- Tombol Mobile Sidebar --}}
     <button 
         x-data 
         @click="$dispatch('open-mobile-sidebar')" 
-        class="text-slate-500 hover:text-ink-900 lg:hidden" 
+        class="text-slate-500 hover:text-blue-900 lg:hidden" 
         aria-label="Buka menu"
     >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
@@ -21,28 +26,35 @@
         </svg>
     </button>
 
+    {{-- Judul & Subjudul --}}
     <div class="min-w-0 flex-1">
-        <h1 class="truncate text-base font-bold text-ink-900 sm:text-lg">@yield('title', 'Dashboard')</h1>
-        @hasSection('subtitle')
-            <p class="truncate text-xs text-slate-500">@yield('subtitle')</p>
-        @endif
+        <h1 class="truncate text-2xl font-bold text-[#0b3168] sm:text-3xl">@yield('title', 'Dashboard')</h1>
+        <p class="truncate text-sm text-gray-500">
+            @yield('subtitle', 'Ringkasan kinerja Tim Kerja Anda')
+        </p>
     </div>
 
-    <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+    {{-- Area Konteks & Aksi (Kanan) --}}
+    <div class="flex shrink-0 items-center gap-3 sm:gap-4">
+        
+        @if (Auth::user()->timKerja->isNotEmpty())
+            <span class="hidden items-center rounded-full bg-gray-100 px-4 py-1.5 text-sm font-bold text-gray-600 sm:inline-flex">
+                {{ Auth::user()->timKerja->first()->nama_tim }}
+            </span>
+        @endif
+
         @if ($ctxTriwulanAktif)
-            <span class="hidden items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 sm:inline-flex">
-                <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
-                {{ $ctxTriwulanAktif->triwulan->kode }} Aktif
+            <span class="hidden items-center rounded-full bg-cyan-100 px-4 py-1.5 text-sm font-bold text-cyan-800 sm:inline-flex">
+                {{ $ctxTriwulanAktif->triwulan->kode }}
             </span>
         @endif
 
         @if ($ctxTahunList->isNotEmpty())
-            <form method="POST" action="{{ route('admin.context.tahun-anggaran') }}" x-data
-                  @change="$el.submit()">
+            <form method="POST" action="{{ route('admin.context.tahun-anggaran') }}" x-data @change="$el.submit()">
                 @csrf
                 <label class="sr-only" for="ctx-tahun">Tahun Anggaran</label>
                 <select id="ctx-tahun" name="tahun_anggaran_id"
-                        class="rounded-lg border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-sm font-medium text-ink-900 focus:border-brand-500 focus:ring-brand-500">
+                        class="min-w-[110px] cursor-pointer appearance-none rounded-full border-none bg-cyan-100 px-5 py-1.5 text-sm font-bold text-cyan-800 focus:ring-2 focus:ring-cyan-500 text-left">
                     @foreach ($ctxTahunList as $tahun)
                         <option value="{{ $tahun->id }}" @selected($tahun->id == $ctxTahunAktifId)>TA {{ $tahun->tahun }}</option>
                     @endforeach
@@ -50,6 +62,12 @@
             </form>
         @endif
 
-        <div class="hidden h-9 w-9 items-center justify-center rounded-full bg-ink-900 text-sm font-bold text-white sm:flex">A</div>
+        <button class="relative ml-2 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-7 w-7">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75v-.7V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+            </svg>
+            <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-white">1</span>
+        </button>
+        
     </div>
 </header>

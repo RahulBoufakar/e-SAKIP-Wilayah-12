@@ -23,10 +23,15 @@
     @stack('head')
 </head>
 <body class="h-full bg-slate-100 font-sans text-ink-900 antialiased">
-    <div class="min-h-screen flex">
+
+    {{-- x-data untuk state collapse sidebar, dipakai bareng sidebar & navbar --}}
+    <div class="min-h-screen flex" x-data="{ desktopCollapsed: false }">
         @include('validator.layout.sidebar')
 
-        <div class="flex-1 flex flex-col min-w-0 lg:pl-72">
+        <div
+            class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
+            :class="desktopCollapsed ? 'lg:pl-20' : 'lg:pl-72'"
+        >
             @include('validator.layout.navbar')
 
             <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
