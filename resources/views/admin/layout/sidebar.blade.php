@@ -33,9 +33,13 @@
         
         <!-- Header Sidebar Mobile -->
         <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+            @if ($pengaturanAplikasi->logo_url)
+                <img src="{{ $pengaturanAplikasi->logo_url }}" alt="Logo" class="h-9 w-9 rounded-lg bg-white object-contain">
+            @else
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+            @endif
             <div class="leading-tight">
-                <p class="text-sm font-bold text-white">eSAKIP</p>
+                <p class="text-sm font-bold text-white">{{ $pengaturanAplikasi->nama_aplikasi ?? 'eSAKIP' }}</p>
                 <p class="text-[11px] font-medium text-brand-100/60">LLDikti Wilayah XII</p>
             </div>
             <button @click="mobileOpen = false" class="ml-auto text-brand-100/60 hover:text-white">
@@ -66,9 +70,13 @@
 <!-- Desktop Sidebar (Statis, selalu muncul di layar besar) -->
 <aside class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col lg:bg-ink-950">
     <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+        @if ($pengaturanAplikasi->logo_url)
+            <img src="{{ $pengaturanAplikasi->logo_url }}" alt="Logo" class="h-9 w-9 rounded-lg bg-white object-contain">
+        @else
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+        @endif
         <div class="leading-tight">
-            <p class="text-sm font-bold text-white">eSAKIP</p>
+            <p class="text-sm font-bold text-white">{{ $pengaturanAplikasi->nama_aplikasi ?? 'eSAKIP' }}</p>
             <p class="text-[11px] font-medium text-brand-100/60">LLDikti Wilayah XII</p>
         </div>
     </div>

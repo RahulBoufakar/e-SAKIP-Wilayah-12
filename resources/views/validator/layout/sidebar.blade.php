@@ -3,7 +3,11 @@
 
     <aside :class="mobileOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-ink-950 transition-transform duration-300 ease-in-out">
         <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+            @if ($pengaturanAplikasi->logo_url)
+                <img src="{{ $pengaturanAplikasi->logo_url }}" alt="Logo" class="h-9 w-9 rounded-lg bg-white object-contain">
+            @else
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+            @endif
             <div class="leading-tight">
                 <p class="text-sm font-bold text-white">eSAKIP</p>
                 <p class="text-[11px] font-medium text-brand-100/60">Validator</p>
@@ -31,7 +35,11 @@
 
 <aside class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col lg:bg-ink-950">
     <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+        @if ($pengaturanAplikasi->logo_url)
+            <img src="{{ $pengaturanAplikasi->logo_url }}" alt="Logo" class="h-9 w-9 rounded-lg bg-white object-contain">
+        @else
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-mono text-sm font-bold text-white">e</div>
+        @endif
         <div class="leading-tight">
             <p class="text-sm font-bold text-white">eSAKIP</p>
             <p class="text-[11px] font-medium text-brand-100/60">Validator</p>

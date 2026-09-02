@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Dashboard') — eSAKIP LLDikti Wilayah XII</title>
+    <title>@yield('title', 'Dashboard') — {{ $pengaturanAplikasi->nama_aplikasi }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    @if ($pengaturanAplikasi->favicon_url)
+        <link rel="icon" href="{{ $pengaturanAplikasi->favicon_url }}">
+    @endif
+
     <style>
         [x-cloak] { display: none !important; }
         body { -webkit-font-smoothing: antialiased; }

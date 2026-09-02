@@ -31,7 +31,7 @@
             <p class="mt-2 whitespace-pre-line text-sm text-slate-600">{{ $usulan->deskripsi ?: '—' }}</p>
 
             <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <x-file-preview id="kak-{{ $usulan->id }}" label="File KAK (PDF)" :url="$usulan->file_kak_pdf"
+                <<x-file-preview id="kak-{{ $usulan->id }}" label="File KAK/TOR (PDF)" :url="$usulan->file_kak_pdf"
                     :preview-url="route('validator.usulan-program-kerja.file.preview', [$usulan->id, 'kak'])"
                     :download-url="route('validator.usulan-program-kerja.file.unduh', [$usulan->id, 'kak'])" />
 
