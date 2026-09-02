@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class TriwulanStatus extends Model
@@ -45,6 +46,9 @@ class TriwulanStatus extends Model
                 ['status' => 'non_aktif']
             );
             $status->update(['status' => 'aktif']);
+
+            // Hapus cache triwulan aktif untuk tahun anggaran ini
+            Cache::forget("context_triwulan_aktif_{$tahunAnggaranId}");
 
             return $status->fresh();
         });
