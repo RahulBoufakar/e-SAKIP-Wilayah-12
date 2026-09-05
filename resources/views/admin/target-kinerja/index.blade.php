@@ -7,8 +7,8 @@
     <div
         x-data="{
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-            mode: {{ $errors->any() ? '\'edit\'' : '\'create\'' }},
-            form: { id: null, nama_sasaran: '{{ old('nama_sasaran', '') }}' },
+            mode: {{ old('id') ? '\'edit\'' : '\'create\'' }},
+            form: { id: @js(old('id')), nama_sasaran: '{{ old('nama_sasaran', '') }}' },
             openCreate() { this.mode = 'create'; this.form = { id: null, nama_sasaran: '' }; this.modalOpen = true },
             openEdit(row) { this.mode = 'edit'; this.form = { id: row.id, nama_sasaran: row.nama_sasaran }; this.modalOpen = true },
         }"

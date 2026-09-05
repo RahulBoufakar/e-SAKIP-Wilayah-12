@@ -16,11 +16,11 @@
 
     <div
         x-data="{
-            modalPilihOpen: {{ $errors->any() ? 'true' : 'false' }},
-            modalUploadOpen: false,
+            modalPilihOpen: {{ $errors->any() && !$errors->has('file_dokumen') ? 'true' : 'false' }},
+            modalUploadOpen: {{ $errors->has('file_dokumen') ? 'true' : 'false' }},
             modalPreviewOpen: false,
             customList: [''],
-            upload: { id: null, nama_dokumen: '', status_validasi: 'belum_diunggah', catatan_revisi: null },
+            upload: { id: @js(old('id')), nama_dokumen: '', status_validasi: 'belum_diunggah', catatan_revisi: null },
             previewLoading: false,
             previewError: null,
             previewLabel: '',
@@ -225,6 +225,7 @@
                     <form :action="'{{ url('tim-kerja/pelaporan-kegiatan/dokumen') }}/' + upload.id + '/upload'" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="id" :value="upload.id">
                         <label class="block text-sm font-medium text-ink-900">File Dokumen (PDF, maks. 5 MB)</label>
                         <input type="file" name="file_dokumen" accept="application/pdf" required
                                class="mt-1.5 w-full rounded-lg border-slate-200 text-sm">

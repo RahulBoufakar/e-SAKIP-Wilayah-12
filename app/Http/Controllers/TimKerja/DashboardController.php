@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Models\AnalisaKinerja;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
-use App\Models\PelaporanKegiatan;
 use App\Models\TahunAnggaran;
 use App\Models\TriwulanStatus;
 use App\Models\UsulanProgramKerja;
@@ -21,7 +20,6 @@ class DashboardController extends Controller
     private const STATUS_LIST = ['draft', 'menunggu_validasi', 'approved', 'rejected'];
 
     private const MODUL = [
-        PelaporanKegiatan::class => ['label' => 'Pelaporan Kegiatan', 'route' => 'tim-kerja.pelaporan-kegiatan.index'],
         CapaianKinerja::class => ['label' => 'Capaian Kinerja', 'route' => 'tim-kerja.capaian-kinerja.index'],
         AnalisaKinerja::class => ['label' => 'Analisa Kinerja', 'route' => 'tim-kerja.analisa-kinerja.index'],
     ];

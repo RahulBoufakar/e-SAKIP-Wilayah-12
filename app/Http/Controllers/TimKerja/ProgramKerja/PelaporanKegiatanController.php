@@ -202,7 +202,6 @@ class PelaporanKegiatanController extends Controller
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil diunggah.']);
 
-        return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil diunggah.']);
     }
 
     private function hapusDokumen(DokumenLaporanKegiatan $dokumen): void

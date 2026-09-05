@@ -46,8 +46,6 @@ class CapaianKinerjaDokumenController extends Controller
             causer: Auth::user(),
         ));
 
-return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil ditambahkan.']);
-
         return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil ditambahkan.']);
     }
 

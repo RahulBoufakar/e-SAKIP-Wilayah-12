@@ -49,17 +49,11 @@
             </span>
         @endif
 
-        @if ($ctxTahunList->isNotEmpty())
-            <form method="POST" action="{{ route('admin.context.tahun-anggaran') }}" x-data @change="$el.submit()">
-                @csrf
-                <label class="sr-only" for="ctx-tahun">Tahun Anggaran</label>
-                <select id="ctx-tahun" name="tahun_anggaran_id"
-                        class="min-w-[110px] cursor-pointer appearance-none rounded-full border-none bg-cyan-100 px-5 py-1.5 text-sm font-bold text-cyan-800 focus:ring-2 focus:ring-cyan-500 text-left">
-                    @foreach ($ctxTahunList as $tahun)
-                        <option value="{{ $tahun->id }}" @selected($tahun->id == $ctxTahunAktifId)>TA {{ $tahun->tahun }}</option>
-                    @endforeach
-                </select>
-            </form>
+        @php $ctxTahunAktif = $ctxTahunList->firstWhere('id', $ctxTahunAktifId); @endphp
+        @if ($ctxTahunAktif)
+            <span class="hidden items-center rounded-full bg-cyan-100 px-4 py-1.5 text-sm font-bold text-cyan-800 sm:inline-flex">
+                TA {{ $ctxTahunAktif->tahun }}
+            </span>
         @endif
 
         {{-- Ikon Notifikasi Lonceng --}}

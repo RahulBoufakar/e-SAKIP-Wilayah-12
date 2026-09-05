@@ -7,8 +7,8 @@
     <div
         x-data="{
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-            mode: {{ $errors->any() ? '\'edit\'' : '\'create\'' }},
-            form: { id: null, kode_pts: '{{ old('kode_pts', '') }}', nama_pts: '{{ old('nama_pts', '') }}', status_pts: '{{ old('status_pts', 'aktif') }}', akreditasi_pts: '{{ old('akreditasi_pts', '') }}' },
+            mode: {{ old('id') ? '\'edit\'' : '\'create\'' }},
+            form: { id: @js(old('id')), kode_pts: '{{ old('kode_pts', '') }}', nama_pts: '{{ old('nama_pts', '') }}', status_pts: '{{ old('status_pts', 'aktif') }}', akreditasi_pts: '{{ old('akreditasi_pts', '') }}' },
             openCreate() { this.mode = 'create'; this.form = { id: null, kode_pts: '', nama_pts: '', status_pts: 'aktif', akreditasi_pts: '' }; this.modalOpen = true },
             openEdit(row) { this.mode = 'edit'; this.form = { id: row.id, kode_pts: row.kode_pts, nama_pts: row.nama_pts, status_pts: row.status_pts, akreditasi_pts: row.akreditasi_pts }; this.modalOpen = true },
         }"

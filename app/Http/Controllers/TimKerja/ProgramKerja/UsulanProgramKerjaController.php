@@ -106,7 +106,7 @@ class UsulanProgramKerjaController extends Controller
     // GET /tim-kerja/usulan-program-kerja/{usulanProgramKerja}
     public function show(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        // $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorizeAksesUsulan($usulanProgramKerja);
 
         $usulanProgramKerja->load(['iku', 'detailKegiatan']);
 

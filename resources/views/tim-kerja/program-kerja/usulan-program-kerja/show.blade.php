@@ -180,7 +180,6 @@
 
             <template x-if="editing">
                 <form method="POST" action="{{ route('tim-kerja.usulan-program-kerja.detail.store-or-update', $usulan->id) }}" class="mt-4 space-y-3">
-                    <form method="POST" action="{{ route('tim-kerja.usulan-program-kerja.detail.store-or-update', $usulan->id) }}" class="mt-4 space-y-3">
                     @csrf
                     @method('PUT')
 

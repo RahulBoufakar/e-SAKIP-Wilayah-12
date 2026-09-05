@@ -13,7 +13,7 @@
         x-data="{
             modalValidasiOpen: {{ $errors->any() ? 'true' : 'false' }},
             modalPreviewOpen: false,
-            dok: { id: null, nama_dokumen: '', status_validasi: 'menunggu_validasi', catatan_revisi: null },
+            dok: { id: @js(old('id')), nama_dokumen: '', status_validasi: '{{ old('status_validasi', 'menunggu_validasi') }}', catatan_revisi: @js(old('catatan_revisi', '')) },
             previewLoading: false,
             previewError: null,
             openValidasi(d) {
@@ -162,6 +162,7 @@
                     <form :action="'{{ url('validator/pelaporan-kegiatan/dokumen') }}/' + dok.id + '/validasi'" method="POST">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="id" :value="dok.id">
 
                         <label class="block text-sm font-medium text-ink-900">Status Validasi</label>
                         <select name="status_validasi" x-model="dok.status_validasi" required
