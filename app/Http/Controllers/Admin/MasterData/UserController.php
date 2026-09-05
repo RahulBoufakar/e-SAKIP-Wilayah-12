@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\MasterData;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Models\TimKerja;
 use App\Models\User;
@@ -43,10 +44,16 @@ class UserController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => Hash::make($data['password']), // cast 'hashed' -> auto di-hash saat disimpan
+            'password' => Hash::make($data['password']),
         ]);
         $user->syncRoles([$data['role']]);
         $user->timKerja()->sync($data['role'] === 'tim_kerja' ? [$data['tim_kerja_id']] : []);
+
+        event(new ActivityOccurred(
+            subject: $user,
+            description: "membuat user baru \"{$user->name}\" dengan role {$data['role']}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'User berhasil ditambahkan.']);
     }
@@ -58,18 +65,47 @@ class UserController extends Controller
 
         $data = $this->validated($request, $user);
 
+        $roleSebelum = $user->getRoleNames()->first();
+        $timSebelum = $user->timKerja->pluck('nama_tim')->join(', ') ?: '-';
+
         $user->name = $data['name'];
         $user->email = $data['email'];
         if (! empty($data['password'])) {
-            $user->password = Hash::make($data['password']); // kosong = tidak diubah
+            $user->password = Hash::make($data['password']);
         }
         $user->save();
 
         $user->syncRoles([$data['role']]);
-        // 3. Update Tim Kerja di Tabel Pivot
         $user->timKerja()->sync(
             $data['role'] === 'tim_kerja' ? [$data['tim_kerja_id']] : []
         );
+
+        // reload relasi setelah sync(), supaya perbandingan "sesudah" akurat (bukan cache lama)
+        $user->load('timKerja');
+        $timSesudah = $user->timKerja->pluck('nama_tim')->join(', ') ?: '-';
+
+        $perubahan = [];
+        if ($roleSebelum !== $data['role']) {
+            $perubahan[] = "role: {$roleSebelum} → {$data['role']}";
+        }
+        if ($timSebelum !== $timSesudah) {
+            $perubahan[] = "tim kerja: {$timSebelum} → {$timSesudah}";
+        }
+
+        if (! empty($perubahan)) {
+            event(new ActivityOccurred(
+                subject: $user,
+                description: "mengubah akses user \"{$user->name}\" (".implode('; ', $perubahan).')',
+                causer: Auth::user(),
+                recipients: collect([$user]), // beri tahu user yang bersangkutan
+                properties: [
+                    'role_sebelum' => $roleSebelum,
+                    'role_sesudah' => $data['role'],
+                    'tim_sebelum' => $timSebelum,
+                    'tim_sesudah' => $timSesudah,
+                ],
+            ));
+        }
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'User berhasil diperbarui.']);
     }

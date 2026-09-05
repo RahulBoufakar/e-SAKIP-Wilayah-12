@@ -66,14 +66,34 @@
         @endif
 
         {{-- Ikon Notifikasi Lonceng --}}
-        <button class="relative ml-2 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-7 w-7">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75v-.7V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-            </svg>
-            <span class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-white">
-                1
-            </span>
-        </button>
+        <div x-data="notificationBell()" x-init="init()" class="relative ml-2">
+            <button @click="open = !open" class="relative flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-7 w-7">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75v-.7V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+                <span x-show="count > 0" x-cloak x-text="count > 9 ? '9+' : count"
+                    class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-white"></span>
+            </button>
+
+            <div x-show="open" @click.outside="open = false" x-cloak x-transition
+                class="absolute right-0 top-12 z-50 w-80 rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
+                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                    <p class="text-sm font-semibold text-ink-900">Notifikasi</p>
+                    <button @click="markAllRead()" x-show="count > 0" class="text-xs font-semibold text-brand-700 hover:underline">Tandai semua dibaca</button>
+                </div>
+                <div class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+                    <template x-if="items.length === 0">
+                        <p class="px-4 py-8 text-center text-xs text-slate-400">Tidak ada notifikasi baru.</p>
+                    </template>
+                    <template x-for="item in items" :key="item.id">
+                        <a :href="'/notifications/' + item.id + '/goto'" class="block px-4 py-3 text-sm hover:bg-slate-50">
+                            <p class="text-ink-900" x-text="item.description"></p>
+                            <p class="mt-1 text-xs text-slate-400" x-text="item.created_at_human"></p>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </div>
 
     </div>
 </header>

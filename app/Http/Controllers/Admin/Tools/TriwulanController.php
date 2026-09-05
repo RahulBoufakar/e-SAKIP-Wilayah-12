@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Admin\Tools;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
+use App\Models\TahunAnggaran;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TriwulanController extends Controller
 {
@@ -43,6 +47,16 @@ class TriwulanController extends Controller
 
         TriwulanStatus::activate($triwulan->id, $data['tahun_anggaran_id']);
 
+        $tahun = TahunAnggaran::find($data['tahun_anggaran_id'])?->tahun;
+
+        event(new ActivityOccurred(
+            subject: $triwulan,
+            description: "mengaktifkan {$triwulan->kode} untuk Tahun Anggaran {$tahun}",
+            causer: Auth::user(),
+            recipients: User::role('tim_kerja')->get(),
+            url: route('tim-kerja.dashboard'),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => "{$triwulan->kode} berhasil diaktifkan."]);
     }
 
@@ -51,9 +65,20 @@ class TriwulanController extends Controller
     {
         $this->authorize('deactivateAll', Triwulan::class);
 
-        // Panggil method static yang sudah diubah
         TriwulanStatus::activate(0, $tahunAnggaranId);
-        
+
+        $tahunAnggaran = TahunAnggaran::find($tahunAnggaranId);
+
+        if ($tahunAnggaran) {
+            event(new ActivityOccurred(
+                subject: $tahunAnggaran,
+                description: "menonaktifkan semua Triwulan untuk Tahun Anggaran {$tahunAnggaran->tahun}",
+                causer: Auth::user(),
+                recipients: User::role('tim_kerja')->get(),
+                url: route('tim-kerja.dashboard'),
+            ));
+        }
+
         return redirect()->back()->with('feedback', ['type' => 'success', 'message' => 'Semua triwulan berhasil dinonaktifkan.']);
     }
 }

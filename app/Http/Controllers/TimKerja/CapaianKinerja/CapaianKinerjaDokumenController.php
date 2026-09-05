@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
 use App\Models\CapaianKinerjaDokumen;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -37,6 +39,14 @@ class CapaianKinerjaDokumenController extends Controller
                 'file_dokumen' => $item['file']->store('capaian-kinerja', 'public'),
             ]);
         }
+
+        event(new ActivityOccurred(
+            subject: $capaianKinerja,
+            description: 'mengunggah '.count($data['dokumen'])." dokumen bukti Capaian Kinerja IKU {$capaianKinerja->iku->kode} — {$capaianKinerja->triwulan->kode}",
+            causer: Auth::user(),
+        ));
+
+return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil ditambahkan.']);
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil ditambahkan.']);
     }

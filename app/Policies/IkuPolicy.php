@@ -17,12 +17,12 @@ class IkuPolicy
         return $user->hasRole('admin');
     }
 
-    public function update(User $user, Iku $iku): bool
+    public function update(User $user): bool
     {
         return $user->hasRole('admin');
     }
 
-    public function delete(User $user, Iku $iku): bool
+    public function delete(User $user): bool
     {
         return $user->hasRole('admin');
     }

@@ -28,13 +28,13 @@ class PengaturanController extends Controller
     {
         $data = $request->validate([
             'nama_aplikasi' => 'required|string|max:100',
-            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:1024',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:10240',
             'favicon' => 'nullable|mimes:png,ico|max:256',
         ], [
             'nama_aplikasi.required' => 'Nama Aplikasi wajib diisi.',
             'logo.image' => 'Logo harus berupa gambar.',
             'logo.mimes' => 'Logo harus berformat PNG, JPG, SVG, atau WEBP.',
-            'logo.max' => 'Ukuran logo maksimal 1 MB.',
+            'logo.max' => 'Ukuran logo maksimal 10 MB.',
             'favicon.mimes' => 'Favicon harus berformat PNG atau ICO.',
             'favicon.max' => 'Ukuran favicon maksimal 256 KB.',
         ]);

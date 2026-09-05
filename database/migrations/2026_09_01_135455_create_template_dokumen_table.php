@@ -13,7 +13,7 @@ return new class extends Migration
         // — sama seperti pola tabel `triwulan`.
         Schema::create('template_dokumen', function (Blueprint $table) {
             $table->id();
-            $table->enum('kode', ['rab', 'kak_tor']);
+            $table->enum('kode', ['rab_excel','rab_pdf', 'kak_tor']);
             $table->string('nama');
             $table->string('file')->nullable();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();

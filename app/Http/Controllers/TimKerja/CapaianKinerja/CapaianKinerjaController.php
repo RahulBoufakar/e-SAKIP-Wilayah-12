@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -9,7 +10,9 @@ use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 class CapaianKinerjaController extends Controller
@@ -115,13 +118,19 @@ class CapaianKinerjaController extends Controller
             $capaian->simpan($data);
         }
 
+        event(new ActivityOccurred(
+            subject: $capaian,
+            description: "menyimpan draft Capaian Kinerja IKU {$iku->kode} — {$triwulan->kode}",
+            causer: Auth::user(),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian berhasil disimpan.']);
     }
 
     // PUT /tim-kerja/capaian-kinerja/{capaianKinerja}/kirim
     public function kirim(CapaianKinerja $capaianKinerja)
     {
-         $this->authorize('manageKinerja', $capaianKinerja->iku);
+        $this->authorize('manageKinerja', $capaianKinerja->iku);
 
         if (! $capaianKinerja->isDataLengkap()) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Lengkapi seluruh nilai variabel/realisasi sebelum mengirim untuk validasi.']);
@@ -136,6 +145,14 @@ class CapaianKinerjaController extends Controller
         } catch (\RuntimeException $e) {
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
+
+        event(new ActivityOccurred(
+            subject: $capaianKinerja,
+            description: "mengirim Capaian Kinerja IKU {$capaianKinerja->iku->kode} — {$capaianKinerja->triwulan->kode} untuk validasi",
+            causer: Auth::user(),
+            recipients: User::role('validator')->get(),
+            url: route('validator.capaian-kinerja.show', [$capaianKinerja->iku_id, $capaianKinerja->triwulan_id]),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian Kinerja berhasil dikirim untuk validasi.']);
     }

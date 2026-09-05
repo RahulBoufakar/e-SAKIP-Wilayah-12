@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\TargetKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
@@ -10,6 +11,7 @@ use App\Models\TahunAnggaran;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class IkuLldiktiController extends Controller
 {
@@ -69,7 +71,7 @@ class IkuLldiktiController extends Controller
             'target.numeric' => 'Target harus berupa angka.',
         ]);
 
-        CapaianKinerja::updateOrCreate(
+        $capaian = CapaianKinerja::updateOrCreate(
             [
                 'iku_id' => $data['iku_id'],
                 'triwulan_id' => $data['triwulan_id'],
@@ -78,6 +80,11 @@ class IkuLldiktiController extends Controller
             ['target' => $data['target'] ?? null]
         );
 
+        event(new ActivityOccurred(
+            subject: $capaian,
+            description: "mengatur Target Capaian Kinerja IKU {$capaian->iku->kode} — {$capaian->triwulan->kode} menjadi {$data['target']}",
+            causer: Auth::user(),
+        ));
         return back()->with('feedback', ['type' => 'success', 'message' => 'Target berhasil disimpan.']);
     }
 }

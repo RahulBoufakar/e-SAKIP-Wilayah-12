@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin\TargetKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
 use App\Models\Iku;
 use App\Models\RencanaAksi;
 use App\Models\Triwulan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RencanaAksiController extends Controller
 {
@@ -64,6 +66,12 @@ class RencanaAksiController extends Controller
                 ['uraian' => $data['uraian'][$tw->id] ?? null]
             );
         }
+
+        event(new ActivityOccurred(
+            subject: $iku,
+            description: "memperbarui Rencana Aksi IKU {$iku->kode}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Rencana Aksi berhasil disimpan.']);
     }

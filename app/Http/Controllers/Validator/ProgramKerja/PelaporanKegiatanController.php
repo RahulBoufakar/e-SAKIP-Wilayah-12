@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Validator\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -88,6 +89,22 @@ class PelaporanKegiatanController extends Controller
             'catatan_revisi' => $data['status_validasi'] === 'ditolak' ? $data['catatan_revisi'] : null,
         ]);
 
+        // Hanya notifikasi untuk hasil final (disetujui/ditolak) — reset ke
+        // menunggu_validasi oleh Validator tidak dianggap "aktivitas" yang perlu dikabarkan.
+        if (in_array($data['status_validasi'], ['disetujui', 'ditolak'], true)) {
+            $verb = $data['status_validasi'] === 'disetujui' ? 'menyetujui' : 'menolak';
+            $kodeProker = $dokumenLaporanKegiatan->laporan->proker->kode_proker ?? '-';
+
+            event(new ActivityOccurred(
+                subject: $dokumenLaporanKegiatan,
+                description: "{$verb} dokumen \"{$dokumenLaporanKegiatan->nama_dokumen}\" pada laporan kegiatan {$kodeProker}",
+                causer: Auth::user(),
+                recipients: $dokumenLaporanKegiatan->laporan->proker->usulanProgramKerja->iku->timKerja?->users ?? collect(),
+                properties: $data['status_validasi'] === 'ditolak' ? ['catatan_revisi' => $data['catatan_revisi']] : [],
+                url: route('tim-kerja.pelaporan-kegiatan.show', $dokumenLaporanKegiatan->laporan->proker_id),
+            ));
+        }
+
         return back()->with('feedback', ['type' => 'success', 'message' => 'Status validasi dokumen berhasil disimpan.']);
     }
 
@@ -99,6 +116,17 @@ class PelaporanKegiatanController extends Controller
         }
 
         $laporanKegiatan->update(['is_locked' => ! $laporanKegiatan->is_locked]);
+
+        $proker = $laporanKegiatan->proker;
+        $verb = $laporanKegiatan->is_locked ? 'mengunci' : 'membuka kunci';
+
+        event(new ActivityOccurred(
+            subject: $laporanKegiatan,
+            description: "{$verb} laporan kegiatan {$proker->kode_proker}",
+            causer: Auth::user(),
+            recipients: $proker->usulanProgramKerja->iku->timKerja?->users ?? collect(),
+            url: route('tim-kerja.pelaporan-kegiatan.show', $laporanKegiatan->proker_id),
+        ));
 
         return back()->with('feedback', [
             'type' => 'success',

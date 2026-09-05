@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\AnalisaKinerja;
 use App\Models\Iku;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AnalisaKinerjaController extends Controller
 {
@@ -97,6 +100,14 @@ class AnalisaKinerjaController extends Controller
         $data['catatan_revisi'] = null;
 
         $analisa->simpan($data);
+
+        event(new ActivityOccurred(
+            subject: $analisa,
+            description: "mengirim Analisis Kinerja IKU {$iku->kode} — {$triwulan->kode} untuk validasi",
+            causer: Auth::user(),
+            recipients: User::role('validator')->get(),
+            url: route('validator.analisa-kinerja.index', ['triwulan' => $triwulan->kode]),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Analisis Kinerja berhasil dikirim untuk validasi.']);
     }

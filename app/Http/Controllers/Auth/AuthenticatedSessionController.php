@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\TahunAnggaran;
@@ -47,6 +48,13 @@ class AuthenticatedSessionController extends Controller
             $request->session()->put('tahun_anggaran_id', $request->integer('tahun_anggaran_id'));
         }
 
+        event(new ActivityOccurred(
+            subject: $request->user(),
+            description: 'login ke sistem',
+            causer: $request->user(),
+            // tanpa recipients — ini murni audit log, tidak perlu notifikasi ke siapapun
+        ));
+
         return redirect()->intended(
             route(RouteServiceProvider::homeRouteFor($request->user()))
         );
@@ -57,11 +65,20 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user(); // ambil dulu SEBELUM logout, karena setelah logout Auth::user() jadi null
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
+
+        if ($user) {
+            event(new ActivityOccurred(
+                subject: $user,
+                description: 'logout dari sistem',
+                causer: $user,
+            ));
+        }
 
         return redirect('/');
     }

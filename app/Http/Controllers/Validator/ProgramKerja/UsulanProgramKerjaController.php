@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Validator\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -81,6 +82,14 @@ class UsulanProgramKerjaController extends Controller
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
 
+        event(new ActivityOccurred(
+            subject: $usulanProgramKerja,
+            description: "menyetujui Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\"",
+            causer: Auth::user(),
+            recipients: $usulanProgramKerja->iku->timKerja?->users ?? collect(),
+            url: route('tim-kerja.usulan-program-kerja.show', $usulanProgramKerja->id),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => 'Usulan Program Kerja disetujui.']);
     }
 
@@ -102,6 +111,15 @@ class UsulanProgramKerjaController extends Controller
         } catch (RuntimeException $e) {
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
+
+        event(new ActivityOccurred(
+            subject: $usulanProgramKerja,
+            description: "menolak Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\"",
+            causer: Auth::user(),
+            recipients: $usulanProgramKerja->iku->timKerja?->users ?? collect(),
+            properties: ['catatan_revisi' => $data['catatan_revisi']],
+            url: route('tim-kerja.usulan-program-kerja.show', $usulanProgramKerja->id),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Usulan Program Kerja ditolak.']);
     }

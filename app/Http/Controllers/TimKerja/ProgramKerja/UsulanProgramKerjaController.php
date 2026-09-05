@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\Iku;
 use App\Models\TahunAnggaran;
 use App\Models\TemplateDokumen;
+use App\Models\User;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -89,6 +92,12 @@ class UsulanProgramKerjaController extends Controller
 
         $usulan = UsulanProgramKerja::create($data);
 
+        event(new ActivityOccurred(
+            subject: $usulan,
+            description: "membuat Usulan Program Kerja \"{$usulan->nama_usulan}\"",
+            causer: Auth::user(),
+        ));
+
         return redirect()
             ->route('tim-kerja.usulan-program-kerja.show', $usulan->id)
             ->with('feedback', ['type' => 'success', 'message' => 'Usulan Program Kerja berhasil dibuat. Silakan lengkapi file & Detail Kegiatan.']);
@@ -150,6 +159,12 @@ class UsulanProgramKerjaController extends Controller
 
         $usulanProgramKerja->simpan($data);
 
+        event(new ActivityOccurred(
+            subject: $usulanProgramKerja,
+            description: "memperbarui Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\"",
+            causer: Auth::user(),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => 'Usulan Program Kerja berhasil disimpan.']);
     }
 
@@ -163,6 +178,14 @@ class UsulanProgramKerjaController extends Controller
         }
 
         $usulanProgramKerja->kirim();
+
+        event(new ActivityOccurred(
+            subject: $usulanProgramKerja,
+            description: "mengirim Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\" untuk validasi",
+            causer: Auth::user(),
+            recipients: User::role('validator')->get(),
+            url: route('validator.usulan-program-kerja.show', $usulanProgramKerja->id),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Usulan Program Kerja berhasil dikirim untuk validasi.']);
     }

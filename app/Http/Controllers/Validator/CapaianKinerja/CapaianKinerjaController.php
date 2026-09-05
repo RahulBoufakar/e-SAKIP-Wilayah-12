@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Validator\CapaianKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -70,7 +71,6 @@ class CapaianKinerjaController extends Controller
         return view('validator.capaian-kinerja.show', compact('iku', 'triwulan', 'capaian', 'formula'));
     }
 
-    // PUT /validator/capaian-kinerja/{capaianKinerja}/setujui
     public function setujui(CapaianKinerja $capaianKinerja)
     {
         if (Auth::user()->cannot('approve', $capaianKinerja)) {
@@ -82,6 +82,14 @@ class CapaianKinerjaController extends Controller
         } catch (RuntimeException $e) {
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
+
+        event(new ActivityOccurred(
+            subject: $capaianKinerja,
+            description: "menyetujui Capaian Kinerja IKU {$capaianKinerja->iku->kode} — {$capaianKinerja->triwulan->kode}",
+            causer: Auth::user(),
+            recipients: $capaianKinerja->iku->timKerja?->users ?? collect(),
+            url: route('tim-kerja.capaian-kinerja.show', [$capaianKinerja->iku_id, $capaianKinerja->triwulan_id]),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian Kinerja disetujui.']);
     }
@@ -102,6 +110,15 @@ class CapaianKinerjaController extends Controller
         } catch (RuntimeException|InvalidArgumentException $e) {
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
+
+        event(new ActivityOccurred(
+            subject: $capaianKinerja,
+            description: "menolak Capaian Kinerja IKU {$capaianKinerja->iku->kode} — {$capaianKinerja->triwulan->kode}",
+            causer: Auth::user(),
+            recipients: $capaianKinerja->iku->timKerja?->users ?? collect(),
+            properties: ['catatan_revisi' => $data['catatan_revisi']],
+            url: route('tim-kerja.capaian-kinerja.show', [$capaianKinerja->iku_id, $capaianKinerja->triwulan_id]),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Capaian Kinerja ditolak.']);
     }

@@ -31,4 +31,9 @@ class SasaranKegiatanPolicy
     {
         return $user->hasRole('admin');
     }
+
+    public function show(User $user, SasaranKegiatan $sasaran): bool
+    {
+        return $user->hasRole('admin');
+    }
 }
