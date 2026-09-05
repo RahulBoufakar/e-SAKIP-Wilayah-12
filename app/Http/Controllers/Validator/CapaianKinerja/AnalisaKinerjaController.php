@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Validator\CapaianKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
 use App\Models\AnalisaKinerja;
@@ -81,6 +82,17 @@ class AnalisaKinerjaController extends Controller
         } catch (RuntimeException $e) {
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
+
+        $verb = $data['status'] === 'disetujui' ? 'menyetujui' : 'menolak';
+
+        event(new ActivityOccurred(
+            subject: $analisaKinerja,
+            description: "{$verb} Analisis Kinerja IKU {$analisaKinerja->iku->kode} — {$analisaKinerja->triwulan->kode}",
+            causer: Auth::user(),
+            recipients: $analisaKinerja->iku->timKerja?->users ?? collect(),
+            properties: $data['status'] === 'ditolak' ? ['catatan_revisi' => $data['catatan_revisi']] : [],
+            url: route('tim-kerja.analisa-kinerja.index', ['triwulan' => $analisaKinerja->triwulan->kode]),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Status Analisis Kinerja berhasil disimpan.']);
     }

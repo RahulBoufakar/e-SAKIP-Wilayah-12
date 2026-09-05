@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Validator\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -61,6 +62,18 @@ class DataProkerController extends Controller
         ]);
 
         $detailKegiatan->update(['jenis_kegiatan' => $data['jenis_kegiatan'] ?? null]);
+
+        if (($data['jenis_kegiatan'] ?? null) === 'kunjungan_lapangan') {
+            $usulan = $detailKegiatan->usulanProgramKerja;
+
+            event(new ActivityOccurred(
+                subject: $detailKegiatan,
+                description: "memvalidasi jenis kegiatan proker \"{$usulan->nama_usulan}\" sebagai Kunjungan Lapangan — PTS dapat ditagging",
+                causer: Auth::user(),
+                recipients: $usulan->iku->timKerja?->users ?? collect(),
+                url: route('tim-kerja.data-proker.index').'#proker-'.$usulan->id,
+            ));
+        }
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Jenis Kegiatan berhasil diperbarui.']);
     }

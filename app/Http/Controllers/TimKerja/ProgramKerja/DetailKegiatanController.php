@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DetailKegiatanController extends Controller
 {
@@ -40,7 +42,13 @@ class DetailKegiatanController extends Controller
             'anggaran.min' => 'Anggaran tidak boleh negatif.',
         ]);
 
-        $usulanProgramKerja->detailKegiatan()->updateOrCreate([], $data);
+        $detail = $usulanProgramKerja->detailKegiatan()->updateOrCreate([], $data);
+
+        event(new ActivityOccurred(
+            subject: $detail,
+            description: "menyimpan Detail Kegiatan untuk Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\"",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Detail Kegiatan berhasil disimpan.']);
     }

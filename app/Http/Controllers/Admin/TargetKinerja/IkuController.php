@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\TargetKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Controller;
@@ -9,6 +10,7 @@ use App\Models\Iku;
 use App\Models\SasaranKegiatan;
 use App\Models\TimKerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class IkuController extends Controller
@@ -49,9 +51,16 @@ class IkuController extends Controller
             'formula_kode.in' => 'Formula tidak valid.',
         ]);
         $data['jenis'] = $jenis;
-        Iku::create($data);
+        $iku = Iku::create($data);
 
         $label = $jenis === 'IKK' ? 'IKK' : 'IKU';
+
+        event(new ActivityOccurred(
+            subject: $iku,
+            description: "membuat {$label} baru {$iku->kode} — {$iku->deskripsi}",
+            causer: Auth::user(),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => "{$label} berhasil ditambahkan."]);
     }
 
@@ -92,6 +101,13 @@ class IkuController extends Controller
         $iku->update($data);
 
         $label = $iku->jenis === 'IKK' ? 'IKK' : 'IKU';
+
+        event(new ActivityOccurred(
+            subject: $iku,
+            description: "memperbarui {$label} {$iku->kode} — {$iku->deskripsi}",
+            causer: Auth::user(),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => "{$label} berhasil diperbarui."]);
     }
 

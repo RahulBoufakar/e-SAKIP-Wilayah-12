@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\TargetKinerja;
 
+use App\Events\ActivityOccurred;
 use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
@@ -10,6 +11,7 @@ use App\Models\Iku;
 use App\Models\SasaranKegiatan;
 use App\Models\TimKerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SasaranKegiatanController extends Controller
 {
@@ -53,7 +55,13 @@ class SasaranKegiatanController extends Controller
         ]);
         $data['tahun_anggaran_id'] = $tahunAnggaranId;
 
-        SasaranKegiatan::create($data);
+        $sasaran = SasaranKegiatan::create($data);
+
+        event(new ActivityOccurred(
+            subject: $sasaran,
+            description: "membuat Sasaran Kegiatan \"{$sasaran->nama_sasaran}\"",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Sasaran Kegiatan berhasil ditambahkan.']);
     }
@@ -70,6 +78,12 @@ class SasaranKegiatanController extends Controller
             'nama_sasaran.max' => 'Nama Sasaran Kegiatan maksimal 255 karakter.',
         ]);
         $sasaran->update($data);
+
+        event(new ActivityOccurred(
+            subject: $sasaran,
+            description: "memperbarui Sasaran Kegiatan \"{$sasaran->nama_sasaran}\"",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Sasaran Kegiatan berhasil diperbarui.']);
     }

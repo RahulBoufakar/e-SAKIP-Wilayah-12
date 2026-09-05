@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ContextController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MasterData\PtsController;
@@ -92,9 +93,13 @@ Route::middleware(['auth', 'role:admin'])
             Route::get('sinkronisasi', [SinkronisasiController::class, 'index'])->name('sinkronisasi.index');
         });
 
+        // 6. Pengaturan
         Route::get('pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
         Route::put('pengaturan/aplikasi', [PengaturanController::class, 'updateAplikasi'])->name('pengaturan.aplikasi.update');
         Route::put('pengaturan/template/{kode}', [PengaturanController::class, 'updateTemplate'])->name('pengaturan.template.update');
         Route::get('pengaturan/template/{kode}/preview', [PengaturanController::class, 'previewTemplate'])->name('pengaturan.template.preview');
         Route::get('pengaturan/template/{kode}/unduh', [PengaturanController::class, 'unduhTemplate'])->name('pengaturan.template.unduh');
+
+        // 7. Audit Log
+        Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
     });

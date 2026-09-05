@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -9,7 +10,9 @@ use App\Models\DokumenLaporanKegiatan;
 use App\Models\LaporanKegiatan;
 use App\Models\ProgramKerja;
 use App\Models\TahunAnggaran;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -148,6 +151,12 @@ class PelaporanKegiatanController extends Controller
             $laporanKegiatan->dokumen()->create(['nama_dokumen' => $nama]);
         }
 
+        event(new ActivityOccurred(
+            subject: $laporanKegiatan,
+            description: "memperbarui daftar dokumen pada laporan kegiatan {$laporanKegiatan->proker->kode_proker}",
+            causer: Auth::user(),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil diperbarui.']);
     }
 
@@ -180,6 +189,18 @@ class PelaporanKegiatanController extends Controller
             'status_validasi' => 'menunggu_validasi',
             'catatan_revisi' => null,
         ]);
+
+        $kodeProker = $dokumenLaporanKegiatan->laporan->proker->kode_proker ?? '-';
+
+        event(new ActivityOccurred(
+            subject: $dokumenLaporanKegiatan,
+            description: "mengunggah dokumen \"{$dokumenLaporanKegiatan->nama_dokumen}\" pada laporan kegiatan {$kodeProker}",
+            causer: Auth::user(),
+            recipients: User::role('validator')->get(),
+            url: route('validator.pelaporan-kegiatan.show', $dokumenLaporanKegiatan->laporan->proker_id),
+        ));
+
+        return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil diunggah.']);
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil diunggah.']);
     }

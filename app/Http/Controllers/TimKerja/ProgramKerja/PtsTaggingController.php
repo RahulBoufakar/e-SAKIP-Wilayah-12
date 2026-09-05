@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\UsulanProgramKerja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PtsTaggingController extends Controller
 {
@@ -26,6 +29,18 @@ class PtsTaggingController extends Controller
         ]);
 
         $usulanProgramKerja->pts()->sync($data['pts_id'] ?? []);
+
+        $jumlahPts = count($data['pts_id'] ?? []);
+
+        if ($jumlahPts > 0) {
+            event(new ActivityOccurred(
+                subject: $usulanProgramKerja,
+                description: "menagging {$jumlahPts} PTS untuk proker \"{$usulanProgramKerja->nama_usulan}\"",
+                causer: Auth::user(),
+                recipients: User::role('validator')->get(),
+                url: route('validator.data-proker.index').'#proker-'.$usulanProgramKerja->id,
+            ));
+        }
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Tagging PTS berhasil disimpan.']);
     }
