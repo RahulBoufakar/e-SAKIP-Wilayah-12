@@ -6,7 +6,7 @@
    <div
     x-data="{
         modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-        form: { iku_id: null, label: '', triwulan_id: {{ $triwulanDipilih?->id ?? 'null' }}, target: '', realisasi: null },
+        form: { iku_id: @js(old('iku_id')), label: '', triwulan_id: {{ $triwulanDipilih?->id ?? 'null' }}, target: @js(old('target', '')), realisasi: null },
         openEdit(iku) {
             this.form = { iku_id: iku.id, label: iku.kode + ' — ' + iku.deskripsi, triwulan_id: {{ $triwulanDipilih?->id ?? 'null' }}, target: iku.target ?? '', realisasi: iku.realisasi ?? null };
             this.modalOpen = true;

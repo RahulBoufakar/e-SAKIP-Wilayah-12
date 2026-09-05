@@ -32,8 +32,12 @@ class TriwulanStatus extends Model
     {
         return DB::transaction(function () use ($triwulanId, $tahunAnggaranId) {
             // Jika triwulanId = 0, berarti nonaktifkan semua
-            if ($triwulanId === 0) {
+             if ($triwulanId === 0) {
                 static::where('tahun_anggaran_id', $tahunAnggaranId)->update(['status' => 'non_aktif']);
+
+                // Hapus cache triwulan aktif untuk tahun anggaran ini
+                Cache::forget("context_triwulan_aktif_{$tahunAnggaranId}");
+
                 return null;
             }
 

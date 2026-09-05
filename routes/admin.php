@@ -27,8 +27,8 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Context bar Tahun Anggaran (lihat ContextController — tidak eksplisit di API_Routes doc)
-        Route::post('context/tahun-anggaran', [ContextController::class, 'setTahunAnggaran'])
-            ->name('context.tahun-anggaran');
+        // Route::post('context/tahun-anggaran', [ContextController::class, 'setTahunAnggaran'])
+        //     ->name('context.tahun-anggaran');
 
         // Master Data
         Route::prefix('master-data')->name('master-data.')->group(function () {

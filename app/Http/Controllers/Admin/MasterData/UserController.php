@@ -18,7 +18,7 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::with('timKerja')
+        $users = User::with('timKerja', 'roles')
                 // ->withoutRole('admin')
                 ->when($request->filled('search'), function ($q) use ($request) {
                     $q->where(function ($subQuery) use ($request) {
@@ -131,7 +131,7 @@ class UserController extends Controller
             'name' => 'required|string|max:150',
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user?->id)],
             'password' => [$isUpdate ? 'nullable' : 'required', 'string', 'min:8'],
-            'role' => 'required|in:administrator,tim_kerja,validator',
+            'role' => 'required|in:admin,tim_kerja,validator',
             'tim_kerja_id' => 'required_if:role,tim_kerja',
             'tim_kerja_id.*' => 'exists:tim_kerja,id',
         ], [

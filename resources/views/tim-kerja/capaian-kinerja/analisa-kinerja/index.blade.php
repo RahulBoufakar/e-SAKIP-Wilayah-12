@@ -6,8 +6,8 @@
 @section('content')
     <div
         x-data="{
-            modalOpen: false,
-            form: { iku_id: null, kode: '', deskripsi: '', progress: '', kendala: '', tindak_lanjut: '', catatan_revisi: null },
+            modalOpen: {{ $errors->any() ? 'true' : 'false' }},
+            form: { iku_id: @js(old('iku_id')), kode: '', deskripsi: '', progress: @js(old('progress', '')), kendala: @js(old('kendala', '')), tindak_lanjut: @js(old('tindak_lanjut', '')), catatan_revisi: null },
             openForm(iku, analisa) {
                 this.form = {
                     iku_id: iku.id,
@@ -121,6 +121,7 @@
                 <form :action="'{{ url('tim-kerja/analisa-kinerja') }}/' + form.iku_id + '/{{ $triwulanDipilih->id ?? '' }}'" method="POST" class="flex flex-1 flex-col overflow-hidden">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="iku_id" :value="form.iku_id">
 
                     <div class="flex-1 space-y-3 overflow-y-auto px-6 py-4">
                         <p class="text-sm text-slate-600" x-text="form.deskripsi"></p>

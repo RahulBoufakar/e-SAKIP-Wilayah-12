@@ -7,8 +7,8 @@
     <div
         x-data="{
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-            mode: {{ $errors->any() ? '\'edit\'' : '\'create\'' }},
-            form: { id: null, name: '{{ old('name', '') }}', email: '{{ old('email', '') }}', password: '', role: '{{ old('role', '') }}', tim_kerja_id: @json(collect(old('tim_kerja_id', []))->map(fn($v) => (int) $v)) },
+            mode: {{ old('id') ? '\'edit\'' : '\'create\'' }},
+            form: { id: @js(old('id')), name: '{{ old('name', '') }}', email: '{{ old('email', '') }}', password: '', role: '{{ old('role', '') }}', tim_kerja_id: @js(old('tim_kerja_id') ? (int)(is_array(old('tim_kerja_id')) ? old('tim_kerja_id')[0] : old('tim_kerja_id')) : null) },
             openCreate() { 
             this.mode = 'create'; 
                 this.form = { 

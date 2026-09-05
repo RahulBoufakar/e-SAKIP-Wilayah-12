@@ -25,8 +25,8 @@
             <template x-if="mode === 'edit'">
                 @method('PUT')
             </template>
+            <input type="hidden" name="id" :value="form.id">
 
-            <input type="hidden" name="jenis" value="IKU">
             <input type="hidden" name="sasaran_kegiatan_id" value="{{ $sasaran->id }}">
 
             <!-- Body: scrollable -->

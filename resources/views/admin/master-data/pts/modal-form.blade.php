@@ -24,6 +24,7 @@
             <template x-if="mode === 'edit'">
                 @method('PUT')
             </template>
+            <input type="hidden" name="id" :value="form.id">
 
             <div class="flex-1 space-y-3 overflow-y-auto px-6 py-4">
                 <x-form.input

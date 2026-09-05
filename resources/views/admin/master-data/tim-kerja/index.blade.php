@@ -7,10 +7,10 @@
     <div
         x-data="{
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-            mode: {{ $errors->any() ? '\'edit\'' : '\'create\'' }},
-            form: { id: null, nama: '{{ old('nama', '') }}' },
+            mode: {{ old('id') ? '\'edit\'' : '\'create\'' }},
+            form: { id: @js(old('id')), nama: '{{ old('nama_tim', old('nama', '')) }}' },
             openCreate() { this.mode = 'create'; this.form = { id: null, nama: '' }; this.modalOpen = true },
-            openEdit(row) { this.mode = 'edit'; this.form = { id: row.id, nama: row.nama }; this.modalOpen = true },
+            openEdit(row) { this.mode = 'edit'; this.form = { id: row.id, nama: row.nama_tim ?? row.nama ?? '' }; this.modalOpen = true },
         }"
     >
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

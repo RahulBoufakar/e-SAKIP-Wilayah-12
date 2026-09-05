@@ -27,20 +27,21 @@ class TahunAnggaranSeeder extends Seeder
 
         $tahun = TahunAnggaran::firstOrCreate(['tahun' => $tahunIni]);
 
-        $tw1 = Triwulan::where('kode', 'TW1')->first();
+        $kodeTriwulanBerjalan = 'TW'.(int) ceil(now()->month / 3);
+        $triwulanBerjalan = Triwulan::where('kode', $kodeTriwulanBerjalan)->first();
 
-        if (! $tw1) {
-            $this->command?->warn('Triwulan TW1 belum ada — jalankan TriwulanSeeder terlebih dahulu.');
+        if (! $triwulanBerjalan) {
+            $this->command?->warn("Triwulan {$kodeTriwulanBerjalan} belum ada — jalankan TriwulanSeeder terlebih dahulu.");
 
             return;
         }
 
         // Idempoten: aman dipanggil ulang, activate() akan menonaktifkan TW lain
-        // di tahun yang sama lalu mengaktifkan TW1 (Rule R-1, single-active).
+        // di tahun yang sama lalu mengaktifkan Triwulan berjalan (Rule R-1, single-active).
         if (! TriwulanStatus::where('tahun_anggaran_id', $tahun->id)->where('status', 'aktif')->exists()) {
-            TriwulanStatus::activate($tw1->id, $tahun->id);
+            TriwulanStatus::activate($triwulanBerjalan->id, $tahun->id);
         }
 
-        $this->command?->info("Tahun Anggaran {$tahunIni} siap, {$tw1->kode} diaktifkan.");
+        $this->command?->info("Tahun Anggaran {$tahunIni} siap, {$triwulanBerjalan->kode} diaktifkan.");
     }
 }

@@ -14,6 +14,7 @@
             mode: {{ old('id') ? '\'edit\'' : '\'create\'' }},
             form: { 
                 id: @js(old('id', null)), 
+                jenis: @js(old('jenis', 'IKU')),
                 deskripsi: @js(old('deskripsi', '')), 
                 target_pk: @js(old('target_pk', '')), 
                 tim: @js(old('tim', '')),
@@ -31,12 +32,12 @@
             },
             openCreate() { 
                 this.mode = 'create'; 
-                this.form = { id: null, deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: '', formula_kode: this.predictedFormulaKode }; 
+                this.form = { id: null, jenis: 'IKU', deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: '', formula_kode: this.predictedFormulaKode }; 
                 this.modalOpen = true;
             },
             openEdit(row) { 
                 this.mode = 'edit'; 
-                this.form = { id: row.id, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja_id, formula_kode: row.formula_kode || this.guessFormula(row.kode) }; 
+                this.form = { id: row.id, jenis: row.jenis, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja_id, formula_kode: row.formula_kode || this.guessFormula(row.kode) }; 
                 this.modalOpen = true;
             }
         }"
@@ -67,6 +68,7 @@
                 <thead>
                     <tr class="bg-ink-900 text-white">
                         <th class="w-25 px-5 py-3 font-semibold">Kode</th>
+                        <th class="w-20 px-5 py-3 text-center font-semibold">Jenis</th>
                         <th class="px-5 py-3 font-semibold">Deskripsi IKU</th>
                         <th class="w-32 px-5 py-3 text-center font-semibold">Target</th>
                         <th class="w-28 px-5 py-3 text-center font-semibold">Satuan</th>
@@ -78,6 +80,9 @@
                     @forelse ($ikuList as $row)
                         <tr class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
                             <td class="px-1 py-3 font-mono text-xs font-semibold text-brand-700">{{ $row->kode }}</td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="inline-flex rounded-full {{ $row->jenis === 'IKK' ? 'bg-amber-50 text-amber-700' : 'bg-brand-50 text-brand-700' }} px-2.5 py-0.5 text-xs font-semibold">{{ $row->jenis }}</span>
+                            </td>
                             <td class="px-5 py-3 font-medium text-ink-900">{{ $row->deskripsi }}</td>
                             <td class="px-5 py-3 text-center text-slate-600">{{ rtrim(rtrim(number_format($row->target_pk, 2, ',', '.'), '0'), ',') }}</td>
                             <td class="px-5 py-3 text-center font-medium text-ink-900">{{ $row->satuan }}</td>
@@ -107,7 +112,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-12 text-center text-sm text-slate-400">
+                            <td colspan="7" class="px-5 py-12 text-center text-sm text-slate-400">
                                 Belum ada IKU untuk Sasaran Kegiatan ini.
                             </td>
                         </tr>

@@ -6,8 +6,8 @@
 @section('content')
     <div
         x-data="{
-            modalOpen: false,
-            dok: { id: null, kode: '', status: 'disetujui', catatan_revisi: null },
+            modalOpen: {{ $errors->any() ? 'true' : 'false' }},
+            dok: { id: @js(old('id')), kode: '', status: '{{ old('status', 'disetujui') }}', catatan_revisi: @js(old('catatan_revisi', '')) },
             openValidasi(iku, analisa) {
                 this.dok = { id: analisa.id, kode: iku.kode, status: 'disetujui', catatan_revisi: null };
                 this.modalOpen = true;
@@ -108,6 +108,7 @@
                 <form :action="'{{ url('validator/analisa-kinerja') }}/' + dok.id + '/validasi'" method="POST" class="px-6 py-4">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="id" :value="dok.id">
 
                     <label class="block text-sm font-medium text-ink-900">Status</label>
                     <select name="status" x-model="dok.status" required class="mt-1.5 w-full rounded-lg border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:ring-brand-500">
