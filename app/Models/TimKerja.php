@@ -12,7 +12,7 @@ class TimKerja extends Model
 
     public function iku()
     {
-        return $this->hasMany(Iku::class);
+        return $this->belongsToMany(Iku::class, 'iku_tim_kerja');
     }
 
     public function users()

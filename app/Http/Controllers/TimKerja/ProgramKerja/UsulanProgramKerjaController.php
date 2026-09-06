@@ -48,7 +48,7 @@ class UsulanProgramKerjaController extends Controller
         // IKU untuk modal "Tambah" — dibatasi ke tahun yang sedang aktif di tab ini,
         // karena tahun Usulan Program Kerja mengikuti tahun IKU yang dipilih (lihat store()).
         $ikuOptions = Iku::with('sasaranKegiatan.tahunAnggaran')
-            ->whereIn('tim_kerja_id', $timKerjaIds)
+            ->whereHas('timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
             ->whereHas('sasaranKegiatan.tahunAnggaran', fn ($q) => $q->where('tahun', $tahun))
             ->orderBy('kode')
             ->get(['id', 'kode', 'deskripsi', 'sasaran_kegiatan_id']);
@@ -76,7 +76,7 @@ class UsulanProgramKerjaController extends Controller
         $data = $request->validate([
             'iku_id' => [
                 'required',
-                Rule::exists('iku', 'id')->where(fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds)),
+                Rule::exists('iku_tim_kerja', 'iku_id')->where(fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds)),
             ],
             'nama_usulan' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',

@@ -49,7 +49,7 @@ class KalenderProkerController extends Controller
         $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('iku', fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds))
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
             ->whereHas('detailKegiatan')
             ->orderBy('id')
             ->paginate(15)
@@ -60,7 +60,7 @@ class KalenderProkerController extends Controller
         $semuaProkerFilter = UsulanProgramKerja::with('detailKegiatan')
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('iku', fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds))
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
             ->whereHas('detailKegiatan')
             ->get();
 

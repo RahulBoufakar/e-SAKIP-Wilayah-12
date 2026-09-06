@@ -45,7 +45,7 @@
                         <td class="max-w-[16rem] px-4 py-3 font-medium text-ink-900">
                             <x-truncate-cell :id="'nama-'.$row->id" :text="$row->usulanProgramKerja->nama_usulan ?? '—'" />
                         </td>
-                        <td class="px-4 py-3 text-slate-600">{{ $row->usulanProgramKerja->iku->timKerja->nama_tim ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ $row->usulanProgramKerja->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                         <td class="px-4 py-3 text-center">
                             @if ($totalMenunggu > 0)
                                 <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">{{ $totalMenunggu }}</span>

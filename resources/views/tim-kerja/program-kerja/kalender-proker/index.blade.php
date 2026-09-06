@@ -56,8 +56,8 @@
                         $bulanAktif = $detail?->bulan_kegiatan ?? [];
                         $belumTervalidasi = $row->status_validasi !== 'approved';
                     @endphp
-                                        <tr id="proker-{{ $row->id }}" class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
-                        <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->nama_tim ?? '—' }}</td>
+                    <tr id="proker-{{ $row->id }}" class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
+                        <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                         <td class="px-3 py-2 text-center">
                             <span class="font-mono text-[11px] font-semibold text-brand-700">
                                 <x-truncate-cell :id="'iku-'.$row->id" :short="$row->iku->nomor ?? '—'" :text="$row->iku->deskripsi ?? '—'" />

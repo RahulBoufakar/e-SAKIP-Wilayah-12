@@ -14,7 +14,7 @@
             <div>
                 <p class="font-mono text-xs font-semibold text-brand-700">{{ $usulan->iku->kode }} — Tahun {{ $usulan->tahun }}</p>
                 <h2 class="mt-1 text-lg font-bold text-ink-900">{{ $usulan->nama_usulan }}</h2>
-                <p class="mt-1 text-xs text-slate-400">Tim Kerja: {{ $usulan->iku->timKerja->nama_tim ?? '—' }}</p>
+                <p class="mt-1 text-xs text-slate-400">Tim Kerja: {{ $usulan->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</p>
             </div>
             <x-status-badge :status="$usulan->status_validasi" />
         </div>

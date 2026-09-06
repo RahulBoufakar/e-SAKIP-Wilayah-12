@@ -53,7 +53,7 @@
                         <td class="max-w-[16rem] px-4 py-3">
                             <x-truncate-cell :id="'permasalahan-'.$row->id" :text="$row->permasalahan ?: '—'" />
                         </td>
-                        <td class="px-4 py-3 text-slate-600">{{ $row->iku->timKerja->nama_tim ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ $row->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                         <td class="px-4 py-3 text-center text-slate-600">{{ $row->tahun }}</td>
                         <td class="px-4 py-3 text-center">
                             <a href="{{ route('validator.usulan-program-kerja.show', $row->id) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Detail</a>

@@ -30,9 +30,9 @@ class UsulanProgramKerjaSeeder extends Seeder
         }
 
         foreach (self::DATA as $kodeIku => $namaUsulan) {
-            $iku = Iku::where('kode', $kodeIku)->first();
+            $iku = Iku::with('timKerja')->where('kode', $kodeIku)->first();
 
-            if (! $iku || ! $iku->tim_kerja_id) {
+            if (! $iku || $iku->timKerja->isEmpty()) {
                 $this->command?->warn("IKU dengan kode \"{$kodeIku}\" belum ada atau belum di-assign Tim Kerja — jalankan SasaranKegiatanSeeder terlebih dahulu.");
 
                 continue;

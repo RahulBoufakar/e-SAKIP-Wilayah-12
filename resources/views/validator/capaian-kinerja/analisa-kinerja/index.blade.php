@@ -49,7 +49,11 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($ikuList as $iku)
-                        @php $analisa = $iku->analisaKinerja->first(); @endphp
+                        @php
+                            $analisa = $iku->analisaKinerja->first();
+                            $timKerjaList = $iku->timKerja ?? collect();
+                            $timKerjaLabel = $timKerjaList->pluck('nama_tim')->filter()->implode(', ') ?: '—';
+                        @endphp
                         <tr class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
                             <td class="px-4 py-3 align-middle">
                                 <div class="flex items-center gap-1.5">
@@ -57,7 +61,7 @@
                                     <span class="min-w-0 max-w-[220px] break-words text-ink-900">{{ $iku->deskripsi }}</span>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-slate-600">{{ $iku->timKerja->nama_tim ?? '—' }}</td>
+                            <td class="px-4 py-3 text-slate-600">{{ $timKerjaLabel }}</td>
                             <td class="max-w-[12rem] px-4 py-3">
                                 <x-truncate-cell :id="'progress-'.$iku->id" :text="$analisa->progress ?? '—'" />
                             </td>
