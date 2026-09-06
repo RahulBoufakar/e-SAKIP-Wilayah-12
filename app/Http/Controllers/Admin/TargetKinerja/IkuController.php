@@ -35,7 +35,8 @@ class IkuController extends Controller
             'target_pk' => 'required|numeric|min:1',
             'satuan' => 'required|string|max:20',
             'deskripsi_target' => 'nullable|string|max:255',
-            'tim_kerja_id' => 'nullable|exists:tim_kerja,id',
+            'tim_kerja_id' => 'nullable|array',
+            'tim_kerja_id.*' => 'exists:tim_kerja,id',
             'formula_kode' => ['nullable', Rule::in(FormulaRegistry::keys())],
         ], [
             'sasaran_kegiatan_id.required' => 'Sasaran Kegiatan wajib dipilih.',
@@ -47,11 +48,16 @@ class IkuController extends Controller
             'satuan.required' => 'Satuan wajib diisi.',
             'satuan.max' => 'Satuan tidak boleh lebih dari 20 karakter.',
             'deskripsi_target.max' => 'Deskripsi Target tidak boleh lebih dari 255 karakter.',
-            'tim_kerja_id.exists' => 'Tim Kerja tidak valid.',
+            'tim_kerja_id.*.exists' => 'Tim Kerja tidak valid.',
             'formula_kode.in' => 'Formula tidak valid.',
         ]);
+
         $data['jenis'] = $jenis;
+        $timKerjaIds = $data['tim_kerja_id'] ?? [];
+        unset($data['tim_kerja_id']);
+
         $iku = Iku::create($data);
+        $iku->timKerja()->sync($timKerjaIds);
 
         $label = $jenis === 'IKK' ? 'IKK' : 'IKU';
 
@@ -84,7 +90,8 @@ class IkuController extends Controller
             'deskripsi' => 'required|string',
             'target_pk' => 'required|numeric|min:1',
             'satuan' => 'required|string|max:20',
-            'tim_kerja_id' => 'nullable|exists:tim_kerja,id',
+            'tim_kerja_id' => 'nullable|array',
+            'tim_kerja_id.*' => 'exists:tim_kerja,id',
             'formula_kode' => ['nullable', Rule::in(FormulaRegistry::keys())],
             'deskripsi_target' => 'nullable|string|max:255',
         ], [
@@ -95,10 +102,15 @@ class IkuController extends Controller
             'satuan.required' => 'Satuan wajib diisi.',
             'satuan.max' => 'Satuan tidak boleh lebih dari 20 karakter.',
             'deskripsi_target.max' => 'Deskripsi Target tidak boleh lebih dari 255 karakter.',
-            'tim_kerja_id.exists' => 'Tim Kerja tidak valid.',
+            'tim_kerja_id.*.exists' => 'Tim Kerja tidak valid.',
             'formula_kode.in' => 'Formula tidak valid.',
         ]);
+        
+        $timKerjaIds = $data['tim_kerja_id'] ?? [];
+        unset($data['tim_kerja_id']);
+
         $iku->update($data);
+        $iku->timKerja()->sync($timKerjaIds);
 
         $label = $iku->jenis === 'IKK' ? 'IKK' : 'IKU';
 

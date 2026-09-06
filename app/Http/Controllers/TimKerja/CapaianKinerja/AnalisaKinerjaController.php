@@ -51,12 +51,11 @@ class AnalisaKinerjaController extends Controller
         if ($triwulanDipilih) {
             $ikuList = Iku::with(['analisaKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
                     ->where('tahun_anggaran_id', $tahunAnggaranId)])
-                ->whereIn('tim_kerja_id', $timKerjaIds)
+                ->whereHas('timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
                 ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
                 ->orderBy('kode')
                 ->get();
         }
-        // dd($ikuList);
 
         return view('tim-kerja.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
     }

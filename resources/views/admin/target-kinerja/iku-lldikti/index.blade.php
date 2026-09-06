@@ -46,7 +46,10 @@
                 @forelse ($sasaranList as $sasaran)
                     @php $jumlahIku = $sasaran->iku->count(); @endphp
                     @forelse ($sasaran->iku as $iku)
-                        @php $r = $iku->capaianKinerja->first(); @endphp
+                        @php
+                            $r = $iku->capaianKinerja->first();
+                            $isTimSaya = $iku->timKerja->pluck('id')->intersect($timKerjaIds)->isNotEmpty();
+                        @endphp
                         <tr class="hover:bg-brand-50/40">
                            @if ($loop->first)
                                 <td rowspan="{{ $jumlahIku }}" class="px-4 py-3 align-middle">

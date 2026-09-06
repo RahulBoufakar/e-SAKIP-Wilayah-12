@@ -72,16 +72,19 @@
                     />
 
                     <div class="md:col-span-2">
-                        <label for="tim_kerja_id" class="mb-1 block text-sm font-medium text-ink-900">
-                            Tim Kerja <span class="font-normal text-slate-400">(opsional)</span>
+                        <label class="mb-1 block text-sm font-medium text-ink-900">
+                            Tim Kerja <span class="font-normal text-slate-400">(opsional, bisa pilih lebih dari satu)</span>
                         </label>
-                        <select name="tim_kerja_id" id="tim_kerja_id" x-model="form.tim_kerja_id"
-                                class="w-full rounded-lg border-slate-200 bg-white text-sm shadow-card focus:border-brand-500 focus:ring-brand-500">
-                            <option value="">— Tidak ada —</option>
-                            @foreach ($timKerjaOptions as $tim)
-                                <option value="{{ $tim->id }}">{{ $tim->nama_tim }}</option>
-                            @endforeach
-                        </select>
+                        <div class="grid grid-cols-1 gap-1.5 rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
+                            @forelse ($timKerjaOptions as $tim)
+                                <label class="flex items-center gap-2 text-sm text-slate-700">
+                                    <input type="checkbox" name="tim_kerja_id[]" value="{{ $tim->id }}" x-model="form.tim_kerja_id">
+                                    {{ $tim->nama_tim }}
+                                </label>
+                            @empty
+                                <p class="text-xs text-slate-400">Belum ada data Tim Kerja.</p>
+                            @endforelse
+                        </div>
                     </div>
                     <div class="md:col-span-2">
                         <label for="formula_kode" class="mb-1 block text-sm font-medium text-ink-900">

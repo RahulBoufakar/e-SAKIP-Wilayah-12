@@ -43,7 +43,7 @@
                                                 <li class="py-2.5">
                                                     <p class="text-sm font-medium text-ink-900">{{ $proker->nama_usulan }}</p>
                                                     <p class="mt-0.5 text-xs text-slate-400">
-                                                        {{ $proker->programKerja->kode_proker ?? '—' }} · {{ $proker->iku->timKerja->nama_tim ?? '—' }}
+                                                        {{ $proker->programKerja->kode_proker ?? '—' }} · {{ $proker->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}
                                                     </p>
                                                 </li>
                                             @endforeach

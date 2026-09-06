@@ -36,7 +36,7 @@
                             </td>
                             <td class="px-4 py-3 text-center text-slate-600">{{ rtrim(rtrim(number_format($iku->target_pk, 2, ',', '.'), '0'), ',') }}</td>
                             <td class="px-4 py-3 text-center text-slate-600">{{ $iku->satuan }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $iku->timKerja->nama_tim ?? '—' }}</td>
+                            <td class="px-4 py-3 text-slate-600">{{ $iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                         </tr>
                     @empty
                     @endforelse

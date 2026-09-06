@@ -38,8 +38,8 @@ class IkuLldiktiController extends Controller
         $sasaranList = collect();
 
         if ($triwulanDipilih) {
-            $sasaranList = SasaranKegiatan::with(['iku' => function ($q) use ($triwulanDipilih, $tahunAnggaranId) {
-                    $q->with(['capaianKinerja' => fn ($c) => $c->where('triwulan_id', $triwulanDipilih->id)
+           $sasaranList = SasaranKegiatan::with(['iku' => function ($q) use ($triwulanDipilih, $tahunAnggaranId) {
+                    $q->with(['timKerja', 'capaianKinerja' => fn ($c) => $c->where('triwulan_id', $triwulanDipilih->id)
                         ->where('tahun_anggaran_id', $tahunAnggaranId)])
                     ->orderBy('kode');
                 }])

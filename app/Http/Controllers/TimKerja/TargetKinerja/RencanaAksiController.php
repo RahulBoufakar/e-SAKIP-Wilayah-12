@@ -32,7 +32,7 @@ class RencanaAksiController extends Controller
         $triwulanList = Triwulan::orderBy('urutan')->get();
 
         $ikuList = Iku::with('rencanaAksi')
-            ->whereIn('tim_kerja_id', $timKerjaIds)
+            ->whereHas('timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
             ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
             ->orderBy('kode')
             ->get();

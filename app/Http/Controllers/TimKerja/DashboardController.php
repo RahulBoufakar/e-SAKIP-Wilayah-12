@@ -41,7 +41,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        $ikuIds = Iku::whereIn('tim_kerja_id', $timKerjaIds)
+        $ikuIds = Iku::whereHas('timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
             ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
             ->pluck('id');
 

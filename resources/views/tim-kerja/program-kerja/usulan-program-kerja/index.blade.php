@@ -42,7 +42,7 @@
                 <thead>
                     <tr class="bg-ink-900 text-white">
                         <th class="w-10 px-3 py-2.5 font-semibold">No</th>
-                        <th class="w-28 px-3 py-2.5 font-semibold">PJ</th>
+                        <th class="w-28 px-3 py-2.5 font-semibold">Tim Kerja</th>
                         <th class="w-48 px-3 py-2.5 font-semibold">Judul</th>
                         <th class="w-48 px-3 py-2.5 font-semibold">IKU/IKK</th>
                         <th class="w-48 px-3 py-2.5 font-semibold">Deskripsi</th>
@@ -55,7 +55,7 @@
                     @forelse ($usulanList as $i => $row)
                         <tr class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
                             <td class="px-3 py-2 text-slate-500">{{ $usulanList->firstItem() + $i }}</td>
-                            <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->nama_tim ?? '—' }}</td>
+                            <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                             <td class="max-w-[12rem] px-3 py-2">
                                 <x-truncate-cell :id="'judul-'.$row->id" :text="$row->nama_usulan" />
                             </td>

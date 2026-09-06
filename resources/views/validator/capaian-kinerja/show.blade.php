@@ -14,7 +14,7 @@
             <div>
                 <p class="font-mono text-xs font-semibold text-brand-700">{{ $iku->kode }} — {{ $triwulan->kode }}</p>
                 <h2 class="mt-1 text-lg font-bold text-ink-900">{{ $iku->deskripsi }}</h2>
-                <p class="mt-1 text-xs text-slate-400">Tim Kerja: {{ $iku->timKerja->nama_tim ?? '—' }}</p>
+                <p class="mt-1 text-xs text-slate-400">Tim Kerja: {{ $iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</p>
             </div>
             @if ($capaian)
                 <x-status-badge :status="$capaian->status" />

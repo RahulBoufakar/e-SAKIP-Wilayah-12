@@ -8,7 +8,7 @@ class Iku extends Model
 {
     protected $table = 'iku';
     protected $fillable = ['sasaran_kegiatan_id', 'kode', 'jenis','deskripsi', 
-    'target_pk', 'satuan', 'deskripsi_target', 'tim_kerja_id', 'formula_kode'];
+    'target_pk', 'satuan', 'deskripsi_target', 'formula_kode'];
 
     protected static function booted(): void
     {
@@ -33,7 +33,7 @@ class Iku extends Model
 
     public function timKerja()
     {
-        return $this->belongsTo(TimKerja::class);
+        return $this->belongsToMany(TimKerja::class, 'iku_tim_kerja');
     }
 
     public function capaianKinerja()

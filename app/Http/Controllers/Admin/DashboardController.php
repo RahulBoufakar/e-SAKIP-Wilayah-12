@@ -100,14 +100,14 @@ class DashboardController extends Controller
         )
             ->with('timKerja')
             ->get()
-            ->groupBy(fn ($iku) => $iku->timKerja->nama_tim ?? 'Tanpa Tim Kerja')
-            ->map->count();
+            ->flatMap(fn ($iku) => $iku->timKerja->isNotEmpty() ? $iku->timKerja->pluck('nama_tim') : collect(['Tanpa Tim Kerja']))
+            ->countBy();
 
         // IKU tanpa Tim Kerja
         $ikuTanpaTim = Iku::whereHas(
             'sasaranKegiatan',
             fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId)
-        )->whereNull('tim_kerja_id')->count();
+        )->whereDoesntHave('timKerja')->count();
 
         // Tren Jumlah Mahasiswa & PTS antar tahun
         $trenMahasiswa = JumlahMahasiswa::with('tahunAnggaran')

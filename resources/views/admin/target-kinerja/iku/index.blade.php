@@ -20,7 +20,7 @@
                 tim: @js(old('tim', '')),
                 satuan: @js(old('satuan', '%')),
                 deskripsi_target: @js(old('deskripsi_target', '')),
-                tim_kerja_id: @js(old('tim_kerja_id', '')),
+                tim_kerja_id: @js(old('tim_kerja_id', [])),
                 formula_kode: @js(old('formula_kode', ''))
             },
             formulaDescriptions: @js(collect($formulaOptions)->map(fn ($f) => $f['description'])),
@@ -32,12 +32,12 @@
             },
             openCreate() { 
                 this.mode = 'create'; 
-                this.form = { id: null, jenis: 'IKU', deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: '', formula_kode: this.predictedFormulaKode }; 
+                this.form = { id: null, jenis: 'IKU', deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: [], formula_kode: this.predictedFormulaKode }; 
                 this.modalOpen = true;
             },
             openEdit(row) { 
                 this.mode = 'edit'; 
-                this.form = { id: row.id, jenis: row.jenis, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja_id, formula_kode: row.formula_kode || this.guessFormula(row.kode) }; 
+                this.form = { id: row.id, jenis: row.jenis, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja.map(t => t.id), formula_kode: row.formula_kode || this.guessFormula(row.kode) }; 
                 this.modalOpen = true;
             }
         }"
@@ -86,7 +86,7 @@
                             <td class="px-5 py-3 font-medium text-ink-900">{{ $row->deskripsi }}</td>
                             <td class="px-5 py-3 text-center text-slate-600">{{ rtrim(rtrim(number_format($row->target_pk, 2, ',', '.'), '0'), ',') }}</td>
                             <td class="px-5 py-3 text-center font-medium text-ink-900">{{ $row->satuan }}</td>
-                            <td class="px-5 py-3 text-center text-slate-600">{{ $row->timKerja->nama_tim ?? '—' }}</td>
+                            <td class="px-5 py-3 text-center text-slate-600">{{ $row->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                             <td class="px-5 py-3">
                                 <div class="flex items-center justify-end gap-2">
                                     <button @click="$refs['detail-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100">Detail</button>
