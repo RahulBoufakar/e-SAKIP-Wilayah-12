@@ -14,6 +14,7 @@ return new class extends Migration
             $table->enum('jenis', ['IKU', 'IKK'])->default('IKU');
             $table->string('kode', 20);
             $table->text('deskripsi');
+            $table->string('formula_kode')->nullable();
             $table->decimal('target_pk', 10, 2);
             $table->string('satuan', 20)->default('%');
             $table->text('deskripsi_target')->nullable();

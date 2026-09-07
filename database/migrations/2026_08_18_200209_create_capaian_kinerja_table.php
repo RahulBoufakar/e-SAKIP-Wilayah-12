@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignId('tahun_anggaran_id')->constrained('tahun_anggaran')->restrictOnDelete();
             $table->decimal('target', 10, 2)->nullable();
             $table->decimal('realisasi', 10, 2)->nullable();
+            $table->json('variabel')->nullable();
             $table->enum('status', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamp('created_at')->useCurrent();

@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\TahunAnggaran;
 use App\Models\User;
 
 class TahunAnggaranPolicy
@@ -17,7 +16,7 @@ class TahunAnggaranPolicy
         return $user->hasRole('admin');
     }
 
-    public function delete(User $user, TahunAnggaran $tahun): bool
+    public function delete(User $user): bool
     {
         return $user->hasRole('admin');
     }

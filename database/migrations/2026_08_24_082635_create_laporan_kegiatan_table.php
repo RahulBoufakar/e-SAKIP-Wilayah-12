@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('laporan_kegiatan', function (Blueprint $table) {
             $table->id();
+             $table->boolean('is_locked')->default(false);
             $table->foreignId('proker_id')->unique()->constrained('program_kerja')->restrictOnDelete();
             $table->timestamps();
         });
