@@ -16,8 +16,8 @@ return new class extends Migration
     {
         Schema::create('iku_tim_kerja', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('iku_id')->constrained('iku')->cascadeOnDelete();
-            $table->foreignId('tim_kerja_id')->constrained('tim_kerja')->cascadeOnDelete();
+            $table->foreignId('iku_id')->constrained('iku')->restrictOnDelete();
+            $table->foreignId('tim_kerja_id')->constrained('tim_kerja')->restrictOnDelete();
             $table->timestamp('created_at')->useCurrent();
 
             $table->unique(['iku_id', 'tim_kerja_id']);
@@ -35,8 +35,12 @@ return new class extends Migration
             });
 
         Schema::table('iku', function (Blueprint $table) {
-            $table->dropForeign(['tim_kerja_id']);
-            $table->dropColumn('tim_kerja_id');
+            // SQLite tidak mendukung drop foreign key secara langsung
+            if (DB::getDriverName() !== 'sqlite') {
+                $table->dropForeign(['tim_kerja_id']);
+                $table->dropColumn('tim_kerja_id');
+            }
+            
         });
     }
 

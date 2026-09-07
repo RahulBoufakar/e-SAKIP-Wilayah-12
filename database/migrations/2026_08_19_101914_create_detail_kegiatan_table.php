@@ -18,7 +18,8 @@ return new class extends Migration
             $table->foreignId('usulan_program_kerja_id')->constrained('usulan_program_kerja')->cascadeOnDelete();
             $table->string('nama_detail');
             $table->string('tempat_pelaksanaan');
-            $table->string('bentuk_kegiatan');
+            $table->enum('bentuk_kegiatan', ['Luring', 'Daring']);
+            $table->enum('jenis_kegiatan', ['kunjungan_lapangan', 'lainnya'])->nullable();
             $table->json('bulan_kegiatan'); // array angka bulan 1-12 (checkbox multi-pilih)
             $table->decimal('anggaran', 15, 2);
             $table->timestamps();

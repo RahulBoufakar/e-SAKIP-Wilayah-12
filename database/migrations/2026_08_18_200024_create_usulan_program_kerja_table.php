@@ -26,6 +26,9 @@ return new class extends Migration
             $table->string('nama_usulan');
             $table->text('deskripsi')->nullable();
             
+            // Kolom Permasalahan
+            $table->text('permasalahan')->nullable();
+
             // Mengubah 'tahun' dari enum menjadi integer (unsignedSmallInteger)
             $table->unsignedSmallInteger('tahun');
             

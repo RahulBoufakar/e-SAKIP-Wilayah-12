@@ -37,7 +37,7 @@ class RouteServiceProvider extends ServiceProvider
             $user->hasRole('admin') => static::HOME_ADMIN,
             $user->hasRole('tim_kerja') => static::HOME_TIM_KERJA,
             $user->hasRole('validator') => static::HOME_VALIDATOR,
-            default => 'landing',
+            default => 'dashboard',
         };
     }
 
