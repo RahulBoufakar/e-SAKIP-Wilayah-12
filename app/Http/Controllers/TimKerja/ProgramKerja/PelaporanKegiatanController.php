@@ -214,8 +214,10 @@ class PelaporanKegiatanController extends Controller
 
     private function authorizeAksesProker(ProgramKerja $programKerja): void
     {
+        $ikuTimKerjaIds = $programKerja->usulanProgramKerja->iku->timKerja->pluck('id');
+
         abort_unless(
-            $this->activeTimKerjaIds()->contains($programKerja->usulanProgramKerja->iku->tim_kerja_id),
+            $this->activeTimKerjaIds()->intersect($ikuTimKerjaIds)->isNotEmpty(),
             403
         );
     }

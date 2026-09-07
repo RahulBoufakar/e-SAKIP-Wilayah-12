@@ -20,7 +20,9 @@ class UsulanProgramKerjaPolicy
     private function owns(User $user, UsulanProgramKerja $usulan): bool
     {
         return $user->hasRole('tim_kerja')
-            && $user->timKerja()->whereKey($usulan->iku->tim_kerja_id)->exists();
+            && $user->timKerja()
+                ->whereIn('tim_kerja.id', $usulan->iku->timKerja->pluck('id'))
+                ->exists();
     }
 
     // Validator\ProgramKerja\UsulanProgramKerjaController::setujui
