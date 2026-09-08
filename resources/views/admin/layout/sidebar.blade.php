@@ -57,21 +57,7 @@
         {{-- ================================================= --}}
         <div class="flex h-20 shrink-0 items-center justify-between px-5">
 
-            <div class="flex min-w-0 flex-1 items-center justify-center bg-white px-3 py-2">
-
-                @if ($pengaturanAplikasi->logo_url)
-                    <img
-                        src="{{ $pengaturanAplikasi->logo_url }}"
-                        alt="Logo"
-                        class="h-20 w-auto max-w-full object-contain"
-                    >
-                @else
-                    <div class="truncate text-xl font-bold text-[#002e5b]">
-                        {{ $pengaturanAplikasi->nama_aplikasi ?? 'LLDIKTI 12' }}
-                    </div>
-                @endif
-
-            </div>
+            <x-app-logo mobile />
 
             {{-- Tombol Close --}}
             <button
@@ -186,24 +172,7 @@
     {{-- ================================================= --}}
     {{-- HEADER LOGO --}}
     {{-- ================================================= --}}
-    <div class="flex h-20 shrink-0 items-center justify-center bg-white px-3 transition-all duration-300 overflow-hidden">
-        @if ($pengaturanAplikasi->logo_url)
-            <img
-                src="{{ $pengaturanAplikasi->logo_url }}"
-                alt="Logo"
-                class="h-16 w-auto max-w-full object-contain transition-all duration-300"
-                :class="desktopCollapsed ? 'scale-75' : 'scale-100'"
-            >
-        @else
-            <div 
-                class="truncate text-xl font-bold text-[#002e5b] transition-all duration-300"
-                :class="desktopCollapsed ? 'text-xs' : 'text-xl'"
-            >
-                <span x-show="!desktopCollapsed">{{ $pengaturanAplikasi->nama_aplikasi ?? 'LLDIKTI 12' }}</span>
-                <span x-show="desktopCollapsed" class="text-sm">L12</span>
-            </div>
-        @endif
-    </div>
+    <x-app-logo />
 
 
     {{-- ================================================= --}}

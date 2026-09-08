@@ -27,14 +27,27 @@
     @stack('head')
 </head>
 <body class="h-full bg-slate-100 font-sans text-ink-900 antialiased">
-    
-    {{-- 1. Tambahkan state Alpine x-data di pembungkus utama --}}
-    <div x-data="{ desktopCollapsed: false }" class="min-h-screen flex">
-        
+
+    {{-- x-cloak di sini: seluruh layout disembunyikan sampai Alpine selesai
+         membaca status sidebar dari localStorage, jadi tidak ada frame di mana
+         sidebar/navbar sempat tampil di ukuran default sebelum "melompat" ke
+         ukuran tersimpan. --}}
+    <div
+        x-data="{
+            desktopCollapsed: JSON.parse(localStorage.getItem('desktopCollapsed') ?? 'false'),
+            init() {
+                this.$watch('desktopCollapsed', (value) => {
+                    localStorage.setItem('desktopCollapsed', JSON.stringify(value));
+                });
+            },
+        }"
+        x-cloak
+        class="min-h-screen flex"
+    >
+
         @include('admin.layout.sidebar')
 
-        {{-- 2. Buat margin kiri dinamis (lg:pl-72 atau lg:pl-20) dan tambahkan efek transisi --}}
-        <div 
+        <div
             class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
             :class="desktopCollapsed ? 'lg:pl-20' : 'lg:pl-72'"
         >
@@ -46,7 +59,7 @@
                 </div>
             </main>
         </div>
-        
+
     </div>
 
     @include('admin.layout.feedback-popup')

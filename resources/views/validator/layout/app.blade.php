@@ -24,8 +24,18 @@
 </head>
 <body class="h-full bg-slate-100 font-sans text-ink-900 antialiased">
 
-    {{-- x-data untuk state collapse sidebar, dipakai bareng sidebar & navbar --}}
-    <div class="min-h-screen flex" x-data="{ desktopCollapsed: false }">
+    <div
+        x-data="{
+            desktopCollapsed: JSON.parse(localStorage.getItem('desktopCollapsed') ?? 'false'),
+            init() {
+                this.$watch('desktopCollapsed', (value) => {
+                    localStorage.setItem('desktopCollapsed', JSON.stringify(value));
+                });
+            },
+        }"
+        x-cloak
+        class="min-h-screen flex"
+    >
         @include('validator.layout.sidebar')
 
         <div
