@@ -8,6 +8,7 @@ use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\SasaranKegiatan;
 use App\Models\TahunAnggaran;
+use App\Models\TimKerja;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
@@ -46,7 +47,11 @@ class IkuLldiktiController extends Controller
                 ->get();
         }
 
-        return view('admin.target-kinerja.iku-lldikti.index', compact('sasaranList', 'triwulanList', 'triwulanDipilih', 'tahunAnggaranId'));
+        $timKerjaIds = TimKerja::whereHas('iku.sasaranKegiatan', function ($q) use ($tahunAnggaranId) {
+            $q->where('tahun_anggaran_id', $tahunAnggaranId);
+        })->pluck('id')->unique()->toArray();
+
+        return view('admin.target-kinerja.iku-lldikti.index', compact('sasaranList', 'triwulanList', 'triwulanDipilih', 'tahunAnggaranId', 'timKerjaIds'));
     }
 
     // PUT /admin/capaian-kinerja/target

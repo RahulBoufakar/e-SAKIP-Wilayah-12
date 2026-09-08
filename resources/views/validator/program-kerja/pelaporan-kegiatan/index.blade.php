@@ -35,7 +35,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-                                @forelse ($prokerList as $row)
+                @forelse ($prokerList as $row)
                     @php
                         $dokumen = $row->laporanKegiatan->dokumen ?? collect();
                         $totalMenunggu = $dokumen->where('status_validasi', 'menunggu_validasi')->count();

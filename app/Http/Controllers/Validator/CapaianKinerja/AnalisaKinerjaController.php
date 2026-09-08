@@ -89,7 +89,9 @@ class AnalisaKinerjaController extends Controller
             subject: $analisaKinerja,
             description: "{$verb} Analisis Kinerja IKU {$analisaKinerja->iku->kode} — {$analisaKinerja->triwulan->kode}",
             causer: Auth::user(),
-            recipients: $analisaKinerja->iku->timKerja?->users ?? collect(),
+            recipients: $analisaKinerja->iku->timKerja?->flatMap(function ($tim) {
+                            return $tim->users;
+                        })->unique('id') ?? collect(),
             properties: $data['status'] === 'ditolak' ? ['catatan_revisi' => $data['catatan_revisi']] : [],
             url: route('tim-kerja.analisa-kinerja.index', ['triwulan' => $analisaKinerja->triwulan->kode]),
         ));

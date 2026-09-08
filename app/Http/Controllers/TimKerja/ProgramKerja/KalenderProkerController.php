@@ -49,7 +49,7 @@ class KalenderProkerController extends Controller
         $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
+            ->whereHas('iku.timKerja', fn ($q) =>  $q->whereIn('tim_kerja.id', $timKerjaIds))
             ->whereHas('detailKegiatan')
             ->orderBy('id')
             ->paginate(15)
@@ -57,10 +57,10 @@ class KalenderProkerController extends Controller
 
         // Agregasi per IKU per bulan untuk tooltip/modal circle kalender: dihitung
         // dari SELURUH data yang lolos filter (bukan hanya halaman pagination aktif).
-        $semuaProkerFilter = UsulanProgramKerja::with('detailKegiatan')
+       $semuaProkerFilter = UsulanProgramKerja::with('detailKegiatan')
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Spesifikasikan 'tim_kerja.id'
             ->whereHas('detailKegiatan')
             ->get();
 

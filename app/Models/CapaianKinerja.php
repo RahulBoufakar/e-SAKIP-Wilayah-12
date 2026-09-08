@@ -42,13 +42,28 @@ class CapaianKinerja extends Model
         return $this->hasMany(CapaianKinerjaDokumen::class, 'capaian_kinerja_id');
     }
 
+    /**
+     * Nilai Realisasi Triwulan Ini = (Realisasi Triwulan Ini ÷ Target PK) x 100%.
+     * Dihitung terhadap Target PK (target akhir/tahunan pada master IKU), BUKAN
+     * terhadap `target` per-triwulan pada tabel ini — supaya persentase tidak
+     * melonjak ratusan persen hanya karena target per-triwulan yang di-set kecil
+     * (mis. target TW1 = 25 sedangkan realisasi = 91 -> 364% pada formula lama).
+     * Wajib eager-load relasi `iku` (dengan kolom target_pk) di pemanggil untuk
+     * menghindari N+1.
+     */
     public function getCapaianAttribute(): ?float
     {
-        if ($this->target === null || (float) $this->target == 0.0 || $this->realisasi === null) {
+        if ($this->realisasi === null) {
             return null;
         }
 
-        return round(((float) $this->realisasi / (float) $this->target) * 100, 2);
+        $targetPk = (float) ($this->iku?->target_pk ?? 0);
+
+        if ($targetPk <= 0) {
+            return null;
+        }
+
+        return round(((float) $this->realisasi / $targetPk) * 100, 2);
     }
 
     /**

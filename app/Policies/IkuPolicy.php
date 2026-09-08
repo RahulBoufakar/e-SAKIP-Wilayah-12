@@ -45,7 +45,6 @@ class IkuPolicy
     public function manageKinerja(User $user, Iku $iku): bool
     {
         return $user->hasRole('tim_kerja')
-            && $iku->tim_kerja_id !== null
-            && $user->timKerja()->whereKey($iku->tim_kerja_id)->exists();
+            && $user->timKerja()->whereIn('tim_kerja.id', $iku->timKerja->pluck('id'))->exists();
     }
 }

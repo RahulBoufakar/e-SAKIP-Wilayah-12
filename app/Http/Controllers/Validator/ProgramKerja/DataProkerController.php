@@ -70,7 +70,9 @@ class DataProkerController extends Controller
                 subject: $detailKegiatan,
                 description: "memvalidasi jenis kegiatan proker \"{$usulan->nama_usulan}\" sebagai Kunjungan Lapangan — PTS dapat ditagging",
                 causer: Auth::user(),
-                recipients: $usulan->iku->timKerja?->users ?? collect(),
+                recipients: $usulan->iku->timKerja?->flatMap(function ($tim) {
+                                return $tim->users;
+                            })->unique('id') ?? collect(),
                 url: route('tim-kerja.data-proker.index').'#proker-'.$usulan->id,
             ));
         }

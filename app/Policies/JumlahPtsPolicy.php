@@ -17,7 +17,7 @@ class JumlahPtsPolicy
         return $user->hasRole('admin');
     }
 
-    public function delete(User $user, JumlahPts $jumlahPts): bool
+    public function delete(User $user): bool
     {
         return $user->hasRole('admin');
     }

@@ -49,9 +49,9 @@ class AnalisaKinerjaController extends Controller
         $ikuList = collect();
 
         if ($triwulanDipilih) {
-            $ikuList = Iku::with(['analisaKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
+            $ikuList = Iku::with(['capaianKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
                     ->where('tahun_anggaran_id', $tahunAnggaranId)])
-                ->whereHas('timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
+                ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
                 ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
                 ->orderBy('kode')
                 ->get();

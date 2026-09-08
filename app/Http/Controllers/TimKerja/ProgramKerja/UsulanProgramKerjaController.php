@@ -48,14 +48,14 @@ class UsulanProgramKerjaController extends Controller
         // IKU untuk modal "Tambah" — dibatasi ke tahun yang sedang aktif di tab ini,
         // karena tahun Usulan Program Kerja mengikuti tahun IKU yang dipilih (lihat store()).
         $ikuOptions = Iku::with('sasaranKegiatan.tahunAnggaran')
-            ->whereHas('timKerja', fn ($q) => $q->whereIn('id', $timKerjaIds))
+            ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Spesifikasikan 'tim_kerja.id'
             ->whereHas('sasaranKegiatan.tahunAnggaran', fn ($q) => $q->where('tahun', $tahun))
             ->orderBy('kode')
             ->get(['id', 'kode', 'deskripsi', 'sasaran_kegiatan_id']);
 
         $usulanList = UsulanProgramKerja::with(['iku.timKerja'])
             ->where('tahun', $tahun)
-            ->whereHas('iku', fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds))
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Gunakan 'iku.timKerja'
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString();
@@ -106,7 +106,7 @@ class UsulanProgramKerjaController extends Controller
     // GET /tim-kerja/usulan-program-kerja/{usulanProgramKerja}
     public function show(Request $request, UsulanProgramKerja $usulanProgramKerja)
     {
-        $this->authorizeAksesUsulan($usulanProgramKerja);
+        $this->authorize('view', $usulanProgramKerja);
 
         $usulanProgramKerja->load(['iku', 'detailKegiatan']);
 

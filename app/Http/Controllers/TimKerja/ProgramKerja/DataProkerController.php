@@ -44,7 +44,7 @@ class DataProkerController extends Controller
         $prokerList = UsulanProgramKerja::with(['iku', 'programKerja', 'detailKegiatan', 'pts'])
             ->where('status_validasi', 'approved')
             ->where('tahun', $tahun)
-            ->whereHas('iku', fn ($q) => $q->whereIn('tim_kerja_id', $timKerjaIds))
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Gunakan 'iku.timKerja' & 'tim_kerja.id'
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString();
