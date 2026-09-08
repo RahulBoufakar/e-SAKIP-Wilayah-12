@@ -50,6 +50,11 @@ class CapaianKinerja extends Model
      * (mis. target TW1 = 25 sedangkan realisasi = 91 -> 364% pada formula lama).
      * Wajib eager-load relasi `iku` (dengan kolom target_pk) di pemanggil untuk
      * menghindari N+1.
+     *
+     * Di-cap maksimal 100%: realisasi seharusnya sudah di-clamp ke Target PK saat
+     * disimpan (lihat FormulaInterface::calculate()), tapi persentase tetap
+     * dijaga di sini sebagai lapis pertahanan kedua (mis. realisasi diinput
+     * manual tanpa formula, atau data lama sebelum capping diterapkan).
      */
     public function getCapaianAttribute(): ?float
     {
@@ -63,7 +68,9 @@ class CapaianKinerja extends Model
             return null;
         }
 
-        return round(((float) $this->realisasi / $targetPk) * 100, 2);
+        $persen = round(((float) $this->realisasi / $targetPk) * 100, 2);
+
+        return min($persen, 100.0);
     }
 
     /**

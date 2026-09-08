@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class TriwulanStatus extends Model
@@ -27,6 +26,11 @@ class TriwulanStatus extends Model
     /**
      * Rule R-1: aktifkan satu Triwulan untuk satu Tahun Anggaran, otomatis
      * menonaktifkan Triwulan lain di tahun yang sama (atomic switch).
+     *
+     * Eviction cache context_triwulan_aktif_{id} dan dashboard TIDAK dilakukan
+     * di sini lagi — dipindahkan ke EvictCachesOnActivity (listener
+     * ActivityOccurred), karena TriwulanController sudah selalu memicu event
+     * tersebut setiap kali method ini dipanggil.
      */
     public static function activate(int $triwulanId, int $tahunAnggaranId): ?self
     {
@@ -34,9 +38,6 @@ class TriwulanStatus extends Model
             // Jika triwulanId = 0, berarti nonaktifkan semua
              if ($triwulanId === 0) {
                 static::where('tahun_anggaran_id', $tahunAnggaranId)->update(['status' => 'non_aktif']);
-
-                // Hapus cache triwulan aktif untuk tahun anggaran ini
-                Cache::forget("context_triwulan_aktif_{$tahunAnggaranId}");
 
                 return null;
             }
@@ -50,9 +51,6 @@ class TriwulanStatus extends Model
                 ['status' => 'non_aktif']
             );
             $status->update(['status' => 'aktif']);
-
-            // Hapus cache triwulan aktif untuk tahun anggaran ini
-            Cache::forget("context_triwulan_aktif_{$tahunAnggaranId}");
 
             return $status->fresh();
         });

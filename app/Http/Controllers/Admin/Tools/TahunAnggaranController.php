@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Tools;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Controller;
 use App\Models\TahunAnggaran;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class TahunAnggaranController extends Controller
 {
@@ -39,10 +40,15 @@ class TahunAnggaranController extends Controller
             'tahun.unique' => 'Tahun anggaran ini sudah ada.',
         ]);
 
-        TahunAnggaran::create($data);
-        
-        // Hapus cache daftar tahun agar data terbaru muncul di context bar
-        Cache::forget('context_tahun_list');
+        $tahun = TahunAnggaran::create($data);
+
+        // Cache context_tahun_list & dashboard di-evict terpusat oleh
+        // EvictCachesOnActivity (listener ActivityOccurred) — lihat app/Listeners.
+        event(new ActivityOccurred(
+            subject: $tahun,
+            description: "menambahkan Tahun Anggaran {$tahun->tahun}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Tahun Anggaran berhasil ditambahkan.']);
     }
@@ -50,13 +56,21 @@ class TahunAnggaranController extends Controller
     // DELETE /admin/tools/tahun/{id} (FR-24, FR-26: Confirmation Prompt wajib di frontend)
     public function destroy(TahunAnggaran $tahun)
     {
-        $this->authorize('delete', TahunAnggaran::class);
+        $this->authorize('delete', $tahun);
 
-        // Hapus cache daftar tahun agar data terbaru muncul di context bar
-        Cache::forget('context_tahun_list');
+        $tahunLabel = $tahun->tahun;
 
         return $this->deleteOrBlock(
-            fn () => $tahun->delete(),
+            function () use ($tahun, $tahunLabel) {
+                $tahun->delete();
+
+                // Cache di-evict terpusat oleh EvictCachesOnActivity.
+                event(new ActivityOccurred(
+                    subject: $tahun,
+                    description: "menghapus Tahun Anggaran {$tahunLabel}",
+                    causer: Auth::user(),
+                ));
+            },
             'Tahun anggaran ini masih memiliki data Sasaran Kegiatan/Jumlah Mahasiswa/Jumlah PTS, tidak dapat dihapus.'
         );
     }

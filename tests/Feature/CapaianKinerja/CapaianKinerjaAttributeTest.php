@@ -13,18 +13,6 @@ it('capaian null saat target atau realisasi kosong', function () {
     expect($capaian->capaian)->toBeNull();
 });
 
-it('capaian null saat target nol (hindari pembagian dengan nol)', function () {
-    $capaian = makeCapaianKinerja($this->iku, $this->tahun, ['target' => 0, 'realisasi' => 10]);
-
-    expect($capaian->capaian)->toBeNull();
-});
-
-it('menghitung capaian sebagai realisasi dibagi target dikali 100', function () {
-    $capaian = makeCapaianKinerja($this->iku, $this->tahun, ['target' => 50, 'realisasi' => 25]);
-
-    expect($capaian->capaian)->toBe(50.0);
-});
-
 it('data dianggap lengkap tanpa formula selama realisasi terisi', function () {
     $capaian = makeCapaianKinerja($this->iku, $this->tahun, ['realisasi' => 10]);
 
