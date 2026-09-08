@@ -100,6 +100,7 @@ class CapaianKinerjaController extends Controller
         }
 
         $formula = FormulaRegistry::resolve($iku->formula_kode);
+        $targetPk = (float) $iku->target_pk;
 
         if ($formula) {
             $rules = collect($formula->variables())
@@ -107,14 +108,29 @@ class CapaianKinerjaController extends Controller
                 ->all();
             $data = $request->validate($rules);
 
+            $realisasi = $formula->calculate($data['variabel']);
+
+            if ($realisasi > $targetPk) {
+                return back()
+                    ->withErrors(['realisasi' => 'Nilai Realisasi hasil perhitungan ('.$realisasi.') melebihi Target PK ('.$targetPk.'). Periksa kembali nilai variabel yang diinput.'])
+                    ->withInput();
+            }
+
             $capaian->simpan([
                 'variabel' => $data['variabel'],
-                'realisasi' => $formula->calculate($data['variabel']),
+                'realisasi' => $realisasi,
             ]);
         } else {
             $data = $request->validate(['realisasi' => 'required|numeric|min:0'], [
                 'realisasi.required' => 'Realisasi wajib diisi.',
             ]);
+
+            if ((float) $data['realisasi'] > $targetPk) {
+                return back()
+                    ->withErrors(['realisasi' => 'Nilai Realisasi ('.$data['realisasi'].') melebihi Target PK ('.$targetPk.').'])
+                    ->withInput();
+            }
+
             $capaian->simpan($data);
         }
 

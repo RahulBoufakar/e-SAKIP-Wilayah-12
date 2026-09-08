@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\ActivityOccurred;
+use App\Listeners\EvictCachesOnActivity;
 use App\Listeners\LogActivity;
 use App\Listeners\SendInAppNotification;
 use Illuminate\Auth\Events\Registered;
@@ -24,6 +25,7 @@ class EventServiceProvider extends ServiceProvider
         ActivityOccurred::class => [
             LogActivity::class,
             SendInAppNotification::class,
+            EvictCachesOnActivity::class,
         ],
     ];
 
