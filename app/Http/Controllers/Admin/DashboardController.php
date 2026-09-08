@@ -12,12 +12,15 @@ use App\Models\RencanaAksi;
 use App\Models\SasaranKegiatan;
 use App\Models\TriwulanStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
 
-    // GET /admin/dashboard (FR-D1/FR-D2, FR-D3: chart Chart.js)
+    private const CACHE_TTL = 300;
+
+    // GET /admin/dashboard
     public function index(Request $request)
     {
         $tahunAnggaranId = $this->activeTahunAnggaranId($request);
@@ -25,6 +28,15 @@ class DashboardController extends Controller
             return $this->missingTahunAnggaran();
         }
 
+        $data = Cache::remember("admin_dashboard_v5_{$tahunAnggaranId}", self::CACHE_TTL, function () use ($tahunAnggaranId) {
+            return $this->buildDashboardData($tahunAnggaranId);
+        });
+
+        return view('admin.dashboard.index', $data);
+    }
+
+    private function buildDashboardData(int $tahunAnggaranId): array
+    {
         $jumlahSasaran = SasaranKegiatan::where('tahun_anggaran_id', $tahunAnggaranId)->count();
 
         $ikuIdsTahunIni = Iku::whereHas(
@@ -39,25 +51,20 @@ class DashboardController extends Controller
             ->where('status', 'aktif')
             ->first();
 
-        // Rata-rata capaian & kelengkapan Realisasi/Rencana Aksi triwulan aktif
-        $rataCapaian = null;
-        $kelengkapanRealisasi = null;
-        $kelengkapanRencanaAksi = null;
+        // target_pk & kode wajib di-eager-load: kode untuk label chart per-IKU,
+        // target_pk untuk penyebut rumus persentase.
+        $capaianRows = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
+            ->where('tahun_anggaran_id', $tahunAnggaranId)
+            ->with('iku:id,kode,target_pk')
+            ->get();
 
-        if ($triwulanAktif) {
-            $capaianList = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
-                ->where('tahun_anggaran_id', $tahunAnggaranId)
-                ->where('triwulan_id', $triwulanAktif->triwulan_id)
-                ->get()
-                ->map(fn ($r) => $r->capaian)
-                ->filter(fn ($c) => $c !== null);
-            $rataCapaian = $capaianList->isNotEmpty() ? round($capaianList->avg(), 2) : null;
+       if ($triwulanAktif) {
+            $capaianAktif = $capaianRows->where('triwulan_id', $triwulanAktif->triwulan_id);
 
-            $realisasiTerisi = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
-                ->where('tahun_anggaran_id', $tahunAnggaranId)
-                ->where('triwulan_id', $triwulanAktif->triwulan_id)
-                ->whereNotNull('realisasi')
-                ->count();
+            $capaianValues = $capaianAktif->map(fn ($r) => $r->capaian)->filter(fn ($c) => $c !== null);
+            $rataCapaian = $capaianValues->isNotEmpty() ? round($capaianValues->avg(), 2) : null;
+
+            $realisasiTerisi = $capaianAktif->filter(fn ($r) => $r->realisasi !== null)->count();
             $kelengkapanRealisasi = [
                 'total' => $jumlahIku,
                 'terisi' => $realisasiTerisi,
@@ -73,27 +80,50 @@ class DashboardController extends Controller
                 'terisi' => $rencanaAksiTerisi,
                 'persen' => $jumlahIku > 0 ? round($rencanaAksiTerisi / $jumlahIku * 100) : 0,
             ];
+
+            // Realisasi & Target per IKU untuk Triwulan Aktif — pola perhitungan
+            // sama seperti chart Sasaran Kegiatan di atas (dibagi Target PK,
+            // bukan dijumlah/dirata-rata mentah), hanya di sini per-IKU (tidak
+            // dirata-ratakan) supaya bisa dibandingkan antar-IKU satu per satu.
+            $ikuCapaianTriwulanChart = $capaianAktif->map(function ($r) {
+                $targetPk = $r->iku?->target_pk !== null ? (float) $r->iku->target_pk : null;
+                $target = $r->target !== null ? (float) $r->target : null;
+
+                return [
+                    'kode' => $r->iku->kode ?? '-',
+                    // Realisasi (%) = (Realisasi ÷ Target PK) x 100%
+                    'realisasi_persen' => $r->capaian ?? 0,
+                    // Target Triwulan (%) = (Target Triwulan ÷ Target PK) x 100%
+                    'target_persen' => $this->persenTerhadapTargetPk($target, $targetPk) ?? 0,
+                ];
+            })->values();
         }
 
-        // Target vs Realisasi per triwulan (TW1-TW4); asumsi id Triwulan 1-4
-        // berurutan sesuai TriwulanSeeder (sama seperti asumsi lama).
-        $targetRealisasiRaw = CapaianKinerja::whereIn('iku_id', $ikuIdsTahunIni)
-            ->where('tahun_anggaran_id', $tahunAnggaranId)
-            ->selectRaw('triwulan_id, SUM(target) as total_target, SUM(realisasi) as total_realisasi')
-            ->groupBy('triwulan_id')
-            ->get()
-            ->keyBy('triwulan_id');
-
+        // Realisasi Sasaran Kegiatan per Triwulan (%): dua garis pembanding,
+        // masing-masing dirata-rata lintas seluruh IKU pada triwulan tsb —
+        //   Rata-rata Realisasi        = (Realisasi ÷ Target PK) x 100%
+        //   Rata-rata Target Triwulan  = (Target Triwulan ÷ Target PK) x 100%
+        // Keduanya dibagi Target PK (bukan dijumlah mentah) supaya tetap dalam
+        // skala 0-100% dan sebanding lintas-IKU meski satuan aslinya berbeda.
         $triwulanChartLabels = ['TW1', 'TW2', 'TW3', 'TW4'];
-        $targetChartData = [];
-        $realisasiChartData = [];
+        $rataRealisasiChart = [];
+        $rataTargetTriwulanChart = [];
+
         foreach ([1, 2, 3, 4] as $triwulanId) {
-            $row = $targetRealisasiRaw->get($triwulanId);
-            $targetChartData[] = (float) ($row->total_target ?? 0);
-            $realisasiChartData[] = (float) ($row->total_realisasi ?? 0);
+            $rowsTw = $capaianRows->where('triwulan_id', $triwulanId);
+
+            $realisasiPersenValues = $rowsTw->map(fn ($r) => $r->capaian)->filter(fn ($v) => $v !== null);
+            $targetPersenValues = $rowsTw
+                ->map(fn ($r) => $this->persenTerhadapTargetPk(
+                    $r->target !== null ? (float) $r->target : null,
+                    $r->iku?->target_pk !== null ? (float) $r->iku->target_pk : null
+                ))
+                ->filter(fn ($v) => $v !== null);
+
+            $rataRealisasiChart[] = $realisasiPersenValues->isNotEmpty() ? round($realisasiPersenValues->avg(), 2) : 0;
+            $rataTargetTriwulanChart[] = $targetPersenValues->isNotEmpty() ? round($targetPersenValues->avg(), 2) : 0;
         }
 
-        // Sebaran IKU per Tim Kerja
         $sebaranIkuPerTim = Iku::whereHas(
             'sasaranKegiatan',
             fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId)
@@ -103,13 +133,13 @@ class DashboardController extends Controller
             ->flatMap(fn ($iku) => $iku->timKerja->isNotEmpty() ? $iku->timKerja->pluck('nama_tim') : collect(['Tanpa Tim Kerja']))
             ->countBy();
 
-        // IKU tanpa Tim Kerja
         $ikuTanpaTim = Iku::whereHas(
             'sasaranKegiatan',
             fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId)
         )->whereDoesntHave('timKerja')->count();
 
-        // Tren Jumlah Mahasiswa & PTS antar tahun
+        // Tren dipisah per kategori (bukan digabung dalam satu chart) sesuai
+        // permintaan, masing-masing dengan label tahun miliknya sendiri.
         $trenMahasiswa = JumlahMahasiswa::with('tahunAnggaran')
             ->get()
             ->groupBy(fn ($r) => $r->tahunAnggaran->tahun)
@@ -122,9 +152,7 @@ class DashboardController extends Controller
             ->map(fn ($rows) => $rows->sum('jumlah'))
             ->sortKeys();
 
-        $trenTahunLabels = $trenMahasiswa->keys()->merge($trenPts->keys())->unique()->sort()->values();
-
-        return view('admin.dashboard.index', compact(
+        return compact(
             'jumlahSasaran',
             'jumlahIku',
             'triwulanAktif',
@@ -132,13 +160,23 @@ class DashboardController extends Controller
             'kelengkapanRealisasi',
             'kelengkapanRencanaAksi',
             'triwulanChartLabels',
-            'targetChartData',
-            'realisasiChartData',
+            'rataRealisasiChart',
+            'rataTargetTriwulanChart',
+            'ikuCapaianTriwulanChart',
             'sebaranIkuPerTim',
             'ikuTanpaTim',
-            'trenTahunLabels',
             'trenMahasiswa',
             'trenPts'
-        ));
+        );
+    }
+
+    /** (nilai ÷ targetPk) x 100%, dibulatkan 2 desimal. Null jika salah satu operand tidak valid. */
+    private function persenTerhadapTargetPk(?float $nilai, ?float $targetPk): ?float
+    {
+        if ($nilai === null || $targetPk === null || $targetPk <= 0) {
+            return null;
+        }
+
+        return round(($nilai / $targetPk) * 100, 2);
     }
 }

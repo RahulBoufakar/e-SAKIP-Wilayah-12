@@ -61,7 +61,7 @@
                     </tr>
                     <tr>
                         <td class="w-48 px-5 py-3 font-medium text-ink-900">Tim Kerja</td>
-                        <td class="px-5 py-3 text-slate-600">{{ $programKerja->usulanProgramKerja->iku->timKerja->nama_tim ?? '—' }}</td>
+                        <td class="px-5 py-3 text-slate-600">{{ collect($programKerja->usulanProgramKerja->iku->timKerja ?? [])->pluck('nama_tim')->filter()->join(', ') ?: '—' }}</td>
                     </tr>
                 </tbody>
             </table>

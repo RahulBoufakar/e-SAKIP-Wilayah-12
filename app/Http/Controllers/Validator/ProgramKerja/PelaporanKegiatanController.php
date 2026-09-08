@@ -99,7 +99,9 @@ class PelaporanKegiatanController extends Controller
                 subject: $dokumenLaporanKegiatan,
                 description: "{$verb} dokumen \"{$dokumenLaporanKegiatan->nama_dokumen}\" pada laporan kegiatan {$kodeProker}",
                 causer: Auth::user(),
-                recipients: $dokumenLaporanKegiatan->laporan->proker->usulanProgramKerja->iku->timKerja?->users ?? collect(),
+                recipients: $dokumenLaporanKegiatan->laporan->proker->usulanProgramKerja->iku->timKerja?->flatMap(function ($tim) {
+                                return $tim->users;
+                            })->unique('id') ?? collect(),
                 properties: $data['status_validasi'] === 'ditolak' ? ['catatan_revisi' => $data['catatan_revisi']] : [],
                 url: route('tim-kerja.pelaporan-kegiatan.show', $dokumenLaporanKegiatan->laporan->proker_id),
             ));
@@ -124,7 +126,9 @@ class PelaporanKegiatanController extends Controller
             subject: $laporanKegiatan,
             description: "{$verb} laporan kegiatan {$proker->kode_proker}",
             causer: Auth::user(),
-            recipients: $proker->usulanProgramKerja->iku->timKerja?->users ?? collect(),
+            recipients: $proker->usulanProgramKerja->iku->timKerja?->flatMap(function ($tim) {
+                            return $tim->users;
+                        })->unique('id') ?? collect(),
             url: route('tim-kerja.pelaporan-kegiatan.show', $laporanKegiatan->proker_id),
         ));
 

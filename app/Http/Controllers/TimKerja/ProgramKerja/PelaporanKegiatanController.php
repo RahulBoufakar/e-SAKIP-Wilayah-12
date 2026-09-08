@@ -49,7 +49,7 @@ class PelaporanKegiatanController extends Controller
         $prokerList = ProgramKerja::with(['usulanProgramKerja.iku.timKerja', 'laporanKegiatan.dokumen'])
             ->whereHas('usulanProgramKerja', function ($q) use ($timKerjaIds, $tahun) {
                 $q->where('tahun', $tahun)
-                    ->whereHas('iku', fn ($qi) => $qi->whereIn('tim_kerja_id', $timKerjaIds));
+                    ->whereHas('iku.timKerja', fn ($qt) => $qt->whereIn('tim_kerja.id', $timKerjaIds)); // <-- Menggunakan relasi timKerja
             })
             ->orderByDesc('id')
             ->paginate(15)

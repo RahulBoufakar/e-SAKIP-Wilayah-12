@@ -87,7 +87,9 @@ class CapaianKinerjaController extends Controller
             subject: $capaianKinerja,
             description: "menyetujui Capaian Kinerja IKU {$capaianKinerja->iku->kode} — {$capaianKinerja->triwulan->kode}",
             causer: Auth::user(),
-            recipients: $capaianKinerja->iku->timKerja?->users ?? collect(),
+            recipients: $capaianKinerja->iku->timKerja?->flatMap(function ($tim) {
+                            return $tim->users;
+                        })->unique('id') ?? collect(),
             url: route('tim-kerja.capaian-kinerja.show', [$capaianKinerja->iku_id, $capaianKinerja->triwulan_id]),
         ));
 
@@ -115,7 +117,9 @@ class CapaianKinerjaController extends Controller
             subject: $capaianKinerja,
             description: "menolak Capaian Kinerja IKU {$capaianKinerja->iku->kode} — {$capaianKinerja->triwulan->kode}",
             causer: Auth::user(),
-            recipients: $capaianKinerja->iku->timKerja?->users ?? collect(),
+            recipients: $capaianKinerja->iku->timKerja?->flatMap(function ($tim) {
+                                return $tim->users;
+                            })->unique('id') ?? collect(),
             properties: ['catatan_revisi' => $data['catatan_revisi']],
             url: route('tim-kerja.capaian-kinerja.show', [$capaianKinerja->iku_id, $capaianKinerja->triwulan_id]),
         ));

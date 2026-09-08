@@ -75,18 +75,20 @@ class UsulanProgramKerjaController extends Controller
         if (Auth::user()->cannot('approve', $usulanProgramKerja)) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Usulan ini tidak dapat disetujui pada status saat ini.']);
         }
-
+        
         try {
             $usulanProgramKerja->setujui(Auth::id());
         } catch (RuntimeException $e) {
             return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
         }
-
+        
         event(new ActivityOccurred(
             subject: $usulanProgramKerja,
             description: "menyetujui Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\"",
             causer: Auth::user(),
-            recipients: $usulanProgramKerja->iku->timKerja?->users ?? collect(),
+            recipients: $usulanProgramKerja->iku?->timKerja?->flatMap(function ($tim) {
+                            return $tim->users;
+                        })->unique('id') ?? collect(),
             url: route('tim-kerja.usulan-program-kerja.show', $usulanProgramKerja->id),
         ));
 
@@ -116,7 +118,9 @@ class UsulanProgramKerjaController extends Controller
             subject: $usulanProgramKerja,
             description: "menolak Usulan Program Kerja \"{$usulanProgramKerja->nama_usulan}\"",
             causer: Auth::user(),
-            recipients: $usulanProgramKerja->iku->timKerja?->users ?? collect(),
+            recipients: $usulanProgramKerja->iku?->timKerja?->flatMap(function ($tim) {
+                            return $tim->users;
+                        })->unique('id') ?? collect(),
             properties: ['catatan_revisi' => $data['catatan_revisi']],
             url: route('tim-kerja.usulan-program-kerja.show', $usulanProgramKerja->id),
         ));
