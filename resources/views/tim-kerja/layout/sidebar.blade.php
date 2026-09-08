@@ -51,53 +51,7 @@
         {{-- ================================================= --}}
         {{-- HEADER LOGO --}}
         {{-- ================================================= --}}
-        <div class="flex h-20 shrink-0 items-center justify-between px-5">
-
-            <div class="flex min-w-0 flex-1 items-center justify-center bg-white px-3 py-2">
-
-                @if ($pengaturanAplikasi->logo_url)
-
-                    <img
-                        src="{{ $pengaturanAplikasi->logo_url }}"
-                        alt="Logo"
-                        class="h-20 w-auto max-w-full object-contain"
-                    >
-
-                @else
-
-                    <div class="truncate text-xl font-bold text-[#002e5b]">
-                        {{ $pengaturanAplikasi->nama_aplikasi ?? 'LLDIKTI 12' }}
-                    </div>
-
-                @endif
-
-            </div>
-
-
-            {{-- Tombol Close --}}
-            <button
-                type="button"
-                @click="mobileOpen = false"
-                class="ml-3 shrink-0 text-gray-500 transition-colors hover:text-gray-800"
-                aria-label="Tutup menu"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M6 18L18 6M6 6l12 12"
-                    />
-                </svg>
-            </button>
-
-        </div>
+        <x-app-logo mobile />
 
 
         {{-- ================================================= --}}
@@ -188,32 +142,7 @@
     {{-- ================================================= --}}
     {{-- HEADER LOGO --}}
     {{-- ================================================= --}}
-    <div
-        class="flex h-20 shrink-0 items-center justify-center bg-white px-3 transition-all duration-300 overflow-hidden"
-    >
-
-        @if ($pengaturanAplikasi->logo_url)
-
-            <img
-                src="{{ $pengaturanAplikasi->logo_url }}"
-                alt="Logo"
-                class="h-16 w-auto max-w-full object-contain transition-all duration-300"
-                :class="desktopCollapsed ? 'scale-75' : 'scale-100'"
-            >
-
-        @else
-
-            <div
-                class="truncate text-xl font-bold text-[#002e5b] transition-all duration-300"
-                :class="desktopCollapsed ? 'text-xs' : 'text-xl'"
-            >
-                <span x-show="!desktopCollapsed">{{ $pengaturanAplikasi->nama_aplikasi ?? 'LLDIKTI 12' }}</span>
-                <span x-show="desktopCollapsed" class="text-sm">L12</span>
-            </div>
-
-        @endif
-
-    </div>
+    <x-app-logo />
 
 
     {{-- ================================================= --}}

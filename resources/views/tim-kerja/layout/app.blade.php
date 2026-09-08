@@ -28,11 +28,20 @@
 </head>
 <body class="h-full bg-slate-100 font-sans text-ink-900 antialiased">
 
-    {{-- x-data untuk state collapse sidebar, dipakai bareng oleh sidebar & navbar --}}
-    <div class="min-h-screen flex" x-data="{ desktopCollapsed: false }">
+    <div
+        x-data="{
+            desktopCollapsed: JSON.parse(localStorage.getItem('desktopCollapsed') ?? 'false'),
+            init() {
+                this.$watch('desktopCollapsed', (value) => {
+                    localStorage.setItem('desktopCollapsed', JSON.stringify(value));
+                });
+            },
+        }"
+        x-cloak
+        class="min-h-screen flex"
+    >
         @include('tim-kerja.layout.sidebar')
 
-        {{-- Padding kiri sekarang reaktif mengikuti lebar aside (w-72 / w-20) --}}
         <div
             class="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
             :class="desktopCollapsed ? 'lg:pl-20' : 'lg:pl-72'"

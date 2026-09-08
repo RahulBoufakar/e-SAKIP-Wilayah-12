@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PengaturanAplikasi;
 use App\Models\TemplateDokumen;
+use App\Services\AppAssetImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class PengaturanController extends Controller
 {
@@ -24,31 +26,47 @@ class PengaturanController extends Controller
     }
 
     // PUT /admin/pengaturan/aplikasi
-    public function updateAplikasi(Request $request)
+    public function updateAplikasi(Request $request, AppAssetImageService $imageService)
     {
         $data = $request->validate([
             'nama_aplikasi' => 'required|string|max:100',
-            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:10240',
-            'favicon' => 'nullable|mimes:png,ico|max:256',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+            // Sengaja pakai 'file', bukan 'image': rule `image` bawaan Laravel
+            // tidak mengenali .ico sebagai gambar valid, jadi kombinasi
+            // image+mimes:ico akan selalu gagal validasi.
+            'favicon' => 'nullable|file|mimes:png,jpg,jpeg,ico,webp,svg|max:1024',
         ], [
             'nama_aplikasi.required' => 'Nama Aplikasi wajib diisi.',
             'logo.image' => 'Logo harus berupa gambar.',
-            'logo.mimes' => 'Logo harus berformat PNG, JPG, SVG, atau WEBP.',
-            'logo.max' => 'Ukuran logo maksimal 10 MB.',
-            'favicon.mimes' => 'Favicon harus berformat PNG atau ICO.',
-            'favicon.max' => 'Ukuran favicon maksimal 256 KB.',
+            'logo.mimes' => 'Logo harus berformat PNG, JPG, atau WEBP.',
+            'logo.max' => 'Ukuran logo maksimal 2 MB.',
+            'favicon.mimes' => 'Favicon harus berformat PNG, JPG, ICO, WEBP, atau SVG.',
+            'favicon.max' => 'Ukuran favicon maksimal 1 MB.',
         ]);
 
         $pengaturan = PengaturanAplikasi::current();
         $update = ['nama_aplikasi' => $data['nama_aplikasi']];
 
-        foreach (['logo', 'favicon'] as $field) {
-            if ($request->hasFile($field)) {
-                if ($pengaturan->$field) {
-                    Storage::disk('public')->delete($pengaturan->$field);
-                }
-                $update[$field] = $request->file($field)->store('pengaturan', 'public');
+        try {
+            if ($request->hasFile('logo')) {
+                $update['logo'] = $imageService->storeLogo($request->file('logo'));
             }
+
+            if ($request->hasFile('favicon')) {
+                $update['favicon'] = $imageService->storeFavicon($request->file('favicon'));
+            }
+        } catch (RuntimeException $e) {
+            return back()->with('feedback', ['type' => 'error', 'message' => $e->getMessage()]);
+        }
+
+        // File lama baru dihapus SETELAH file baru berhasil diproses & disimpan,
+        // supaya kalau pemrosesan gambar gagal (exception di atas), file lama
+        // yang masih dipakai tidak ikut terhapus.
+        if (isset($update['logo']) && $pengaturan->logo) {
+            $imageService->delete($pengaturan->logo);
+        }
+        if (isset($update['favicon']) && $pengaturan->favicon) {
+            $imageService->delete($pengaturan->favicon);
         }
 
         $pengaturan->update($update);
