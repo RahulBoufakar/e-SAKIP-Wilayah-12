@@ -56,6 +56,12 @@ return [
             'throw' => false,
         ],
 
+        'laporan' => [
+            'driver' => 'local',
+            'root' => storage_path('app/laporan-kinerja'),
+            'visibility' => 'private',
+        ],
+
     ],
 
     /*

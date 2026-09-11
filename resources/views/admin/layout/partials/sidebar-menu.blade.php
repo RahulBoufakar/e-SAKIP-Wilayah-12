@@ -115,6 +115,13 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
             <span x-show="!desktopCollapsed" x-transition class="whitespace-nowrap">Jumlah PTS</span>
         </a>
+        <a href="{{ route('admin.tools.laporan-pimpinan.index') }}"
+           class="{{ $sublinkBase }} {{ request()->routeIs('admin.tools.laporan-pimpinan.*') ? $sublinkActive : $sublinkIdle }}"
+           :class="desktopCollapsed ? 'justify-center !pl-3 !pr-3' : ''"
+           title="Laporan Pimpinan">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-1.519-3.144L12 15.75m1.481-1.644l1.938-1.937M8.25 21h7.5a2.25 2.25 0 002.25-2.25V11.25a4.5 4.5 0 00-4.5-4.5h-3.75a4.5 4.5 0 00-4.5 4.5v7.5A2.25 2.25 0 008.25 21z" /></svg>
+            <span x-show="!desktopCollapsed" x-transition class="whitespace-nowrap">Laporan Pimpinan</span>
+        </a>
         <a href="{{ route('admin.tools.sinkronisasi.index') }}"
            class="{{ $sublinkBase }} {{ request()->routeIs('admin.tools.sinkronisasi.*') ? $sublinkActive : $sublinkIdle }}"
            :class="desktopCollapsed ? 'justify-center !pl-3 !pr-3' : ''"

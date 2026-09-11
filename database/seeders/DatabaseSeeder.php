@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             TimKerjaSeeder::class,
             UsulanProgramKerjaSeeder::class,
             ValidatorSeeder::class,
+            PimpinanSeeder::class,
             TemplateDokumenSeeder::class,
         ]);
     }

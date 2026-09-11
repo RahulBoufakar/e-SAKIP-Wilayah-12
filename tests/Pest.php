@@ -3,6 +3,7 @@
 use App\Models\AnalisaKinerja;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
+use App\Models\LaporanKinerja;
 use App\Models\SasaranKegiatan;
 use App\Models\TahunAnggaran;
 use App\Models\TimKerja;
@@ -97,5 +98,17 @@ function makeAnalisaKinerja(Iku $iku, TahunAnggaran $tahunAnggaran, array $attrs
         'triwulan_id' => $triwulanId,
         'tahun_anggaran_id' => $tahunAnggaran->id,
         'status' => 'menunggu_validasi',
+    ], $attrs));
+}
+
+function makeLaporanKinerja(TahunAnggaran $tahunAnggaran, array $attrs = []): LaporanKinerja
+{
+    return LaporanKinerja::create(array_merge([
+        'jenis' => 'tahunan',
+        'tahun_anggaran_id' => $tahunAnggaran->id,
+        'bulan' => null,
+        'triwulan_id' => null,
+        'versi' => 1,
+        'status' => 'diproses',
     ], $attrs));
 }
