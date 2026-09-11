@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
             'admin.layout.navbar',
             'tim-kerja.layout.navbar',
             'validator.layout.navbar',
+            'pimpinan.layout.navbar',
         ], ContextBarComposer::class);
         
     }

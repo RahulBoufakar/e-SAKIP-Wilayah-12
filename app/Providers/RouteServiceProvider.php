@@ -26,6 +26,7 @@ class RouteServiceProvider extends ServiceProvider
     public const HOME_ADMIN = 'admin.dashboard';
     public const HOME_TIM_KERJA = 'tim-kerja.dashboard';
     public const HOME_VALIDATOR = 'validator.dashboard';
+    public const HOME_PIMPINAN = 'pimpinan.dashboard';
 
     /**
      * Resolve nama route home sesuai role user yang login. Return nama route
@@ -37,6 +38,7 @@ class RouteServiceProvider extends ServiceProvider
             $user->hasRole('admin') => static::HOME_ADMIN,
             $user->hasRole('tim_kerja') => static::HOME_TIM_KERJA,
             $user->hasRole('validator') => static::HOME_VALIDATOR,
+            $user->hasRole('pimpinan') => static::HOME_PIMPINAN,
             default => 'dashboard',
         };
     }

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\TargetKinerja\RencanaAksiController;
 use App\Http\Controllers\Admin\TargetKinerja\SasaranKegiatanController;
 use App\Http\Controllers\Admin\Tools\JumlahMahasiswaController;
 use App\Http\Controllers\Admin\Tools\JumlahPtsController;
+use App\Http\Controllers\Admin\Tools\LaporanKinerjaController;
 use App\Http\Controllers\Admin\Tools\SinkronisasiController;
 use App\Http\Controllers\Admin\Tools\TahunAnggaranController;
 use App\Http\Controllers\Admin\Tools\TriwulanController;
@@ -91,6 +92,12 @@ Route::middleware(['auth', 'role:admin'])
 
             // FR-34: hanya halaman placeholder, sengaja tidak ada route POST aktif
             Route::get('sinkronisasi', [SinkronisasiController::class, 'index'])->name('sinkronisasi.index');
+
+            // Laporan Pimpinan — jalur cadangan Admin, akses sama seperti Pimpinan (PRD §2.2/§3.2)
+            Route::get('laporan-pimpinan', [LaporanKinerjaController::class, 'index'])->name('laporan-pimpinan.index');
+            Route::post('laporan-pimpinan/generate', [LaporanKinerjaController::class, 'generate'])->name('laporan-pimpinan.generate');
+            Route::get('laporan-pimpinan/status', [LaporanKinerjaController::class, 'status'])->name('laporan-pimpinan.status');
+            Route::get('laporan-pimpinan/{laporanKinerja}/unduh', [LaporanKinerjaController::class, 'unduh'])->name('laporan-pimpinan.unduh');
         });
 
         // 6. Pengaturan
