@@ -14,13 +14,13 @@ class CapaianKinerjaDokumenController extends Controller
     {
         return response()->json([
             'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($dokumen->file_dokumen)),
+            'base64' => base64_encode(Storage::disk('private')->get($dokumen->file_dokumen)),
         ]);
     }
 
     // GET /validator/capaian-kinerja/dokumen/{dokumen}/unduh
     public function unduh(CapaianKinerjaDokumen $dokumen): StreamedResponse
     {
-        return Storage::disk('public')->download($dokumen->file_dokumen, $dokumen->nama_dokumen.'.pdf');
+        return Storage::disk('private')->download($dokumen->file_dokumen, $dokumen->nama_dokumen.'.pdf');
     }
 }

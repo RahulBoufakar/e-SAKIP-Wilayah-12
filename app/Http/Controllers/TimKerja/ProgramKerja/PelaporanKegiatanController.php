@@ -180,12 +180,13 @@ class PelaporanKegiatanController extends Controller
             return back()->with('feedback', ['type' => 'error', 'message' => $validator->errors()->first()]);
         }
 
+        // AUDIT § A1: dokumen laporan kegiatan disimpan di disk 'private'.
         if ($dokumenLaporanKegiatan->file_dokumen) {
-            Storage::disk('public')->delete($dokumenLaporanKegiatan->file_dokumen);
+            Storage::disk('private')->delete($dokumenLaporanKegiatan->file_dokumen);
         }
 
         $dokumenLaporanKegiatan->update([
-            'file_dokumen' => $request->file('file_dokumen')->store('laporan-kegiatan', 'public'),
+            'file_dokumen' => $request->file('file_dokumen')->store('laporan-kegiatan', 'private'),
             'status_validasi' => 'menunggu_validasi',
             'catatan_revisi' => null,
         ]);
@@ -207,7 +208,7 @@ class PelaporanKegiatanController extends Controller
     private function hapusDokumen(DokumenLaporanKegiatan $dokumen): void
     {
         if ($dokumen->file_dokumen) {
-            Storage::disk('public')->delete($dokumen->file_dokumen);
+            Storage::disk('private')->delete($dokumen->file_dokumen);
         }
         $dokumen->delete();
     }

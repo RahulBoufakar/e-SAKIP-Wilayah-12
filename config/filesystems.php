@@ -44,6 +44,19 @@ return [
             'throw' => false,
         ],
 
+        // AUDIT § A1: disk khusus untuk dokumen kerja (KAK/TOR, RAB, bukti
+        // kinerja, dokumen laporan kegiatan). Root-nya SENGAJA di luar
+        // storage/app/public dan TIDAK pernah didaftarkan di 'links' di
+        // bawah — sehingga tidak pernah bisa disymlink/diakses langsung
+        // lewat URL publik, hanya bisa dibaca lewat Controller yang sudah
+        // memanggil authorize().
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -60,6 +73,7 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/laporan-kinerja'),
             'visibility' => 'private',
+            'throw' => false,
         ],
 
     ],
@@ -72,6 +86,10 @@ return [
     | Here you may configure the symbolic links that will be created when the
     | `storage:link` Artisan command is executed. The array keys should be
     | the locations of the links and the values should be their targets.
+    |
+    | AUDIT § A1: disk 'private' SENGAJA TIDAK didaftarkan di sini. Hanya
+    | 'public' yang boleh disymlink — dipakai untuk logo, favicon, dan
+    | file template_dokumen, bukan dokumen kerja.
     |
     */
 

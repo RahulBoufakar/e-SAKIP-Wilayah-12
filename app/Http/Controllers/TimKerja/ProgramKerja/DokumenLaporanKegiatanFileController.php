@@ -18,7 +18,7 @@ class DokumenLaporanKegiatanFileController extends Controller
 
         return response()->json([
             'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($dokumenLaporanKegiatan->file_dokumen)),
+            'base64' => base64_encode(Storage::disk('private')->get($dokumenLaporanKegiatan->file_dokumen)),
         ]);
     }
 
@@ -26,7 +26,7 @@ class DokumenLaporanKegiatanFileController extends Controller
     {
         $this->authorizeAkses($dokumenLaporanKegiatan);
 
-        return Storage::disk('public')->download(
+        return Storage::disk('private')->download(
             $dokumenLaporanKegiatan->file_dokumen,
             $dokumenLaporanKegiatan->nama_dokumen.'.pdf'
         );
@@ -34,7 +34,7 @@ class DokumenLaporanKegiatanFileController extends Controller
 
     private function authorizeAkses(DokumenLaporanKegiatan $dokumen): void
     {
-        abort_unless($dokumen->file_dokumen && Storage::disk('public')->exists($dokumen->file_dokumen), 404);
+        abort_unless($dokumen->file_dokumen && Storage::disk('private')->exists($dokumen->file_dokumen), 404);
         $this->authorize('view', $dokumen->laporan->proker);
     }
 }

@@ -148,12 +148,14 @@ class UsulanProgramKerjaController extends Controller
             'file_rab_excel.mimes' => 'File RAB Excel harus berformat XLS/XLSX.',
         ]);
 
+        // AUDIT § A1: dokumen kerja (KAK/TOR, RAB) disimpan di disk 'private',
+        // tidak lagi 'public' — supaya tidak bisa diakses langsung lewat URL.
         foreach (['file_kak_pdf', 'file_rab_pdf', 'file_rab_excel'] as $field) {
             if ($request->hasFile($field)) {
                 if ($usulanProgramKerja->$field) {
-                    Storage::disk('public')->delete($usulanProgramKerja->$field);
+                    Storage::disk('private')->delete($usulanProgramKerja->$field);
                 }
-                $data[$field] = $request->file($field)->store('usulan-program-kerja', 'public');
+                $data[$field] = $request->file($field)->store('usulan-program-kerja', 'private');
             }
         }
 

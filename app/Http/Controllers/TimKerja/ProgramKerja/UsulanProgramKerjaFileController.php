@@ -35,7 +35,8 @@ class UsulanProgramKerjaFileController extends Controller
 
         return response()->json([
             'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($path)),
+            // AUDIT § A1: dokumen kerja dipindah ke disk private.
+            'base64' => base64_encode(Storage::disk('private')->get($path)),
         ]);
     }
 
@@ -48,7 +49,7 @@ class UsulanProgramKerjaFileController extends Controller
     {
         $path = $this->resolveFilePath($usulanProgramKerja, $field);
 
-        return Storage::disk('public')->download($path, basename($path));
+        return Storage::disk('private')->download($path, basename($path));
     }
 
     private function resolveFilePath(UsulanProgramKerja $usulanProgramKerja, string $field): string
@@ -59,7 +60,7 @@ class UsulanProgramKerjaFileController extends Controller
         abort_unless($column, 404);
 
         $path = $usulanProgramKerja->$column;
-        abort_unless($path && Storage::disk('public')->exists($path), 404);
+        abort_unless($path && Storage::disk('private')->exists($path), 404);
 
         return $path;
     }
