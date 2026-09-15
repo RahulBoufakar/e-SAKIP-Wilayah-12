@@ -37,4 +37,14 @@ class UsulanProgramKerjaPolicy
     {
         return $this->approve($user, $usulan);
     }
+
+    // AUDIT § B4: Validator\ProgramKerja\UsulanProgramKerjaFileController —
+    // akses dokumen KAK/RAB lintas-tim (Validator boleh lihat proker tim
+    // manapun). Dipisah eksplisit dari owns() supaya kalau ke depan ada
+    // aturan tambahan (mis. hanya proker berstatus tertentu), cukup diubah
+    // di satu tempat ini.
+    public function viewAsValidator(User $user, UsulanProgramKerja $usulan): bool
+    {
+        return $user->hasAnyRole(['validator', 'admin', 'super_admin']);
+    }
 }

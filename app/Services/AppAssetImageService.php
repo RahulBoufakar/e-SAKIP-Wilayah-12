@@ -17,6 +17,11 @@ class AppAssetImageService
     private const DISK = 'public';
     private const DIR = 'logos';
 
+    // AUDIT § A3: batas dimensi favicon raster sebelum diproses ImageManager,
+    // sebagai lapis pertahanan terhadap decompression bomb (file kecil dengan
+    // dimensi ekstrem). Tidak berlaku untuk .ico — lihat storeFavicon().
+    private const MAX_FAVICON_DIMENSION = 512;
+
     private ImageManager $manager;
 
     public function __construct()
@@ -54,26 +59,19 @@ class AppAssetImageService
     }
 
     /**
-     * SVG & ICO disimpan apa adanya (format vektor/ikon native).
-     * Format raster lain (PNG/JPG/WEBP) di-crop+resize persis 32x32
-     * lalu dikonversi ke PNG transparan.
+     * AUDIT § A3: dukungan SVG dihapus total — favicon hanya menerima PNG/ICO.
+     * ICO disimpan apa adanya (format ikon native, tidak bisa diproses
+     * ImageManager). PNG (dan format raster lain yang lolos validasi mimes di
+     * Controller) di-crop+resize persis 32x32 lalu dikonversi ke PNG transparan,
+     * didahului validasi dimensi sumber untuk mencegah decompression bomb.
      *
      * @return string Path relatif pada disk 'public', untuk disimpan di kolom favicon.
      *
-     * @throws RuntimeException jika SVG mengandung tag <script>.
+     * @throws RuntimeException jika dimensi gambar melebihi batas maksimal.
      */
     public function storeFavicon(UploadedFile $file): string
     {
         $ext = strtolower($file->getClientOriginalExtension());
-
-        if ($ext === 'svg') {
-            $this->guardSvgIsSafe($file);
-
-            $path = self::DIR . '/favicon_' . now()->timestamp . '.svg';
-            Storage::disk(self::DISK)->put($path, file_get_contents($file->getRealPath()));
-
-            return $path;
-        }
 
         if ($ext === 'ico') {
             $path = self::DIR . '/favicon_' . now()->timestamp . '.ico';
@@ -81,6 +79,8 @@ class AppAssetImageService
 
             return $path;
         }
+
+        $this->guardDimensionWithinLimit($file);
 
         // Pengganti read() di v2
         $image = $this->manager->make($file->getRealPath());
@@ -107,14 +107,22 @@ class AppAssetImageService
     }
 
     /**
-     * Tolak SVG yang mengandung tag <script> — pencegahan XSS dasar.
+     * AUDIT § A3: tolak gambar dengan dimensi melebihi batas maksimal, sebelum
+     * dibebankan ke ImageManager (mitigasi decompression bomb — file kecil
+     * secara ukuran tapi dimensi piksel ekstrem).
      */
-    private function guardSvgIsSafe(UploadedFile $file): void
+    private function guardDimensionWithinLimit(UploadedFile $file): void
     {
-        $content = file_get_contents($file->getRealPath());
+        $dimensions = getimagesize($file->getRealPath());
 
-        if ($content !== false && preg_match('/<script/i', $content)) {
-            throw new RuntimeException('File SVG mengandung tag <script> dan ditolak demi keamanan.');
+        if ($dimensions === false) {
+            throw new RuntimeException('File favicon tidak dapat dibaca sebagai gambar.');
+        }
+
+        [$width, $height] = $dimensions;
+
+        if ($width > self::MAX_FAVICON_DIMENSION || $height > self::MAX_FAVICON_DIMENSION) {
+            throw new RuntimeException('Dimensi favicon melebihi batas maksimal '.self::MAX_FAVICON_DIMENSION.'x'.self::MAX_FAVICON_DIMENSION.'px.');
         }
     }
 }

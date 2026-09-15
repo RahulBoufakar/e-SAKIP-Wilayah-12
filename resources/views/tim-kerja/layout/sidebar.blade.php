@@ -47,45 +47,69 @@
         x-transition:leave-end="-translate-x-full"
         class="fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 max-w-[85vw] flex-col overflow-hidden bg-[#f3f4f6]"
     >
-
         {{-- ================================================= --}}
         {{-- HEADER LOGO --}}
         {{-- ================================================= --}}
-        <x-app-logo mobile />
+        <div class="flex h-16 shrink-0 items-center justify-between px-5">
 
+            {{-- Logo with max-height constraint to avoid vertical stretch --}}
+            <div class="flex items-center max-h-12 overflow-hidden">
+                <x-app-logo mobile />
+            </div>
+
+            {{-- Tombol Close --}}
+            <button
+                type="button"
+                @click="mobileOpen = false"
+                class="ml-3 shrink-0 text-gray-500 transition-colors hover:text-gray-800"
+                aria-label="Tutup menu"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                </svg>
+            </button>
+
+        </div>
 
         {{-- ================================================= --}}
         {{-- AREA NAVIGASI --}}
         {{-- ================================================= --}}
         <div class="flex min-h-0 flex-1 flex-col bg-white">
 
-
-            {{-- TAB ORANGE --}}
+            {{-- TAB ROLE TIM KERJA --}}
             <div
                 class="relative z-10 shrink-0 rounded-t-3xl bg-[#f0a500] py-1.5 text-center text-sm font-bold text-white shadow-sm"
             >
                 {{ ucwords(str_replace(['-', '_'], ' ', Auth::user()->getRoleNames()->first() ?? 'Tim Kerja')) }}
             </div>
 
-
-            {{-- CONTAINER MENU BIRU --}}
+            {{-- CONTAINER MENU --}}
             <div
                 class="relative z-0 mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-none rounded-b-none bg-[#002e5b] pt-2 shadow-lg"
             >
 
-                {{-- Menu --}}
+                {{-- Navigation Menu --}}
                 <nav
                     class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3"
                 >
                     @include('tim-kerja.layout.partials.sidebar-menu')
                 </nav>
 
-
-                {{-- LOGOUT --}}
+                {{-- LOGOUT BUTTON --}}
                 <div
                     class="shrink-0 border-t border-white/10 p-4"
                 >
-
                     <form
                         method="POST"
                         action="{{ route('logout') }}"
@@ -97,7 +121,6 @@
                             type="submit"
                             class="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-white/5 hover:text-red-300"
                         >
-
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 class="h-5 w-5 shrink-0"
@@ -114,10 +137,8 @@
                             </svg>
 
                             <span>Keluar</span>
-
                         </button>
                     </form>
-
                 </div>
 
             </div>

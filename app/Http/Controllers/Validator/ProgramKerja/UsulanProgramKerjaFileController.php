@@ -38,6 +38,10 @@ class UsulanProgramKerjaFileController extends Controller
 
     private function resolveFilePath(UsulanProgramKerja $usulanProgramKerja, string $field): string
     {
+        // AUDIT § B4: nyatakan aturan akses secara eksplisit lewat Policy,
+        // bukan cuma mengandalkan middleware role:validator di route group.
+        $this->authorize('viewAsValidator', $usulanProgramKerja);
+
         $column = self::FIELD_MAP[$field] ?? null;
         abort_unless($column, 404);
 

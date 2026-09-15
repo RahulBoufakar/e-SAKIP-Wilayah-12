@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Tools;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Models\JumlahMahasiswa;
 use App\Models\TahunAnggaran;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class JumlahMahasiswaController extends Controller
 {
@@ -37,7 +39,15 @@ class JumlahMahasiswaController extends Controller
         ]);
 
         // FR-30: tidak memicu recalculation apa pun
-        JumlahMahasiswa::create($data);
+        $jumlahMahasiswa = JumlahMahasiswa::create($data);
+
+        // AUDIT § A4: sebelumnya mutasi Master Data ini belum tercatat sama sekali.
+        $tahun = TahunAnggaran::find($data['tahun_anggaran_id'])?->tahun;
+        event(new ActivityOccurred(
+            subject: $jumlahMahasiswa,
+            description: "menambahkan data Jumlah Mahasiswa TA {$tahun}: {$data['jumlah']}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Jumlah Mahasiswa berhasil ditambahkan.']);
     }
@@ -47,7 +57,17 @@ class JumlahMahasiswaController extends Controller
     {
         $this->authorize('delete', JumlahMahasiswa::class);
 
+        // AUDIT § A4: snapshot sebelum delete.
+        $tahun = $jumlahMahasiswa->tahunAnggaran?->tahun;
+        $jumlahSebelum = $jumlahMahasiswa->jumlah;
+
         $jumlahMahasiswa->delete();
+
+        event(new ActivityOccurred(
+            subject: $jumlahMahasiswa,
+            description: "menghapus data Jumlah Mahasiswa TA {$tahun}: {$jumlahSebelum}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data Jumlah Mahasiswa berhasil dihapus.']);
     }

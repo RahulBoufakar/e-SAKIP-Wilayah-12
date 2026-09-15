@@ -21,8 +21,15 @@ class UserPolicy
         return $user->hasRole('admin');
     }
 
+    // AUDIT § B2: admin hanya boleh mengubah akun admin miliknya sendiri.
+    // Mengubah admin LAIN hanya boleh lewat super_admin (Gate::before di
+    // AppServiceProvider melewati method ini sepenuhnya untuk super_admin).
     public function update(User $user, User $model): bool
     {
+        if ($model->hasRole('admin') && $user->id !== $model->id) {
+            return false;
+        }
+
         return $user->hasRole('admin');
     }
 

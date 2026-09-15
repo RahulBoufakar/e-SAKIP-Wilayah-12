@@ -14,9 +14,15 @@ use RuntimeException;
  *
  * Model pemakai WAJIB punya kolom: status, catatan_revisi.
  * Dipakai oleh: UsulanProgramKerja, PelaporanKegiatan, CapaianKinerja, AnalisaKinerja.
+ *
+ * AUDIT § A5.1: transisi status (kirim/setujui/tolak) dikunci lewat
+ * LocksRowForTransition untuk mencegah race condition pada pola
+ * "baca status -> cek -> tulis" yang sebelumnya tidak atomik.
  */
 trait HasStatusPengiriman
 {
+    use LocksRowForTransition;
+
     /** Simpan sebagai draft. Gagal jika field sedang terkunci (lihat isFieldLocked()). */
     public function simpan(array $data): static
     {
@@ -33,15 +39,19 @@ trait HasStatusPengiriman
     {
         $this->guardNotLocked();
 
-        if (! in_array($this->status, ['draft', 'ditolak'], true)) {
-            throw new RuntimeException('Hanya data berstatus draft atau ditolak yang bisa dikirim untuk validasi.');
-        }
+        return $this->transitionWithLock(function ($fresh) {
+            if (! in_array($fresh->status, ['draft', 'ditolak'], true)) {
+                throw new RuntimeException('Hanya data berstatus draft atau ditolak yang bisa dikirim untuk validasi.');
+            }
 
-        $this->status = 'menunggu_validasi';
-        $this->catatan_revisi = null;
-        $this->save();
+            $fresh->status = 'menunggu_validasi';
+            $fresh->catatan_revisi = null;
+            $fresh->save();
 
-        return $this;
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     /** Setujui: menunggu_validasi -> disetujui. Khusus role validator/admin/super_admin. */
@@ -49,14 +59,18 @@ trait HasStatusPengiriman
     {
         $this->guardRole(['validator', 'admin', 'super_admin']);
 
-        if ($this->status !== 'menunggu_validasi') {
-            throw new RuntimeException('Hanya data berstatus menunggu_validasi yang bisa disetujui.');
-        }
+        return $this->transitionWithLock(function ($fresh) {
+            if ($fresh->status !== 'menunggu_validasi') {
+                throw new RuntimeException('Hanya data berstatus menunggu_validasi yang bisa disetujui.');
+            }
 
-        $this->status = 'disetujui';
-        $this->save();
+            $fresh->status = 'disetujui';
+            $fresh->save();
 
-        return $this;
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     /** Tolak: menunggu_validasi -> ditolak. Khusus role validator/admin/super_admin. catatan_revisi wajib. */
@@ -68,15 +82,19 @@ trait HasStatusPengiriman
             throw new InvalidArgumentException('Catatan revisi wajib diisi saat menolak pengajuan.');
         }
 
-        if ($this->status !== 'menunggu_validasi') {
-            throw new RuntimeException('Hanya data berstatus menunggu_validasi yang bisa ditolak.');
-        }
+        return $this->transitionWithLock(function ($fresh) use ($catatanRevisi) {
+            if ($fresh->status !== 'menunggu_validasi') {
+                throw new RuntimeException('Hanya data berstatus menunggu_validasi yang bisa ditolak.');
+            }
 
-        $this->status = 'ditolak';
-        $this->catatan_revisi = $catatanRevisi;
-        $this->save();
+            $fresh->status = 'ditolak';
+            $fresh->catatan_revisi = $catatanRevisi;
+            $fresh->save();
 
-        return $this;
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     /**

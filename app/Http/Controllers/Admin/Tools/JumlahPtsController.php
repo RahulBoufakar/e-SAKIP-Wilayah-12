@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Tools;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Models\JumlahPts;
 use App\Models\TahunAnggaran;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class JumlahPtsController extends Controller
 {
@@ -37,7 +39,15 @@ class JumlahPtsController extends Controller
         ]);
 
         // FR-33: tidak memicu recalculation apa pun
-        JumlahPts::create($data);
+        $jumlahPts = JumlahPts::create($data);
+
+        // AUDIT § A4: sebelumnya mutasi Master Data ini belum tercatat sama sekali.
+        $tahun = TahunAnggaran::find($data['tahun_anggaran_id'])?->tahun;
+        event(new ActivityOccurred(
+            subject: $jumlahPts,
+            description: "menambahkan data Jumlah PTS TA {$tahun}: {$data['jumlah']}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Jumlah PTS berhasil ditambahkan.']);
     }
@@ -47,7 +57,18 @@ class JumlahPtsController extends Controller
     {
 
         $this->authorize('delete', $jumlahPts);
+
+        // AUDIT § A4: snapshot sebelum delete.
+        $tahun = $jumlahPts->tahunAnggaran?->tahun;
+        $jumlahSebelum = $jumlahPts->jumlah;
+
         $jumlahPts->delete();
+
+        event(new ActivityOccurred(
+            subject: $jumlahPts,
+            description: "menghapus data Jumlah PTS TA {$tahun}: {$jumlahSebelum}",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data Jumlah PTS berhasil dihapus.']);
     }

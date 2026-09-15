@@ -12,6 +12,9 @@ class CapaianKinerjaDokumenController extends Controller
     // GET /validator/capaian-kinerja/dokumen/{dokumen}/preview
     public function preview(CapaianKinerjaDokumen $dokumen)
     {
+        // AUDIT § B4: nyatakan aturan akses secara eksplisit lewat Policy.
+        $this->authorize('viewAsValidator', $dokumen);
+
         return response()->json([
             'mime' => 'application/pdf',
             'base64' => base64_encode(Storage::disk('private')->get($dokumen->file_dokumen)),
@@ -21,6 +24,8 @@ class CapaianKinerjaDokumenController extends Controller
     // GET /validator/capaian-kinerja/dokumen/{dokumen}/unduh
     public function unduh(CapaianKinerjaDokumen $dokumen): StreamedResponse
     {
+        $this->authorize('viewAsValidator', $dokumen);
+
         return Storage::disk('private')->download($dokumen->file_dokumen, $dokumen->nama_dokumen.'.pdf');
     }
 }

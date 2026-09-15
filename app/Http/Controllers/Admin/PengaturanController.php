@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Models\PengaturanAplikasi;
 use App\Models\TemplateDokumen;
 use App\Services\AppAssetImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -31,16 +33,17 @@ class PengaturanController extends Controller
         $data = $request->validate([
             'nama_aplikasi' => 'required|string|max:100',
             'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
-            // Sengaja pakai 'file', bukan 'image': rule `image` bawaan Laravel
-            // tidak mengenali .ico sebagai gambar valid, jadi kombinasi
-            // image+mimes:ico akan selalu gagal validasi.
-            'favicon' => 'nullable|file|mimes:png,jpg,jpeg,ico,webp,svg|max:1024',
+            // AUDIT § A3: dukungan SVG dihapus total — hanya PNG/ICO yang
+            // diterima untuk favicon. Rule `image` bawaan Laravel tidak
+            // mengenali .ico sebagai gambar valid, jadi kombinasi
+            // image+mimes:ico akan selalu gagal validasi, karena itu dipakai `file`.
+            'favicon' => 'nullable|file|mimes:png,ico|max:1024',
         ], [
             'nama_aplikasi.required' => 'Nama Aplikasi wajib diisi.',
             'logo.image' => 'Logo harus berupa gambar.',
             'logo.mimes' => 'Logo harus berformat PNG, JPG, atau WEBP.',
             'logo.max' => 'Ukuran logo maksimal 2 MB.',
-            'favicon.mimes' => 'Favicon harus berformat PNG, JPG, ICO, WEBP, atau SVG.',
+            'favicon.mimes' => 'Favicon harus berformat PNG atau ICO.',
             'favicon.max' => 'Ukuran favicon maksimal 1 MB.',
         ]);
 
@@ -69,9 +72,29 @@ class PengaturanController extends Controller
             $imageService->delete($pengaturan->favicon);
         }
 
+        // AUDIT § A4: catat perubahan branding aplikasi sebelum atribut lama tertimpa.
+        $perubahan = [];
+        if ($pengaturan->nama_aplikasi !== $data['nama_aplikasi']) {
+            $perubahan[] = 'nama aplikasi';
+        }
+        if (isset($update['logo'])) {
+            $perubahan[] = 'logo';
+        }
+        if (isset($update['favicon'])) {
+            $perubahan[] = 'favicon';
+        }
+
         $pengaturan->update($update);
 
         Cache::forget(PengaturanAplikasi::CACHE_KEY);
+
+        if (! empty($perubahan)) {
+            event(new ActivityOccurred(
+                subject: $pengaturan,
+                description: 'memperbarui Pengaturan Aplikasi ('.implode(', ', $perubahan).')',
+                causer: Auth::user(),
+            ));
+        }
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Pengaturan Aplikasi berhasil disimpan.']);
     }
@@ -94,6 +117,13 @@ class PengaturanController extends Controller
         }
 
         $template->update(['file' => $data['file']->store('template-dokumen', 'public')]);
+
+        // AUDIT § A4: perubahan template dokumen resmi layak diaudit.
+        event(new ActivityOccurred(
+            subject: $template,
+            description: "mengunggah/mengganti file template \"{$template->nama}\"",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => "{$template->nama} berhasil diperbarui."]);
     }

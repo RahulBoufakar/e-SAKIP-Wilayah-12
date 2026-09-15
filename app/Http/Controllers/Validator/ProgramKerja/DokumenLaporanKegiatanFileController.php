@@ -11,6 +11,9 @@ class DokumenLaporanKegiatanFileController extends Controller
 {
     public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
     {
+        // AUDIT § B4: nyatakan aturan akses secara eksplisit lewat Policy.
+        $this->authorize('viewAsValidator', $dokumenLaporanKegiatan);
+
         abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('private')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
 
         return response()->json([
@@ -21,6 +24,8 @@ class DokumenLaporanKegiatanFileController extends Controller
 
     public function unduh(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
+        $this->authorize('viewAsValidator', $dokumenLaporanKegiatan);
+
         abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('private')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
 
         return Storage::disk('private')->download(
