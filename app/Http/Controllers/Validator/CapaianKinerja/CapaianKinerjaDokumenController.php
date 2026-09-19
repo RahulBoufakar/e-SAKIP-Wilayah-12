@@ -10,14 +10,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CapaianKinerjaDokumenController extends Controller
 {
     // GET /validator/capaian-kinerja/dokumen/{dokumen}/preview
-    public function preview(CapaianKinerjaDokumen $dokumen)
+    // AUDIT § A6/A7: stream langsung, bukan JSON+base64.
+    public function preview(CapaianKinerjaDokumen $dokumen): StreamedResponse
     {
-        // AUDIT § B4: nyatakan aturan akses secara eksplisit lewat Policy.
-        $this->authorize('viewAsValidator', $dokumen);
+        $this->authorize('viewAsValidator', $dokumen); // AUDIT § B4
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('private')->get($dokumen->file_dokumen)),
+        return response()->stream(function () use ($dokumen) {
+            fpassthru(Storage::disk('private')->readStream($dokumen->file_dokumen));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 

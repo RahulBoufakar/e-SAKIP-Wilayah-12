@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PengaturanController extends Controller
 {
@@ -129,15 +130,21 @@ class PengaturanController extends Controller
     }
 
     // GET /admin/pengaturan/template/{kode}/preview — khusus jenis PDF
-    public function previewTemplate(string $kode)
+    // AUDIT § A6/A7: ikut diubah ke streaming (bukan JSON+base64), karena
+    // view ini memakai komponen Blade <x-file-preview> yang sama dengan
+    // UsulanProgramKerjaFileController dkk — begitu JS komponen itu diubah
+    // untuk mengharapkan blob mentah, endpoint ini WAJIB konsisten juga,
+    // kalau tidak preview template akan rusak.
+    public function previewTemplate(string $kode): StreamedResponse
     {
         $template = TemplateDokumen::where('kode', $kode)->firstOrFail();
         abort_unless($template->isPdf(), 404);
         abort_unless($template->file && Storage::disk('public')->exists($template->file), 404);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($template->file)),
+        return response()->stream(function () use ($template) {
+            fpassthru(Storage::disk('public')->readStream($template->file));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 

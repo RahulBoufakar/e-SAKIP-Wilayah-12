@@ -12,13 +12,15 @@ class DokumenLaporanKegiatanFileController extends Controller
 {
     use ResolvesTimKerjaSession;
 
-    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
+    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
         $this->authorizeAkses($dokumenLaporanKegiatan);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('private')->get($dokumenLaporanKegiatan->file_dokumen)),
+        // AUDIT § A6/A7: stream langsung, bukan JSON+base64.
+        return response()->stream(function () use ($dokumenLaporanKegiatan) {
+            fpassthru(Storage::disk('private')->readStream($dokumenLaporanKegiatan->file_dokumen));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 

@@ -2,6 +2,8 @@
 
 use App\Jobs\GenerateLaporanKinerjaJob;
 use App\Models\LaporanKinerja;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Models\Activity;
@@ -146,4 +148,70 @@ it('memfilter daftar laporan berdasarkan jenis dan tahun anggaran', function () 
 
     $response->assertOk();
     expect($response->viewData('laporanList')->total())->toBe(1);
+});
+
+// --- AUDIT § A8: Cache::lock() untuk idempotency generate laporan ---
+
+it('melepas Cache::lock setelah proses generate selesai, sehingga bisa diambil lagi oleh proses berikutnya', function () {
+    Queue::fake([GenerateLaporanKinerjaJob::class]);
+    $pimpinan = userWithRole('pimpinan');
+
+    $this->actingAs($pimpinan)->post(route('pimpinan.laporan.generate'), [
+        'tahun_anggaran_id' => $this->tahun->id,
+        'jenis' => 'tahunan',
+    ])->assertRedirect();
+
+    $lockKey = "generate-laporan:tahunan:{$this->tahun->id}::";
+    $lock = Cache::lock($lockKey, 10);
+
+    // Kalau ini gagal (false), berarti lock lama masih dipegang -> tidak
+    // pernah dilepas -> generate laporan berikutnya untuk periode yang sama
+    // akan macet permanen menunggu lock yang tidak akan pernah lepas sendiri.
+    expect($lock->get())->toBeTrue();
+    $lock->release();
+});
+
+it('melempar LockTimeoutException saat lock masih dipegang proses lain untuk kombinasi periode yang sama (cegah generate ganda)', function () {
+    $lockKey = "generate-laporan:tahunan:{$this->tahun->id}::";
+    $externalLock = Cache::lock($lockKey, 10);
+    expect($externalLock->get())->toBeTrue(); // simulasikan proses lain sedang memegang lock
+
+    // Test ini sengaja butuh ~5 detik nyata (block(5) di LaporanKinerjaService)
+    // untuk benar-benar memverifikasi lock diblokir, bukan diam-diam diloloskan.
+    app(\App\Services\LaporanKinerjaService::class)->generateTahunan($this->tahun->id);
+
+    $externalLock->release();
+})->throws(LockTimeoutException::class);
+
+it('tidak membuat baris laporan baru apa pun selama lock masih dipegang pihak lain', function () {
+    $lockKey = "generate-laporan:tahunan:{$this->tahun->id}::";
+    $externalLock = Cache::lock($lockKey, 10);
+    $externalLock->get();
+
+    try {
+        app(\App\Services\LaporanKinerjaService::class)->generateTahunan($this->tahun->id);
+    } catch (LockTimeoutException $e) {
+        // diharapkan — lihat test sebelumnya
+    } finally {
+        $externalLock->release();
+    }
+
+    expect(LaporanKinerja::where('jenis', 'tahunan')->where('tahun_anggaran_id', $this->tahun->id)->count())->toBe(0);
+});
+
+it('lock per kombinasi periode tidak saling memblokir periode yang berbeda', function () {
+    Queue::fake([GenerateLaporanKinerjaJob::class]);
+
+    // Pegang lock untuk laporan TAHUNAN...
+    $lockTahunan = Cache::lock("generate-laporan:tahunan:{$this->tahun->id}::", 10);
+    $lockTahunan->get();
+
+    // ...tapi generate laporan BULANAN untuk tahun yang sama tetap harus lolos
+    // tanpa menunggu, karena lock key-nya berbeda (bukan lock global).
+    $laporanBulanan = app(\App\Services\LaporanKinerjaService::class)->generateBulanan($this->tahun->id, 5);
+
+    expect($laporanBulanan)->not->toBeNull()
+        ->and($laporanBulanan->status)->toBe('diproses');
+
+    $lockTahunan->release();
 });

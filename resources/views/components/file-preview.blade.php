@@ -8,11 +8,10 @@
             this.error = null;
             this.loading = true;
             try {
-                const res = await fetch('{{ $previewUrl }}', { headers: { 'Accept': 'application/json' } });
+                // AUDIT § A6/A7: konsumsi blob mentah langsung, bukan JSON+base64.
+                const res = await fetch('{{ $previewUrl }}');
                 if (! res.ok) throw new Error('Gagal memuat pratinjau.');
-                const data = await res.json();
-                const bytes = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
-                const blob = new Blob([bytes], { type: data.mime });
+                const blob = await res.blob();
                 this.$refs['iframe-{{ $id }}'].src = URL.createObjectURL(blob);
                 this.$refs['preview-{{ $id }}'].showModal();
             } catch (e) {
@@ -20,6 +19,13 @@
             } finally {
                 this.loading = false;
             }
+        },
+        closePreview() {
+            // Lepas object URL supaya tidak menumpuk di memori browser tiap
+            // kali modal dibuka-tutup berulang kali.
+            const frame = this.$refs['iframe-{{ $id }}'];
+            if (frame.src) URL.revokeObjectURL(frame.src);
+            this.$refs['preview-{{ $id }}'].close();
         },
     }"
 >
@@ -36,11 +42,11 @@
         </div>
         <p x-show="error" x-text="error" x-cloak class="mt-1 text-xs font-medium text-rose-600"></p>
 
-        <dialog x-ref="preview-{{ $id }}" @click.self="$el.close()" class="m-auto h-[85vh] w-full max-w-3xl rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
+        <dialog x-ref="preview-{{ $id }}" @click.self="closePreview()" class="m-auto h-[85vh] w-full max-w-3xl rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
             <div class="flex h-full flex-col">
                 <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
                     <p class="text-sm font-semibold text-ink-900">{{ $label }}</p>
-                    <button type="button" @click="$refs['preview-{{ $id }}'].close()" class="text-slate-400 hover:text-slate-600">&times;</button>
+                    <button type="button" @click="closePreview()" class="text-slate-400 hover:text-slate-600">&times;</button>
                 </div>
                 <iframe x-ref="iframe-{{ $id }}" class="w-full flex-1"></iframe>
             </div>

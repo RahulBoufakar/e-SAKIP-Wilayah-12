@@ -22,21 +22,21 @@ class UsulanProgramKerjaFileController extends Controller
 
     /**
      * GET .../file/{field}/preview
-     * Dibungkus JSON + base64 sengaja — supaya di level response HTTP, ini
-     * tidak terlihat seperti "file yang bisa didownload" sama sekali bagi
-     * download manager/ekstensi browser yang mengintip fetch(). Dipakai
-     * iframe preview (hanya untuk field berformat PDF).
+     * AUDIT § A6/A7: di-stream langsung dari disk, bukan dibungkus JSON+base64
+     * (base64 menambah ~33% ukuran payload & memuat seluruh file ke memori
+     * PHP sekaligus). Tanpa Content-Disposition: attachment supaya browser
+     * tetap merender di iframe (bukan memicu download seperti unduh()).
      */
-    public function preview(UsulanProgramKerja $usulanProgramKerja, string $field)
+    public function preview(UsulanProgramKerja $usulanProgramKerja, string $field): StreamedResponse
     {
         abort_unless(in_array($field, ['kak', 'rab-pdf'], true), 404); // RAB Excel tidak didukung iframe
 
         $path = $this->resolveFilePath($usulanProgramKerja, $field);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            // AUDIT § A1: dokumen kerja dipindah ke disk private.
-            'base64' => base64_encode(Storage::disk('private')->get($path)),
+        return response()->stream(function () use ($path) {
+            fpassthru(Storage::disk('private')->readStream($path));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 

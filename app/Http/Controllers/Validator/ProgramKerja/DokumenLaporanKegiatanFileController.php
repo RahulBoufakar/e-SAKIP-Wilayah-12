@@ -9,16 +9,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DokumenLaporanKegiatanFileController extends Controller
 {
-    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
+    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
-        // AUDIT § B4: nyatakan aturan akses secara eksplisit lewat Policy.
+        // AUDIT § B4
         $this->authorize('viewAsValidator', $dokumenLaporanKegiatan);
 
         abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('private')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('private')->get($dokumenLaporanKegiatan->file_dokumen)),
+        // AUDIT § A6/A7: stream langsung, bukan JSON+base64.
+        return response()->stream(function () use ($dokumenLaporanKegiatan) {
+            fpassthru(Storage::disk('private')->readStream($dokumenLaporanKegiatan->file_dokumen));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 

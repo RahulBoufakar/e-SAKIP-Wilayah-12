@@ -4,9 +4,14 @@ namespace App\Policies;
 
 use App\Models\UsulanProgramKerja;
 use App\Models\User;
+use App\Services\TeamOwnershipService;
 
 class UsulanProgramKerjaPolicy
 {
+    public function __construct(private TeamOwnershipService $teamOwnership)
+    {
+    }
+
     public function view(User $user, UsulanProgramKerja $usulan): bool
     {
         return $this->owns($user, $usulan);
@@ -17,12 +22,10 @@ class UsulanProgramKerjaPolicy
         return $this->owns($user, $usulan);
     }
 
+    // AUDIT § B3: cek kepemilikan tim didelegasikan ke TeamOwnershipService.
     private function owns(User $user, UsulanProgramKerja $usulan): bool
     {
-        return $user->hasRole('tim_kerja')
-            && $user->timKerja()
-                ->whereIn('tim_kerja.id', $usulan->iku->timKerja->pluck('id'))
-                ->exists();
+        return $user->hasRole('tim_kerja') && $this->teamOwnership->ownsUsulan($user, $usulan);
     }
 
     // Validator\ProgramKerja\UsulanProgramKerjaController::setujui

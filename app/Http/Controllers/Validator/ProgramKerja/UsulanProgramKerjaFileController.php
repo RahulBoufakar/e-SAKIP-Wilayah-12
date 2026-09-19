@@ -15,17 +15,22 @@ class UsulanProgramKerjaFileController extends Controller
         'rab-excel' => 'file_rab_excel',
     ];
 
-    public function preview(UsulanProgramKerja $usulanProgramKerja, string $field)
+    // AUDIT § A6/A7: preview di-stream langsung (bukan dibungkus JSON+base64).
+    // Base64 menambah ~33% ukuran payload dan mewajibkan seluruh file dimuat
+    // penuh ke memori PHP sebelum dikirim — untuk PDF besar ini boros memori
+    // & lebih lambat. StreamedResponse mengirim file per-chunk langsung dari
+    // disk ke client tanpa Content-Disposition: attachment (supaya browser
+    // tetap merender di iframe, bukan memaksa download seperti unduh()).
+    public function preview(UsulanProgramKerja $usulanProgramKerja, string $field): StreamedResponse
     {
         abort_unless(in_array($field, ['kak', 'rab-pdf'], true), 404);
 
         $path = $this->resolveFilePath($usulanProgramKerja, $field);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            // AUDIT § A1: dokumen kerja dipindah ke disk private — tidak lagi
-            // dapat diakses langsung lewat URL publik, hanya lewat endpoint ini.
-            'base64' => base64_encode(Storage::disk('private')->get($path)),
+        return response()->stream(function () use ($path) {
+            fpassthru(Storage::disk('private')->readStream($path));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 
