@@ -107,3 +107,29 @@ it('CapaianKinerjaPolicy izinkan reject terlepas dari kelengkapan data, asal men
 
     expect($validator->can('reject', $capaian))->toBeTrue();
 });
+
+// --- AUDIT § A5.1: LocksRowForTransition — guard transisi ganda ---
+
+it('menolak setujui() kedua kali pada Capaian Kinerja yang sama meski dipanggil berurutan cepat', function () {
+    $capaian = makeCapaianKinerja($this->iku, $this->tahun, [
+        'realisasi' => 90,
+        'status' => 'menunggu_validasi',
+    ]);
+
+    $this->actingAs(userWithRole('validator'));
+
+    $capaian->setujui(); // panggilan pertama — sukses
+    $capaian->setujui(); // panggilan kedua — harus gagal
+})->throws(RuntimeException::class);
+
+it('menolak tolak() kedua kali pada Capaian Kinerja yang sama meski dipanggil berurutan cepat', function () {
+    $capaian = makeCapaianKinerja($this->iku, $this->tahun, [
+        'realisasi' => 90,
+        'status' => 'menunggu_validasi',
+    ]);
+
+    $this->actingAs(userWithRole('validator'));
+
+    $capaian->tolak('Revisi pertama');
+    $capaian->tolak('Revisi kedua');
+})->throws(RuntimeException::class);

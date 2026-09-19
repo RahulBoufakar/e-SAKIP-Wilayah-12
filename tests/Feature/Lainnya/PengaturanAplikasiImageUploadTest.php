@@ -40,7 +40,7 @@ it('logo yang lebih kecil dari 400px tidak di-upscale', function () {
     ]);
 
     $pengaturan = PengaturanAplikasi::current()->fresh();
-    
+
     $manager = new ImageManager(['driver' => 'gd']);
     $result = $manager->make(Storage::disk('public')->path($pengaturan->logo));
 
@@ -71,8 +71,9 @@ it('menolak logo yang melebihi ukuran maksimal 2 MB', function () {
     $response->assertSessionHasErrors('logo');
 });
 
-it('admin dapat mengunggah favicon raster: di-crop-resize persis 32x32 dan dikonversi ke PNG', function () {
-    $favicon = UploadedFile::fake()->image('favicon-source.jpg', 100, 50);
+it('admin dapat mengunggah favicon PNG: di-crop-resize persis 32x32 dan dikonversi ke PNG', function () {
+    // AUDIT § A3: favicon raster kini hanya menerima PNG (bukan JPG lagi).
+    $favicon = UploadedFile::fake()->image('favicon-source.png', 100, 50);
 
     $this->actingAs($this->admin)->put(route('admin.pengaturan.aplikasi.update'), [
         'nama_aplikasi' => 'eSAKIP LLDikti',
@@ -89,37 +90,6 @@ it('admin dapat mengunggah favicon raster: di-crop-resize persis 32x32 dan dikon
 
     expect($result->width())->toBe(32)
         ->and($result->height())->toBe(32);
-});
-
-it('favicon SVG disimpan apa adanya tanpa diproses/dikonversi', function () {
-    $svgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16"/></svg>';
-    $favicon = UploadedFile::fake()->createWithContent('favicon.svg', $svgContent);
-
-    $this->actingAs($this->admin)->put(route('admin.pengaturan.aplikasi.update'), [
-        'nama_aplikasi' => 'eSAKIP LLDikti',
-        'favicon' => $favicon,
-    ]);
-
-    $pengaturan = PengaturanAplikasi::current()->fresh();
-
-    expect($pengaturan->favicon)->toEndWith('.svg')
-        ->and(Storage::disk('public')->get($pengaturan->favicon))->toBe($svgContent);
-});
-
-it('menolak favicon SVG yang mengandung tag <script> demi keamanan, tanpa mengubah favicon lama', function () {
-    $faviconSebelum = PengaturanAplikasi::current()->favicon;
-
-    $svgMalicious = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
-    $favicon = UploadedFile::fake()->createWithContent('favicon.svg', $svgMalicious);
-
-    $response = $this->actingAs($this->admin)->put(route('admin.pengaturan.aplikasi.update'), [
-        'nama_aplikasi' => 'eSAKIP LLDikti',
-        'favicon' => $favicon,
-    ]);
-
-    $response->assertRedirect();
-    expect(session('feedback')['type'])->toBe('error')
-        ->and(PengaturanAplikasi::current()->fresh()->favicon)->toBe($faviconSebelum);
 });
 
 it('favicon ICO disimpan apa adanya tanpa diproses', function () {
@@ -198,4 +168,46 @@ it('memblokir role selain admin mengakses update pengaturan aplikasi', function 
     ]);
 
     $response->assertForbidden();
+});
+
+// --- AUDIT § A3: SVG dilarang total, tambah validasi dimensi ---
+
+it('menolak upload SVG untuk favicon karena hanya PNG/ICO yang didukung', function () {
+    $svgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16"/></svg>';
+    $favicon = UploadedFile::fake()->createWithContent('favicon.svg', $svgContent);
+
+    $response = $this->actingAs($this->admin)->put(route('admin.pengaturan.aplikasi.update'), [
+        'nama_aplikasi' => 'eSAKIP LLDikti',
+        'favicon' => $favicon,
+    ]);
+
+    $response->assertSessionHasErrors('favicon');
+    expect(PengaturanAplikasi::current()->fresh()->favicon)->toBeNull();
+});
+
+it('menolak favicon PNG dengan dimensi melebihi batas maksimal 512x512px', function () {
+    $favicon = UploadedFile::fake()->image('favicon-raksasa.png', 2000, 2000);
+
+    $response = $this->actingAs($this->admin)->put(route('admin.pengaturan.aplikasi.update'), [
+        'nama_aplikasi' => 'eSAKIP LLDikti',
+        'favicon' => $favicon,
+    ]);
+
+    $response->assertRedirect();
+    expect(session('feedback')['type'])->toBe('error')
+        ->and(session('feedback')['message'])->toContain('512')
+        ->and(PengaturanAplikasi::current()->fresh()->favicon)->toBeNull();
+});
+
+it('menerima favicon PNG persis pada batas 512x512px', function () {
+    $favicon = UploadedFile::fake()->image('favicon-batas.png', 512, 512);
+
+    $response = $this->actingAs($this->admin)->put(route('admin.pengaturan.aplikasi.update'), [
+        'nama_aplikasi' => 'eSAKIP LLDikti',
+        'favicon' => $favicon,
+    ]);
+
+    $response->assertRedirect();
+    expect(session('feedback')['type'])->toBe('success');
+    Storage::disk('public')->assertExists(PengaturanAplikasi::current()->fresh()->favicon);
 });

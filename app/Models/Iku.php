@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Iku extends Model
 {
@@ -13,11 +14,17 @@ class Iku extends Model
     protected static function booted(): void
     {
         // D-3: kode = "[{jenis} {urutan_sasaran}.{urutan_iku}]", mis. "[iku 1.1]"
+        // AUDIT § A5.2: kunci baris SasaranKegiatan (scope owner penomoran)
+        // supaya dua IKU yang dibuat nyaris bersamaan pada sasaran yang sama
+        // tidak mendapat urutan/kode yang sama (race condition pada pola
+        // COUNT()+1 tanpa lock).
         static::creating(function (Iku $iku) {
-            $sasaran = SasaranKegiatan::findOrFail($iku->sasaran_kegiatan_id);
-            $nomorSasaran = (int) str_replace('s.', '', $sasaran->kode);
-            $urutan = static::where('sasaran_kegiatan_id', $iku->sasaran_kegiatan_id)->count() + 1;
-            $iku->kode = "[" . strtolower($iku->jenis) . " {$nomorSasaran}.{$urutan}]";
+            DB::transaction(function () use ($iku) {
+                $sasaran = SasaranKegiatan::whereKey($iku->sasaran_kegiatan_id)->lockForUpdate()->firstOrFail();
+                $nomorSasaran = (int) str_replace('s.', '', $sasaran->kode);
+                $urutan = static::where('sasaran_kegiatan_id', $iku->sasaran_kegiatan_id)->count() + 1;
+                $iku->kode = "[" . strtolower($iku->jenis) . " {$nomorSasaran}.{$urutan}]";
+            });
         });
     }
 

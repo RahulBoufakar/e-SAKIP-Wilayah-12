@@ -11,6 +11,10 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         $email = env('ADMIN_EMAIL', 'admin@esakip-lldikti12.test');
+
+        // keputusan-sadar: kredensial ini HANYA untuk testing & first-deploy.
+        // WAJIB dirotasi/diganti manual oleh tim ops setelah deployment pertama
+        // selesai. Lihat AUDIT-KEAMANAN-DAN-TECHNICAL-DEBT.md § A2.
         $password = Hash::make('admin123'); // Ganti dengan password yang diinginkan
 
         $user = User::firstOrCreate(

@@ -36,3 +36,21 @@ it('mengekstrak atribut nomor dari kode', function () {
 
     expect($iku->nomor)->toBe('1.1');
 });
+
+// --- AUDIT § A5.2: lock generator kode — verifikasi struktural (bukan true-concurrency) ---
+
+it('menghasilkan kode IKU yang selalu unik dan berurutan saat dibuat berturut-turut cepat pada sasaran yang sama', function () {
+    $tahun = makeTahunAnggaran();
+    $sasaran = makeSasaranKegiatan($tahun);
+
+    $kodeList = [];
+    for ($i = 1; $i <= 10; $i++) {
+        $iku = makeIku($sasaran, ['deskripsi' => "IKU ke-{$i}"]);
+        $kodeList[] = $iku->kode;
+    }
+
+    expect($kodeList)->toBe([
+        '[iku 1.1]', '[iku 1.2]', '[iku 1.3]', '[iku 1.4]', '[iku 1.5]',
+        '[iku 1.6]', '[iku 1.7]', '[iku 1.8]', '[iku 1.9]', '[iku 1.10]',
+    ])->and(count(array_unique($kodeList)))->toBe(10);
+});

@@ -24,11 +24,10 @@
                 this.previewError = null;
                 this.previewLoading = true;
                 try {
-                    const res = await fetch('{{ url('validator/pelaporan-kegiatan/dokumen') }}/' + id + '/preview', { headers: { 'Accept': 'application/json' } });
+                    // AUDIT § A6/A7: konsumsi blob mentah langsung, bukan JSON+base64.
+                    const res = await fetch('{{ url('validator/pelaporan-kegiatan/dokumen') }}/' + id + '/preview');
                     if (! res.ok) throw new Error('Gagal memuat pratinjau.');
-                    const data = await res.json();
-                    const bytes = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
-                    const blob = new Blob([bytes], { type: data.mime });
+                    const blob = await res.blob();
                     this.$refs.previewFrame.src = URL.createObjectURL(blob);
                     this.modalPreviewOpen = true;
                 } catch (e) {
@@ -36,6 +35,10 @@
                 } finally {
                     this.previewLoading = false;
                 }
+            },
+            closePreview() {
+                if (this.$refs.previewFrame.src) URL.revokeObjectURL(this.$refs.previewFrame.src);
+                this.modalPreviewOpen = false;
             },
         }"
         class="mt-4"
@@ -189,11 +192,11 @@
 
         {{-- Modal Preview PDF --}}
         <div x-show="modalPreviewOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center px-4">
-            <div x-show="modalPreviewOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50" @click="modalPreviewOpen = false"></div>
+            <div x-show="modalPreviewOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50" @click="closePreview()"></div>
             <div x-show="modalPreviewOpen" x-transition class="relative flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
                 <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3">
                     <p class="text-sm font-semibold text-ink-900" x-text="dok.nama_dokumen"></p>
-                    <button type="button" @click="modalPreviewOpen = false" class="text-slate-400 hover:text-slate-600">&times;</button>
+                    <button type="button" @click="closePreview()" class="text-slate-400 hover:text-slate-600">&times;</button>
                 </div>
                 <iframe x-ref="previewFrame" class="w-full flex-1"></iframe>
             </div>

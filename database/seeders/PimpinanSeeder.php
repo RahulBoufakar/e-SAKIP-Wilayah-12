@@ -15,6 +15,9 @@ class PimpinanSeeder extends Seeder
         $rolePimpinan = Role::firstOrCreate(['name' => 'pimpinan']);
 
         // 2. Buat User Pimpinan
+        // keputusan-sadar: kredensial ini HANYA untuk testing & first-deploy.
+        // WAJIB dirotasi/diganti manual oleh tim ops setelah deployment pertama
+        // selesai. Lihat AUDIT-KEAMANAN-DAN-TECHNICAL-DEBT.md § A2.
         $pimpinan = User::firstOrCreate(
             ['email' => 'pimpinan1@lldikti12.test'],
             [

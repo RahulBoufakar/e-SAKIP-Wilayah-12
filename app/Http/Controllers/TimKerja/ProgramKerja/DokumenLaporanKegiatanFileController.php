@@ -12,13 +12,15 @@ class DokumenLaporanKegiatanFileController extends Controller
 {
     use ResolvesTimKerjaSession;
 
-    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
+    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
         $this->authorizeAkses($dokumenLaporanKegiatan);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($dokumenLaporanKegiatan->file_dokumen)),
+        // AUDIT § A6/A7: stream langsung, bukan JSON+base64.
+        return response()->stream(function () use ($dokumenLaporanKegiatan) {
+            fpassthru(Storage::disk('private')->readStream($dokumenLaporanKegiatan->file_dokumen));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 
@@ -26,7 +28,7 @@ class DokumenLaporanKegiatanFileController extends Controller
     {
         $this->authorizeAkses($dokumenLaporanKegiatan);
 
-        return Storage::disk('public')->download(
+        return Storage::disk('private')->download(
             $dokumenLaporanKegiatan->file_dokumen,
             $dokumenLaporanKegiatan->nama_dokumen.'.pdf'
         );
@@ -34,7 +36,7 @@ class DokumenLaporanKegiatanFileController extends Controller
 
     private function authorizeAkses(DokumenLaporanKegiatan $dokumen): void
     {
-        abort_unless($dokumen->file_dokumen && Storage::disk('public')->exists($dokumen->file_dokumen), 404);
+        abort_unless($dokumen->file_dokumen && Storage::disk('private')->exists($dokumen->file_dokumen), 404);
         $this->authorize('view', $dokumen->laporan->proker);
     }
 }

@@ -67,6 +67,8 @@ class UserController extends Controller
 
         $roleSebelum = $user->getRoleNames()->first();
         $timSebelum = $user->timKerja->pluck('nama_tim')->join(', ') ?: '-';
+        $emailSebelum = $user->email; // AUDIT § A4: dibutuhkan untuk deteksi perubahan kredensial
+        $passwordDiganti = ! empty($data['password']); // AUDIT § A4
 
         $user->name = $data['name'];
         $user->email = $data['email'];
@@ -83,6 +85,7 @@ class UserController extends Controller
         // reload relasi setelah sync(), supaya perbandingan "sesudah" akurat (bukan cache lama)
         $user->load('timKerja');
         $timSesudah = $user->timKerja->pluck('nama_tim')->join(', ') ?: '-';
+        $emailBerubah = $emailSebelum !== $data['email']; // AUDIT § A4
 
         $perubahan = [];
         if ($roleSebelum !== $data['role']) {
@@ -91,11 +94,19 @@ class UserController extends Controller
         if ($timSebelum !== $timSesudah) {
             $perubahan[] = "tim kerja: {$timSebelum} → {$timSesudah}";
         }
+        // AUDIT § A4: email & reset password WAJIB selalu tercatat, meski
+        // role/tim tidak berubah — sebelumnya perubahan ini lolos tanpa log.
+        if ($emailBerubah) {
+            $perubahan[] = "email: {$emailSebelum} → {$data['email']}";
+        }
+        if ($passwordDiganti) {
+            $perubahan[] = 'password direset';
+        }
 
         if (! empty($perubahan)) {
             event(new ActivityOccurred(
                 subject: $user,
-                description: "mengubah akses user \"{$user->name}\" (".implode('; ', $perubahan).')',
+                description: "mengubah akses/kredensial user \"{$user->name}\" (".implode('; ', $perubahan).')',
                 causer: Auth::user(),
                 recipients: collect([$user]), // beri tahu user yang bersangkutan
                 properties: [
@@ -103,6 +114,8 @@ class UserController extends Controller
                     'role_sesudah' => $data['role'],
                     'tim_sebelum' => $timSebelum,
                     'tim_sesudah' => $timSesudah,
+                    'email_berubah' => $emailBerubah,
+                    'password_direset' => $passwordDiganti,
                 ],
             ));
         }
@@ -117,9 +130,25 @@ class UserController extends Controller
             return back()->with('feedback', ['type' => 'error', 'message' => 'User Admin tidak dapat dihapus']);
         }
 
+        // AUDIT § A4: snapshot sebelum delete — subject akan hilang dari DB setelahnya.
+        $namaSebelum = $user->name;
+        $emailSebelum = $user->email;
+        $roleSebelum = $user->getRoleNames()->first();
+
         $user->timKerja()->detach();
         $user->syncRoles([]);
         $user->delete();
+
+        event(new ActivityOccurred(
+            subject: $user,
+            description: "menghapus user \"{$namaSebelum}\" ({$emailSebelum}), role sebelumnya: ".($roleSebelum ?? '-'),
+            causer: Auth::user(),
+            properties: [
+                'nama' => $namaSebelum,
+                'email' => $emailSebelum,
+                'role_sebelum' => $roleSebelum,
+            ],
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'User berhasil dihapus.']);
     }

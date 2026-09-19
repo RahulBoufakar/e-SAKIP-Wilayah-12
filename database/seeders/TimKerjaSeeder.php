@@ -21,6 +21,9 @@ class TimKerjaSeeder extends Seeder
         ]);
 
         // 3. Buat User Humas
+        // keputusan-sadar: kredensial ini HANYA untuk testing & first-deploy.
+        // WAJIB dirotasi/diganti manual oleh tim ops setelah deployment pertama
+        // selesai. Lihat AUDIT-KEAMANAN-DAN-TECHNICAL-DEBT.md § A2.
         $userHumas = User::firstOrCreate(
             ['email' => 'humas1@lldikti12.test'],
             [
@@ -41,6 +44,9 @@ class TimKerjaSeeder extends Seeder
         ]);
 
         // 7. Buat User Kelembagaan
+        // keputusan-sadar: kredensial ini HANYA untuk testing & first-deploy.
+        // WAJIB dirotasi/diganti manual oleh tim ops setelah deployment pertama
+        // selesai. Lihat AUDIT-KEAMANAN-DAN-TECHNICAL-DEBT.md § A2.
         $userKelembagaan = User::firstOrCreate(
             ['email' => 'kelembagaan1@lldikti12.test'],
             [

@@ -9,21 +9,28 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DokumenLaporanKegiatanFileController extends Controller
 {
-    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
+    public function preview(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
-        abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('public')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
+        // AUDIT § B4
+        $this->authorize('viewAsValidator', $dokumenLaporanKegiatan);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($dokumenLaporanKegiatan->file_dokumen)),
+        abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('private')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
+
+        // AUDIT § A6/A7: stream langsung, bukan JSON+base64.
+        return response()->stream(function () use ($dokumenLaporanKegiatan) {
+            fpassthru(Storage::disk('private')->readStream($dokumenLaporanKegiatan->file_dokumen));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 
     public function unduh(DokumenLaporanKegiatan $dokumenLaporanKegiatan): StreamedResponse
     {
-        abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('public')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
+        $this->authorize('viewAsValidator', $dokumenLaporanKegiatan);
 
-        return Storage::disk('public')->download(
+        abort_unless($dokumenLaporanKegiatan->file_dokumen && Storage::disk('private')->exists($dokumenLaporanKegiatan->file_dokumen), 404);
+
+        return Storage::disk('private')->download(
             $dokumenLaporanKegiatan->file_dokumen,
             $dokumenLaporanKegiatan->nama_dokumen.'.pdf'
         );

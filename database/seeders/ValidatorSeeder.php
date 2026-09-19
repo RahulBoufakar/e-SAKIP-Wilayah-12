@@ -15,6 +15,9 @@ class ValidatorSeeder extends Seeder
         $roleValidator = Role::firstOrCreate(['name' => 'validator']);
 
         // 2. Buat User Validator
+        // keputusan-sadar: kredensial ini HANYA untuk testing & first-deploy.
+        // WAJIB dirotasi/diganti manual oleh tim ops setelah deployment pertama
+        // selesai. Lihat AUDIT-KEAMANAN-DAN-TECHNICAL-DEBT.md § A2.
         $validator = User::firstOrCreate(
             ['email' => 'validator1@lldikti12.test'],
             [

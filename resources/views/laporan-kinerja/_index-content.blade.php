@@ -7,6 +7,7 @@
 <div
     x-data="{
         modalOpen: {{ $errors->any() ? 'true' : 'false' }},
+        submitting: false,
         form: { tahun_anggaran_id: {{ $tahunAnggaranId }}, jenis: '{{ old('jenis', 'bulanan') }}', bulan: '{{ old('bulan', now()->month) }}', triwulan_id: '{{ old('triwulan_id', '') }}' },
     }"
 >
@@ -121,7 +122,11 @@
                 </button>
             </div>
 
-            <form method="POST" action="{{ route("{$routePrefix}.generate") }}" class="flex flex-1 flex-col overflow-hidden">
+            {{-- AUDIT § A8: @submit menandai submitting=true & tombol otomatis
+                 nonaktif — mencegah double-klik dari sisi UI. Backend
+                 (Cache::lock() di LaporanKinerjaService) tetap jadi pertahanan
+                 utama; ini murni pencegahan dini di sisi UX. --}}
+            <form method="POST" action="{{ route("{$routePrefix}.generate") }}" @submit="submitting = true" class="flex flex-1 flex-col overflow-hidden">
                 @csrf
 
                 <div class="flex-1 space-y-3 overflow-y-auto px-6 py-4">
@@ -159,8 +164,11 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-                    <button type="button" @click="modalOpen = false" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-                    <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Generate</button>
+                    <button type="button" @click="modalOpen = false" :disabled="submitting" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">Batal</button>
+                    <button type="submit" :disabled="submitting" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60">
+                        <span x-show="!submitting">Generate</span>
+                        <span x-show="submitting">Memproses...</span>
+                    </button>
                 </div>
             </form>
         </div>

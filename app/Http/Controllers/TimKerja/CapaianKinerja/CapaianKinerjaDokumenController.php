@@ -33,10 +33,11 @@ class CapaianKinerjaDokumenController extends Controller
             'dokumen.*.file.max' => 'Ukuran file maksimal 5 MB.',
         ]);
 
+        // AUDIT § A1: dokumen bukti capaian kinerja disimpan di disk 'private'.
         foreach ($data['dokumen'] as $item) {
             $capaianKinerja->dokumen()->create([
                 'nama_dokumen' => $item['nama_dokumen'],
-                'file_dokumen' => $item['file']->store('capaian-kinerja', 'public'),
+                'file_dokumen' => $item['file']->store('capaian-kinerja', 'private'),
             ]);
         }
 
@@ -55,20 +56,22 @@ class CapaianKinerjaDokumenController extends Controller
         $this->authorizeAkses($dokumen->capaianKinerja);
         abort_if($dokumen->capaianKinerja->isFieldLocked(), 403, 'Data ini sedang terkunci dan tidak dapat diubah.');
 
-        Storage::disk('public')->delete($dokumen->file_dokumen);
+        Storage::disk('private')->delete($dokumen->file_dokumen);
         $dokumen->delete();
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil dihapus.']);
     }
 
     // GET /tim-kerja/capaian-kinerja/dokumen/{dokumen}/preview
-    public function preview(CapaianKinerjaDokumen $dokumen)
+    // AUDIT § A6/A7: stream langsung, bukan JSON+base64.
+    public function preview(CapaianKinerjaDokumen $dokumen): StreamedResponse
     {
         $this->authorizeAkses($dokumen->capaianKinerja);
 
-        return response()->json([
-            'mime' => 'application/pdf',
-            'base64' => base64_encode(Storage::disk('public')->get($dokumen->file_dokumen)),
+        return response()->stream(function () use ($dokumen) {
+            fpassthru(Storage::disk('private')->readStream($dokumen->file_dokumen));
+        }, 200, [
+            'Content-Type' => 'application/pdf',
         ]);
     }
 
@@ -77,7 +80,7 @@ class CapaianKinerjaDokumenController extends Controller
     {
         $this->authorizeAkses($dokumen->capaianKinerja);
 
-        return Storage::disk('public')->download($dokumen->file_dokumen, $dokumen->nama_dokumen.'.pdf');
+        return Storage::disk('private')->download($dokumen->file_dokumen, $dokumen->nama_dokumen.'.pdf');
     }
 
     private function authorizeAkses(CapaianKinerja $capaianKinerja): void

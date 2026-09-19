@@ -4,9 +4,14 @@ namespace App\Policies;
 
 use App\Models\Iku;
 use App\Models\User;
+use App\Services\TeamOwnershipService;
 
 class IkuPolicy
 {
+    public function __construct(private TeamOwnershipService $teamOwnership)
+    {
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->hasRole('admin');
@@ -42,9 +47,9 @@ class IkuPolicy
     }
 
     // Dipakai Tim Kerja: CapaianKinerjaController & AnalisaKinerjaController (show/update/kirim/storeOrUpdate)
+    // AUDIT § B3: cek kepemilikan tim didelegasikan ke TeamOwnershipService.
     public function manageKinerja(User $user, Iku $iku): bool
     {
-        return $user->hasRole('tim_kerja')
-            && $user->timKerja()->whereIn('tim_kerja.id', $iku->timKerja->pluck('id'))->exists();
+        return $user->hasRole('tim_kerja') && $this->teamOwnership->ownsIku($user, $iku);
     }
 }

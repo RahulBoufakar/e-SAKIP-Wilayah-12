@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
+use App\Models\Concerns\LocksRowForTransition;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use InvalidArgumentException;
 use RuntimeException;
 
 class UsulanProgramKerja extends Model
 {
+    use LocksRowForTransition;
 
     protected $table = 'usulan_program_kerja';
     protected $fillable = [
@@ -57,37 +60,60 @@ class UsulanProgramKerja extends Model
         return $this;
     }
 
-    /** Ajukan validasi: draft|rejected -> menunggu_validasi. */
+    /**
+     * Ajukan validasi: draft|rejected -> menunggu_validasi.
+     * AUDIT § A5.1: dikunci lewat LocksRowForTransition (vocabulary
+     * status_validasi/approved/rejected TETAP tidak berubah).
+     */
     public function kirim(): static
     {
         $this->guardNotLocked();
 
-        if (! in_array($this->status_validasi, ['draft', 'rejected'], true)) {
-            throw new RuntimeException('Hanya usulan berstatus draft atau rejected yang bisa dikirim untuk validasi.');
-        }
+        return $this->transitionWithLock(function ($fresh) {
+            if (! in_array($fresh->status_validasi, ['draft', 'rejected'], true)) {
+                throw new RuntimeException('Hanya usulan berstatus draft atau rejected yang bisa dikirim untuk validasi.');
+            }
 
-        $this->status_validasi = 'menunggu_validasi';
-        $this->catatan_revisi = null;
-        $this->save();
+            $fresh->status_validasi = 'menunggu_validasi';
+            $fresh->catatan_revisi = null;
+            $fresh->save();
 
-        return $this;
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     /** Setujui: menunggu_validasi -> approved. Otomatis membuat baris program_kerja. */
     public function setujui(int $validatorId): static
     {
-        if ($this->status_validasi !== 'menunggu_validasi') {
-            throw new RuntimeException('Hanya usulan berstatus menunggu_validasi yang bisa disetujui.');
-        }
+        return $this->transitionWithLock(function ($fresh) use ($validatorId) {
+            if ($fresh->status_validasi !== 'menunggu_validasi') {
+                throw new RuntimeException('Hanya usulan berstatus menunggu_validasi yang bisa disetujui.');
+            }
 
-        $this->status_validasi = 'approved';
-        $this->validator_id = $validatorId;
-        $this->tgl_validasi = now();
-        $this->save();
+            $fresh->status_validasi = 'approved';
+            $fresh->validator_id = $validatorId;
+            $fresh->tgl_validasi = now();
+            $fresh->save();
 
-        $this->programKerja()->firstOrCreate([]);
+            // AUDIT § A5.1: jaring pengaman kedua — kalau baris program_kerja
+            // sudah lebih dulu ada (mis. sisa percobaan approve ganda dari
+            // sebelum lock ini diterapkan), perlakukan sebagai no-op idempoten
+            // alih-alih melempar exception tak tertangani, konsisten dengan
+            // pola HandlesRestrictedDeletes yang sudah ada di codebase.
+            try {
+                $fresh->programKerja()->firstOrCreate([]);
+            } catch (QueryException $e) {
+                if ((int) $e->getCode() !== 23000) {
+                    throw $e;
+                }
+            }
 
-        return $this;
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     /** Tolak: menunggu_validasi -> rejected. catatan_revisi wajib. */
@@ -97,17 +123,21 @@ class UsulanProgramKerja extends Model
             throw new InvalidArgumentException('Catatan revisi wajib diisi saat menolak usulan.');
         }
 
-        if ($this->status_validasi !== 'menunggu_validasi') {
-            throw new RuntimeException('Hanya usulan berstatus menunggu_validasi yang bisa ditolak.');
-        }
+        return $this->transitionWithLock(function ($fresh) use ($validatorId, $catatanRevisi) {
+            if ($fresh->status_validasi !== 'menunggu_validasi') {
+                throw new RuntimeException('Hanya usulan berstatus menunggu_validasi yang bisa ditolak.');
+            }
 
-        $this->status_validasi = 'rejected';
-        $this->validator_id = $validatorId;
-        $this->tgl_validasi = now();
-        $this->catatan_revisi = $catatanRevisi;
-        $this->save();
+            $fresh->status_validasi = 'rejected';
+            $fresh->validator_id = $validatorId;
+            $fresh->tgl_validasi = now();
+            $fresh->catatan_revisi = $catatanRevisi;
+            $fresh->save();
 
-        return $this;
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     /** True jika field harus read-only untuk Tim Kerja saat ini. */

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin\MasterData;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Controller;
 use App\Models\Pts;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class PtsController extends Controller
@@ -33,7 +35,14 @@ class PtsController extends Controller
         $this->authorize('create', Pts::class);
 
         $data = $this->validated($request);
-        Pts::create($data);
+        $pts = Pts::create($data);
+
+        // AUDIT § A4: sebelumnya mutasi Master Data ini belum tercatat sama sekali.
+        event(new ActivityOccurred(
+            subject: $pts,
+            description: "menambahkan data PTS \"{$pts->nama_pts}\" ({$pts->kode_pts})",
+            causer: Auth::user(),
+        ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data PTS berhasil ditambahkan.']);
     }
@@ -46,6 +55,12 @@ class PtsController extends Controller
         $data = $this->validated($request, $pts);
         $pts->update($data);
 
+        event(new ActivityOccurred(
+            subject: $pts,
+            description: "memperbarui data PTS \"{$pts->nama_pts}\" ({$pts->kode_pts})",
+            causer: Auth::user(),
+        ));
+
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data PTS berhasil diperbarui.']);
     }
 
@@ -54,8 +69,20 @@ class PtsController extends Controller
     {
         $this->authorize('delete', $pts);
 
+        // AUDIT § A4: snapshot sebelum delete.
+        $namaPts = $pts->nama_pts;
+        $kodePts = $pts->kode_pts;
+
         return $this->deleteOrBlock(
-            fn () => $pts->delete(),
+            function () use ($pts, $namaPts, $kodePts) {
+                $pts->delete();
+
+                event(new ActivityOccurred(
+                    subject: $pts,
+                    description: "menghapus data PTS \"{$namaPts}\" ({$kodePts})",
+                    causer: Auth::user(),
+                ));
+            },
             'Data PTS ini masih ditagging pada Program Kerja, tidak dapat dihapus.'
         );
     }
