@@ -7,6 +7,7 @@ use App\Models\TahunAnggaran;
 use App\Models\TimKerja;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Satu titik terpusat untuk seluruh eviction cache aplikasi. Setiap perubahan
@@ -23,26 +24,31 @@ class EvictCachesOnActivity implements ShouldQueue
 {
     public function handle(ActivityOccurred $event): void
     {
-        // Context bar (dipakai composer navbar Admin/Tim Kerja/Validator)
-        Cache::forget('context_tahun_list');
+        try {
+            // Context bar (dipakai composer navbar Admin/Tim Kerja/Validator)
+            Cache::forget('context_tahun_list');
 
-        $tahunIds = TahunAnggaran::pluck('id');
-
-        foreach ($tahunIds as $tahunId) {
-            Cache::forget("context_triwulan_aktif_{$tahunId}");
+            $tahunIds = TahunAnggaran::pluck('id');
 
             // Dashboard Admin & Validator: dikunci per tahun anggaran saja.
-            Cache::forget("admin_dashboard_v5_{$tahunId}");
-            Cache::forget("validator_dashboard_v2_{$tahunId}");
-        }
-
-        // Dashboard Tim Kerja: dikunci per kombinasi tahun anggaran + tim kerja.
-        $timKerjaIds = TimKerja::pluck('id')->sort()->values();
-
-        if ($timKerjaIds->isNotEmpty()) {
             foreach ($tahunIds as $tahunId) {
-                $this->forgetTimKerjaDashboardCombinations($tahunId, $timKerjaIds);
+                Cache::forget("context_triwulan_aktif_{$tahunId}");
+                Cache::forget("admin_dashboard_v5_{$tahunId}");
+                Cache::forget("validator_dashboard_v2_{$tahunId}");
+                Cache::forget("pimpinan_dashboard_v1_{$tahunId}");
             }
+
+            // Dashboard Tim Kerja: dikunci per kombinasi tahun anggaran + tim kerja.
+            $timKerjaIds = TimKerja::pluck('id')->sort()->values();
+
+            if ($timKerjaIds->isNotEmpty()) {
+                foreach ($tahunIds as $tahunId) {
+                    $this->forgetTimKerjaDashboardCombinations($tahunId, $timKerjaIds);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Cache stale jauh lebih murah daripada aksi user gagal/500.
+            Log::warning('Gagal evict cache setelah ActivityOccurred: '.$e->getMessage());
         }
     }
 
