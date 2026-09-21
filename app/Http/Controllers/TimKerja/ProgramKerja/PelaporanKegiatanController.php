@@ -205,6 +205,27 @@ class PelaporanKegiatanController extends Controller
 
     }
 
+    public function destroyDokumen(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
+    {
+        $this->authorizeAksesProker($dokumenLaporanKegiatan->laporan->proker);
+
+        abort_if($dokumenLaporanKegiatan->laporan->is_locked, 403, 'Laporan ini sudah dikunci oleh Validator dan tidak dapat diubah.');
+
+        if (! in_array($dokumenLaporanKegiatan->status_validasi, ['ditolak', 'belum_diunggah'], true)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Hanya dokumen berstatus ditolak atau belum diunggah yang dapat dihapus.']);
+        }
+
+        $this->hapusDokumen($dokumenLaporanKegiatan);
+
+        event(new ActivityOccurred(
+            subject: $dokumenLaporanKegiatan,
+            description: "menghapus dokumen \"{$dokumenLaporanKegiatan->nama_dokumen}\" pada laporan kegiatan {$dokumenLaporanKegiatan->laporan->proker->kode_proker}",
+            causer: Auth::user(),
+        ));
+
+        return back()->with('feedback', ['type' => 'success', 'message' => 'Dokumen berhasil dihapus.']);
+    }
+
     private function hapusDokumen(DokumenLaporanKegiatan $dokumen): void
     {
         if ($dokumen->file_dokumen) {

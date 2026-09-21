@@ -132,7 +132,20 @@
                                     @elseif (! $dok->file_dokumen)
                                         <span class="text-xs text-slate-400">Belum ada file</span>
                                     @endif
+
+                                    {{-- Poin 2: hapus langsung, hanya untuk status yang belum berarti apa-apa bagi Validator --}}
++                                    @if (! $laporan->is_locked && in_array($dok->status_validasi, ['ditolak', 'belum_diunggah'], true))
++                                        <button type="button" @click="$refs['confirm-dok-{{ $dok->id }}'].showModal()" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
++                                    @endif
                                 </div>
+
+                                @if (! $laporan->is_locked && in_array($dok->status_validasi, ['ditolak', 'belum_diunggah'], true))
++                                    @include('admin.layout.confirm-delete', [
++                                        'refName' => 'confirm-dok-'.$dok->id,
++                                        'action' => route('tim-kerja.pelaporan-kegiatan.dokumen.destroy', $dok->id),
++                                        'label' => 'dokumen "'.$dok->nama_dokumen.'"',
++                                    ])
++                                @endif
                             </td>
                         </tr>
                     @empty
