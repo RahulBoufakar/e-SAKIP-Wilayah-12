@@ -69,7 +69,7 @@
                         @for ($b = 1; $b <= 12; $b++)
                             @php
                                 $aktifBulanIni = in_array($b, $bulanAktif);
-                                $itemsBulanIku = $aktifBulanIni ? ($prokerPerIkuBulan[$row->iku_id][$b] ?? collect()) : collect();
+                                $itemsBulanIku = $aktifBulanIni ? ($prokerPerBulan[$b] ?? collect()) : collect();
                                 $countBulanIku = $itemsBulanIku->count();
                             @endphp
                             <td class="px-1 py-2 text-center">
@@ -85,7 +85,7 @@
 
                                         <dialog x-ref="circle-{{ $row->id }}-{{ $b }}" @click.self="$el.close()" class="m-auto w-full max-w-sm rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
                                             <div class="p-6">
-                                                <h3 class="text-sm font-bold text-ink-900">{{ $bulanIndo[$b] }} — IKU {{ $row->iku->nomor ?? '—' }}</h3>
+                                                <h3 class="text-sm font-bold text-ink-900">{{ $bulanIndo[$b] }} {{$tahun}}</h3>
                                                 <p class="mt-1 text-xs text-slate-400">Program yang direncanakan pada bulan {{ $bulanIndo[$b] }} {{ $tahun }}.</p>
                                                 <ul class="mt-4 space-y-2">
                                                     @foreach ($itemsBulanIku as $item)

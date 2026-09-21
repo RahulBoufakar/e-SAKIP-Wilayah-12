@@ -22,7 +22,7 @@ class PtsController extends Controller
                 $q->where('nama_pts', 'like', '%'.$request->search.'%')
                     ->orWhere('kode_pts', 'like', '%'.$request->search.'%');
             })
-            ->orderBy('nama_pts')
+            ->orderBy('kode_pts')
             ->paginate(15)
             ->withQueryString();
 
