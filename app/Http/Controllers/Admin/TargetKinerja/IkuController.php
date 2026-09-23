@@ -128,6 +128,14 @@ class IkuController extends Controller
     {
         $this->authorize('delete', Iku::class);
 
+        // Rule R-4/poin-9: rencana aksi yang uraiannya masih kosong tidak
+        // dianggap sebagai data nyata — hapus dulu supaya tidak menghalangi
+        // FK RESTRICT. Baris rencana_aksi yang SUDAH berisi uraian tetap
+        // memblokir penghapusan lewat exception 23000 di deleteOrBlock().
+        $iku->rencanaAksi()
+            ->where(fn ($q) => $q->whereNull('uraian')->orWhere('uraian', ''))
+            ->delete();
+
         $label = $iku->jenis === 'IKK' ? 'IKK' : 'IKU';
         return $this->deleteOrBlock(
             fn () => $iku->delete(),

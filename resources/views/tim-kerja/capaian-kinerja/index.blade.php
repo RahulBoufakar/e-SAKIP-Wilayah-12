@@ -32,6 +32,7 @@
                     <th rowspan="2" class="w-24 px-4 py-3 text-center align-middle font-semibold">Target PK</th>
                     <th rowspan="2" class="w-20 px-4 py-3 text-center align-middle font-semibold">Satuan</th>
                     <th colspan="2" class="px-4 py-2 text-center align-middle font-semibold">{{ $triwulanDipilih->kode ?? '—' }}</th>
+                    <th rowspan="2" class="w-36 px-4 py-3 text-center align-middle font-semibold">Status</th>
                     <th rowspan="2" class="w-24 px-4 py-3 text-center align-middle font-semibold">Aksi</th>
                 </tr>
                 <tr class="bg-ink-900 text-white">
@@ -42,7 +43,8 @@
             <tbody class="divide-y divide-slate-100">
                 @forelse ($ikuList as $iku)
                     @php $c = $iku->capaianKinerja->first(); @endphp
-                    <tr class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
+                    @php $perluRevisi = $c && $c->status === 'ditolak'; @endphp
+                    <tr class="{{ $perluRevisi ? 'bg-rose-50/60' : ($loop->even ? 'bg-slate-50/60' : '') }} hover:bg-brand-50/40">
                         <td class="px-4 py-3 align-middle">
                             <div class="flex items-center gap-1.5">
                                 <span class="shrink-0 font-mono text-xs font-semibold text-brand-700">{{ $iku->kode }}</span>
@@ -54,6 +56,13 @@
                         <td class="px-4 py-3 text-center text-slate-600">{{ $c?->target ?? '—' }}</td>
                         <td class="px-4 py-3 text-center text-slate-600">{{ $c?->realisasi ?? '—' }}</td>
                         <td class="px-4 py-3 text-center">
+                            @if ($c)
+                                <x-status-badge :status="$c->status" />
+                            @else
+                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">Belum Diisi</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-center">
                             @if ($isTriwulanAktif)
                                 <a href="{{ route('tim-kerja.capaian-kinerja.show', [$iku->id, $triwulanDipilih->id]) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Detail</a>
                             @else
@@ -63,7 +72,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">
+                        <td colspan="7" class="px-4 py-12 text-center text-sm text-slate-400">
                             Belum ada IKU untuk Tim Kerja Anda pada tahun anggaran ini.
                         </td>
                     </tr>

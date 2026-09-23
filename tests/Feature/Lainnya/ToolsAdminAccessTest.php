@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\JumlahPts;
+use App\Models\Pts;
+use Spatie\Activitylog\Models\Activity;
 
 it('admin dapat menambah jumlah mahasiswa untuk suatu tahun anggaran', function () {
     $admin = userWithRole('admin');
@@ -49,4 +51,18 @@ it('admin dapat menambah dan menghapus jumlah PTS', function () {
     $this->actingAs($admin)->delete(route('admin.tools.jumlah-pts.destroy', $record->id));
 
     $this->assertDatabaseMissing('jumlah_pts', ['id' => $record->id]);
+});
+
+it('menghapus PTS tanpa 404, data hilang, dan tercatat di audit log', function () {
+    $admin = userWithRole('admin');
+    $pts = Pts::create(['kode_pts' => 'PTS100', 'nama_pts' => 'Uji', 'status_pts' => 'aktif']);
+
+    $response = $this->actingAs($admin)
+        ->from(route('admin.master-data.pts.index'))
+        ->delete(route('admin.master-data.pts.destroy', $pts->id));
+
+    $response->assertRedirect(route('admin.master-data.pts.index')); // (a) bukan 404
+    $this->assertDatabaseMissing('pts', ['id' => $pts->id]);          // (b)
+    expect(Activity::where('log_name', 'audit_trail')                  // (c)
+        ->where('description', 'like', '%menghapus data PTS%')->exists())->toBeTrue();
 });

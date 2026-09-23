@@ -111,7 +111,7 @@
 
         <!-- Modal Isi/Edit -->
         <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div x-show="modalOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50" @click="modalOpen = false"></div>
+            <div x-show="modalOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50"></div>
             <div x-show="modalOpen" x-transition class="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
                 <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                     <h3 class="text-base font-bold text-ink-900">Analisis Kinerja — <span x-text="form.kode"></span></h3>

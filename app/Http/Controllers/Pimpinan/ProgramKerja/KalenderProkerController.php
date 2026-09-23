@@ -46,23 +46,19 @@ class KalenderProkerController extends Controller
             ->whereHas('detailKegiatan')
             ->get();
 
-        $prokerPerIkuBulan = $semuaProkerFilter
-            ->groupBy('iku_id')
-            ->map(function ($prokerIku) {
-                return collect(range(1, 12))->mapWithKeys(function ($b) use ($prokerIku) {
-                    $items = $prokerIku
-                        ->filter(fn ($p) => in_array($b, $p->detailKegiatan->bulan_kegiatan ?? []))
-                        ->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama_usulan])
-                        ->values();
+        $prokerPerBulan = collect(range(1, 12))->mapWithKeys(function ($b) use ($semuaProkerFilter) {
+            $items = $semuaProkerFilter
+                ->filter(fn ($p) => in_array($b, $p->detailKegiatan->bulan_kegiatan ?? []))
+                ->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama_usulan])
+                ->values();
 
-                    return [$b => $items];
-                });
-            });
+            return [$b => $items];
+        });
 
         $bulanIndo = self::BULAN_INDO;
 
         return view('pimpinan.program-kerja.kalender-proker.index', compact(
-            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'bulanIndo', 'prokerPerIkuBulan'
+            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'bulanIndo', 'prokerPerBulan'
         ));
     }
 }

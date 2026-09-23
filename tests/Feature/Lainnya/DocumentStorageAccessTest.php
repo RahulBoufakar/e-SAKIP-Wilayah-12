@@ -56,7 +56,7 @@ it('endpoint preview Capaian Kinerja tetap bisa membaca file dari disk private b
 
     $response = $this->actingAs($user)->get(route('tim-kerja.capaian-kinerja.dokumen.preview', $dokumen->id));
 
-    $response->assertOk()->assertJsonStructure(['mime', 'base64']);
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
 });
 
 it('menyimpan file KAK/RAB Usulan Program Kerja ke disk private saat diunggah', function () {
@@ -105,7 +105,7 @@ it('endpoint preview/unduh KAK Usulan Program Kerja tetap bisa membaca dari disk
     $previewResponse = $this->actingAs($user)->get(route('tim-kerja.usulan-program-kerja.file.preview', [$usulan->id, 'kak']));
     $unduhResponse = $this->actingAs($user)->get(route('tim-kerja.usulan-program-kerja.file.unduh', [$usulan->id, 'kak']));
 
-    $previewResponse->assertOk()->assertJsonStructure(['mime', 'base64']);
+    $previewResponse->assertOk()->assertHeader('Content-Type', 'application/pdf');
     $unduhResponse->assertOk();
 });
 

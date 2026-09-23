@@ -58,7 +58,14 @@ class DashboardController extends Controller
             ->with('iku:id,kode,target_pk')
             ->get();
 
-       if ($triwulanAktif) {
+        // Rata-rata capaian, kelengkapan realisasi, kelengkapan rencana aksi, dan
+        // data chart per-IKU untuk triwulan aktif (jika ada)
+        $rataCapaian = null;
+        $kelengkapanRealisasi = ['total' => $jumlahIku, 'terisi' => 0, 'persen' => 0];
+        $kelengkapanRencanaAksi = ['total' => $jumlahIku, 'terisi' => 0, 'persen' => 0];
+        $ikuCapaianTriwulanChart = collect();
+
+        if ($triwulanAktif) {
             $capaianAktif = $capaianRows->where('triwulan_id', $triwulanAktif->triwulan_id);
 
             $capaianValues = $capaianAktif->map(fn ($r) => $r->capaian)->filter(fn ($c) => $c !== null);

@@ -49,6 +49,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::get('pelaporan-kegiatan/{programKerja}', [PelaporanKegiatanController::class, 'show'])->name('pelaporan-kegiatan.show');
         Route::post('pelaporan-kegiatan/{laporanKegiatan}/dokumen', [PelaporanKegiatanController::class, 'storeDokumen'])->name('pelaporan-kegiatan.dokumen.store');
         Route::put('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/upload', [PelaporanKegiatanController::class, 'uploadDokumen'])->name('pelaporan-kegiatan.dokumen.upload');
+        Route::delete('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}', [PelaporanKegiatanController::class, 'destroyDokumen'])->name('pelaporan-kegiatan.dokumen.destroy');
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/preview', [DokumenLaporanKegiatanFileController::class, 'preview'])->name('pelaporan-kegiatan.dokumen.preview');
         Route::get('pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/unduh', [DokumenLaporanKegiatanFileController::class, 'unduh'])->name('pelaporan-kegiatan.dokumen.unduh');
 

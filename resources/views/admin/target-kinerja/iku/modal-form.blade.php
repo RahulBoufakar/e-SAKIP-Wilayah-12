@@ -1,5 +1,5 @@
 <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">
-    <div x-show="modalOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50" @click="modalOpen = false"></div>
+    <div x-show="modalOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50"a></div>
 
     <div
         x-show="modalOpen"
