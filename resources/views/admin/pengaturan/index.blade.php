@@ -117,7 +117,29 @@
                 @endforeach
             </div>
         @else
-            <p class="text-sm text-slate-400">Konten pengaturan Lainnya akan tampil di sini.</p>
+            <div class="max-w-lg">
+                <p class="text-sm text-slate-500">
+                    Background ini dipakai pada halaman <strong>Hubungi Kami</strong> dan halaman <strong>Error</strong>.
+                </p>
+
+                @if ($pengaturanAplikasi->background_kontak_url)
+                    <img src="{{ $pengaturanAplikasi->background_kontak_url }}" alt="Background" class="mt-4 h-40 w-full rounded-xl border border-slate-200 object-cover">
+                @endif
+
+                <form method="POST" action="{{ route('admin.pengaturan.lainnya.update') }}" enctype="multipart/form-data" class="mt-4 space-y-3">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="block text-sm font-medium text-ink-900">Ganti Background</label>
+                        <input type="file" name="background_kontak" accept="image/png,image/jpeg,image/webp" required class="mt-1.5 w-full rounded-lg border-slate-200 text-sm">
+                        <p class="mt-1 text-xs text-slate-400">PNG/JPG/WEBP, maksimal 5 MB.</p>
+                        @error('background_kontak')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Simpan</button>
+                    </div>
+                </form>
+            </div>
         @endif
     </div>
 @endsection

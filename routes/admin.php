@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\MasterData\PtsController;
 use App\Http\Controllers\Admin\MasterData\TimKerjaController;
 use App\Http\Controllers\Admin\MasterData\UserController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\PesanKontakController;
 use App\Http\Controllers\Admin\TargetKinerja\IkuController;
 use App\Http\Controllers\Admin\TargetKinerja\IkuLldiktiController;
 use App\Http\Controllers\Admin\TargetKinerja\RencanaAksiController;
@@ -106,7 +107,11 @@ Route::middleware(['auth', 'role:admin'])
         Route::put('pengaturan/template/{kode}', [PengaturanController::class, 'updateTemplate'])->name('pengaturan.template.update');
         Route::get('pengaturan/template/{kode}/preview', [PengaturanController::class, 'previewTemplate'])->name('pengaturan.template.preview');
         Route::get('pengaturan/template/{kode}/unduh', [PengaturanController::class, 'unduhTemplate'])->name('pengaturan.template.unduh');
+        Route::put('pengaturan/lainnya', [PengaturanController::class, 'updateLainnya'])->name('pengaturan.lainnya.update');
 
         // 7. Audit Log
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
+
+        // 8. Pesan Hubungi Kami
+        Route::get('pesan-kontak', [PesanKontakController::class, 'index'])->name('pesan-kontak.index');
     });

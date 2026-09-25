@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\KontakController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +34,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     Route::get('/notifications/{notification}/goto', [NotificationController::class, 'goto'])->name('notifications.goto');
 });
+
+// Kontak Routes
+Route::get('kontak', [KontakController::class, 'create'])->name('kontak.create');
+Route::post('kontak', [KontakController::class, 'store'])->name('kontak.store');
 
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';

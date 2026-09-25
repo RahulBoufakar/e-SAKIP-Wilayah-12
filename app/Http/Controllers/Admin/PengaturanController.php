@@ -156,4 +156,37 @@ class PengaturanController extends Controller
 
         return Storage::disk('public')->download($template->file, $template->nama);
     }
+
+    // PUT /admin/pengaturan/lainnya
+    public function updateLainnya(Request $request)
+    {
+        $data = $request->validate([
+            'background_kontak' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
+        ], [
+            'background_kontak.required' => 'Gambar latar wajib diunggah.',
+            'background_kontak.image' => 'File harus berupa gambar.',
+            'background_kontak.mimes' => 'Format harus PNG, JPG, atau WEBP.',
+            'background_kontak.max' => 'Ukuran gambar maksimal 5 MB.',
+        ]);
+
+        $pengaturan = PengaturanAplikasi::current();
+
+        if ($pengaturan->background_kontak) {
+            Storage::disk('public')->delete($pengaturan->background_kontak);
+        }
+
+        $pengaturan->update([
+            'background_kontak' => $data['background_kontak']->store('backgrounds', 'public'),
+        ]);
+
+        Cache::forget(PengaturanAplikasi::CACHE_KEY);
+
+        event(new ActivityOccurred(
+            subject: $pengaturan,
+            description: 'memperbarui background halaman Kontak & Error',
+            causer: Auth::user(),
+        ));
+
+        return back()->with('feedback', ['type' => 'success', 'message' => 'Background berhasil diperbarui.']);
+    }
 }

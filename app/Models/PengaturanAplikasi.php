@@ -11,7 +11,7 @@ class PengaturanAplikasi extends Model
     const CREATED_AT = null;
 
     protected $table = 'pengaturan_aplikasi';
-    protected $fillable = ['nama_aplikasi', 'logo', 'favicon'];
+    protected $fillable = ['nama_aplikasi', 'logo', 'favicon', 'background_kontak'];
 
     /**
      * Singleton: hanya satu baris (id=1) untuk seluruh pengaturan aplikasi.
@@ -29,5 +29,10 @@ class PengaturanAplikasi extends Model
     public function getFaviconUrlAttribute(): ?string
     {
         return $this->favicon ? Storage::url($this->favicon) : null;
+    }
+
+    public function getBackgroundKontakUrlAttribute(): ?string
+    {
+        return $this->background_kontak ? Storage::url($this->background_kontak) : null;
     }
 }
