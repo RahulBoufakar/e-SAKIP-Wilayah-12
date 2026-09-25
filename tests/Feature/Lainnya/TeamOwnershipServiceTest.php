@@ -111,3 +111,41 @@ it('ownsProgramKerja() false untuk user dari tim lain', function () {
 
     expect($this->service->ownsProgramKerja($user, $programKerja))->toBeFalse();
 });
+
+it('ownsLaporanKegiatan() didelegasikan lewat proker miliknya', function () {
+    $iku = makeIku($this->sasaran);
+    $tim = makeTimKerja();
+    $iku->timKerja()->attach($tim->id);
+
+    $usulan = makeUsulan($iku, ['status_validasi' => 'menunggu_validasi']);
+    $validator = userWithRole('validator');
+    $usulan->setujui($validator->id);
+
+    $programKerja = ProgramKerja::where('usulan_program_kerja_id', $usulan->id)->first();
+    $laporan = \App\Models\LaporanKegiatan::create(['proker_id' => $programKerja->id]);
+
+    $user = userWithRole('tim_kerja', ['email' => 'lk-owner@test.local']);
+    $user->timKerja()->attach($tim->id);
+
+    expect($this->service->ownsLaporanKegiatan($user, $laporan))->toBeTrue();
+});
+
+it('ownsLaporanKegiatan() false untuk user dari tim lain', function () {
+    $iku = makeIku($this->sasaran);
+    $tim = makeTimKerja();
+    $iku->timKerja()->attach($tim->id);
+
+    $usulan = makeUsulan($iku, ['status_validasi' => 'menunggu_validasi']);
+    $validator = userWithRole('validator');
+    $usulan->setujui($validator->id);
+
+    $programKerja = ProgramKerja::where('usulan_program_kerja_id', $usulan->id)->first();
+    $laporan = \App\Models\LaporanKegiatan::create(['proker_id' => $programKerja->id]);
+
+    $timLain = makeTimKerja('Tim Lain LK');
+    $user = userWithRole('tim_kerja', ['email' => 'lk-outsider@test.local']);
+    $user->timKerja()->attach($timLain->id);
+
+    expect($this->service->ownsLaporanKegiatan($user, $laporan))->toBeFalse();
+});
+

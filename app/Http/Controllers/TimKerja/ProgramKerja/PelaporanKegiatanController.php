@@ -90,9 +90,7 @@ class PelaporanKegiatanController extends Controller
     // POST /tim-kerja/pelaporan-kegiatan/{laporanKegiatan}/dokumen
     public function storeDokumen(Request $request, LaporanKegiatan $laporanKegiatan)
     {
-        $this->authorizeAksesProker($laporanKegiatan->proker);
-
-        abort_if($laporanKegiatan->is_locked, 403, 'Laporan ini sudah dikunci oleh Validator dan tidak dapat diubah.');
+        $this->authorize('update', $laporanKegiatan);
 
         $data = $request->validate([
             'dokumen_standar' => 'nullable|array',
@@ -163,10 +161,7 @@ class PelaporanKegiatanController extends Controller
     // PUT /tim-kerja/pelaporan-kegiatan/dokumen/{dokumenLaporanKegiatan}/upload
     public function uploadDokumen(Request $request, DokumenLaporanKegiatan $dokumenLaporanKegiatan)
     {
-        $this->authorizeAksesProker($dokumenLaporanKegiatan->laporan->proker);
-
-        abort_if($dokumenLaporanKegiatan->laporan->is_locked, 403, 'Laporan ini sudah dikunci oleh Validator dan tidak dapat diubah.');
-        abort_if($dokumenLaporanKegiatan->isLocked(), 403, 'Dokumen ini sudah disetujui dan tidak dapat diubah.');
+        $this->authorize('uploadDokumen', [$dokumenLaporanKegiatan->laporan, $dokumenLaporanKegiatan]);
 
         $validator = Validator::make($request->all(), [
             'file_dokumen' => 'required|file|mimes:pdf|max:5120',
@@ -207,9 +202,7 @@ class PelaporanKegiatanController extends Controller
 
     public function destroyDokumen(DokumenLaporanKegiatan $dokumenLaporanKegiatan)
     {
-        $this->authorizeAksesProker($dokumenLaporanKegiatan->laporan->proker);
-
-        abort_if($dokumenLaporanKegiatan->laporan->is_locked, 403, 'Laporan ini sudah dikunci oleh Validator dan tidak dapat diubah.');
+        $this->authorize('deleteDokumen', $dokumenLaporanKegiatan->laporan);
 
         if (! in_array($dokumenLaporanKegiatan->status_validasi, ['ditolak', 'belum_diunggah'], true)) {
             return back()->with('feedback', ['type' => 'error', 'message' => 'Hanya dokumen berstatus ditolak atau belum diunggah yang dapat dihapus.']);
@@ -232,15 +225,5 @@ class PelaporanKegiatanController extends Controller
             Storage::disk('private')->delete($dokumen->file_dokumen);
         }
         $dokumen->delete();
-    }
-
-    private function authorizeAksesProker(ProgramKerja $programKerja): void
-    {
-        $ikuTimKerjaIds = $programKerja->usulanProgramKerja->iku->timKerja->pluck('id');
-
-        abort_unless(
-            $this->activeTimKerjaIds()->intersect($ikuTimKerjaIds)->isNotEmpty(),
-            403
-        );
     }
 }
