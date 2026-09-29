@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin\TargetKinerja;
 
 use App\Events\ActivityOccurred;
-use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Controller;
 use App\Models\Iku;
@@ -37,7 +36,10 @@ class IkuController extends Controller
             'deskripsi_target' => 'nullable|string|max:255',
             'tim_kerja_id' => 'nullable|array',
             'tim_kerja_id.*' => 'exists:tim_kerja,id',
-            'formula_kode' => ['nullable', Rule::in(FormulaRegistry::keys())],
+            // REFAKTOR HYBRID: formula_kode (registry generik) diganti tipe_iku
+            // (Spek §3 — 9 tipe resmi). Nullable: IKU di luar scope 9 tipe
+            // hybrid boleh tidak diisi (mis. IKK internal tanpa capaian otomatis).
+            'tipe_iku' => ['nullable', Rule::in(array_keys(config('capaian_kinerja_tipe')))],
         ], [
             'sasaran_kegiatan_id.required' => 'Sasaran Kegiatan wajib dipilih.',
             'sasaran_kegiatan_id.exists' => 'Sasaran Kegiatan tidak valid.',
@@ -49,7 +51,7 @@ class IkuController extends Controller
             'satuan.max' => 'Satuan tidak boleh lebih dari 20 karakter.',
             'deskripsi_target.max' => 'Deskripsi Target tidak boleh lebih dari 255 karakter.',
             'tim_kerja_id.*.exists' => 'Tim Kerja tidak valid.',
-            'formula_kode.in' => 'Formula tidak valid.',
+            'tipe_iku.in' => 'Tipe Capaian Kinerja tidak valid.',
         ]);
 
         $data['jenis'] = $jenis;
@@ -92,7 +94,7 @@ class IkuController extends Controller
             'satuan' => 'required|string|max:20',
             'tim_kerja_id' => 'nullable|array',
             'tim_kerja_id.*' => 'exists:tim_kerja,id',
-            'formula_kode' => ['nullable', Rule::in(FormulaRegistry::keys())],
+            'tipe_iku' => ['nullable', Rule::in(array_keys(config('capaian_kinerja_tipe')))],
             'deskripsi_target' => 'nullable|string|max:255',
         ], [
             'deskripsi.required' => 'Deskripsi wajib diisi.',
@@ -103,9 +105,9 @@ class IkuController extends Controller
             'satuan.max' => 'Satuan tidak boleh lebih dari 20 karakter.',
             'deskripsi_target.max' => 'Deskripsi Target tidak boleh lebih dari 255 karakter.',
             'tim_kerja_id.*.exists' => 'Tim Kerja tidak valid.',
-            'formula_kode.in' => 'Formula tidak valid.',
+            'tipe_iku.in' => 'Tipe Capaian Kinerja tidak valid.',
         ]);
-        
+
         $timKerjaIds = $data['tim_kerja_id'] ?? [];
         unset($data['tim_kerja_id']);
 

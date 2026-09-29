@@ -116,7 +116,7 @@ it('preview dokumen laporan kegiatan (Validator) di-stream sebagai binary', func
 it('preview dokumen bukti Capaian Kinerja (TimKerja) di-stream sebagai binary', function () {
     $tahun = makeTahunAnggaran();
     $sasaran = makeSasaranKegiatan($tahun);
-    $iku = makeIku($sasaran);
+    $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $timKerja = makeTimKerja();
     $iku->timKerja()->attach($timKerja->id);
 
@@ -125,11 +125,21 @@ it('preview dokumen bukti Capaian Kinerja (TimKerja) di-stream sebagai binary', 
 
     $capaian = makeCapaianKinerja($iku, $tahun);
     $content = 'ISI-PDF-DUMMY-BUKTI-TIMKERJA';
-    $path = 'capaian-kinerja/bukti-stream-timkerja.pdf';
+    $path = 'capaian-kinerja-hybrid/bukti-stream-timkerja.pdf';
     Storage::disk('private')->put($path, $content);
-    $dokumen = $capaian->dokumen()->create(['nama_dokumen' => 'Bukti Uji', 'file_dokumen' => $path]);
+    $baris = $capaian->kepuasanLayanan()->create([
+        'total_responden' => 10,
+        'responden_puas' => 9,
+        'status_validasi' => 'draft',
+        'file_bukti_dukung' => $path,
+    ]);
 
-    $response = $this->actingAs($user)->get(route('tim-kerja.capaian-kinerja.dokumen.preview', $dokumen->id));
+    $response = $this->actingAs($user)->get(route('tim-kerja.capaian-kinerja.bukti.preview', [
+        'iku' => $iku->id,
+        'komponen' => 'utama',
+        'barisId' => $baris->id,
+        'triwulan_id' => $capaian->triwulan_id,
+    ]));
 
     $response->assertOk();
     expect($response->headers->get('Content-Type'))->toStartWith('application/pdf')
@@ -140,7 +150,7 @@ it('preview dokumen bukti Capaian Kinerja (TimKerja) di-stream sebagai binary', 
 it('preview dokumen bukti Capaian Kinerja (Validator) di-stream sebagai binary', function () {
     $tahun = makeTahunAnggaran();
     $sasaran = makeSasaranKegiatan($tahun);
-    $iku = makeIku($sasaran);
+    $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $timKerja = makeTimKerja();
     $iku->timKerja()->attach($timKerja->id);
 
@@ -148,11 +158,21 @@ it('preview dokumen bukti Capaian Kinerja (Validator) di-stream sebagai binary',
 
     $capaian = makeCapaianKinerja($iku, $tahun);
     $content = 'ISI-PDF-DUMMY-BUKTI-VALIDATOR';
-    $path = 'capaian-kinerja/bukti-stream-validator.pdf';
+    $path = 'capaian-kinerja-hybrid/bukti-stream-validator.pdf';
     Storage::disk('private')->put($path, $content);
-    $dokumen = $capaian->dokumen()->create(['nama_dokumen' => 'Bukti Uji', 'file_dokumen' => $path]);
+    $baris = $capaian->kepuasanLayanan()->create([
+        'total_responden' => 10,
+        'responden_puas' => 9,
+        'status_validasi' => 'draft',
+        'file_bukti_dukung' => $path,
+    ]);
 
-    $response = $this->actingAs($validator)->get(route('validator.capaian-kinerja.dokumen.preview', $dokumen->id));
+    $response = $this->actingAs($validator)->get(route('validator.capaian-kinerja.bukti.preview', [
+        'iku' => $iku->id,
+        'komponen' => 'utama',
+        'barisId' => $baris->id,
+        'triwulan_id' => $capaian->triwulan_id,
+    ]));
 
     $response->assertOk();
     expect($response->headers->get('Content-Type'))->toStartWith('application/pdf')

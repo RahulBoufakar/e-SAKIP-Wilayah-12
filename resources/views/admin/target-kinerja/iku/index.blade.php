@@ -12,32 +12,26 @@
         x-data="{
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
             mode: {{ old('id') ? '\'edit\'' : '\'create\'' }},
-            form: { 
-                id: @js(old('id', null)), 
+            form: {
+                id: @js(old('id', null)),
                 jenis: @js(old('jenis', 'IKU')),
-                deskripsi: @js(old('deskripsi', '')), 
-                target_pk: @js(old('target_pk', '')), 
+                deskripsi: @js(old('deskripsi', '')),
+                target_pk: @js(old('target_pk', '')),
                 tim: @js(old('tim', '')),
                 satuan: @js(old('satuan', '%')),
                 deskripsi_target: @js(old('deskripsi_target', '')),
                 tim_kerja_id: @js(old('tim_kerja_id', [])),
-                formula_kode: @js(old('formula_kode', ''))
+                {{-- REFAKTOR HYBRID: formula_kode diganti tipe_iku (lihat modal-form.blade.php) --}}
+                tipe_iku: @js(old('tipe_iku', ''))
             },
-            formulaDescriptions: @js(collect($formulaOptions)->map(fn ($f) => $f['description'])),
-            formulaByNomor: @js(\App\Formulas\FormulaRegistry::nomorMap()),
-            predictedFormulaKode: @js($predictedFormulaKode ?? ''),
-            guessFormula(kode) {
-                const match = kode ? kode.match(/(\d+\.\d+)/) : null;
-                return match ? (this.formulaByNomor[match[1]] ?? '') : '';
-            },
-            openCreate() { 
-                this.mode = 'create'; 
-                this.form = { id: null, jenis: 'IKU', deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: [], formula_kode: this.predictedFormulaKode }; 
+            openCreate() {
+                this.mode = 'create';
+                this.form = { id: null, jenis: 'IKU', deskripsi: '', target_pk: '', tim: '', satuan: '%', deskripsi_target: '', tim_kerja_id: [], tipe_iku: '' };
                 this.modalOpen = true;
             },
-            openEdit(row) { 
-                this.mode = 'edit'; 
-                this.form = { id: row.id, jenis: row.jenis, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja.map(t => t.id), formula_kode: row.formula_kode || this.guessFormula(row.kode) }; 
+            openEdit(row) {
+                this.mode = 'edit';
+                this.form = { id: row.id, jenis: row.jenis, deskripsi: row.deskripsi, target_pk: row.target_pk, tim: row.tim, satuan: row.satuan, deskripsi_target: row.deskripsi_target, tim_kerja_id: row.tim_kerja.map(t => t.id), tipe_iku: row.tipe_iku || '' };
                 this.modalOpen = true;
             }
         }"
@@ -70,7 +64,7 @@
                         <th class="w-25 px-5 py-3 font-semibold">Kode</th>
                         <th class="w-20 px-5 py-3 text-center font-semibold">Jenis</th>
                         <th class="px-5 py-3 font-semibold">Deskripsi IKU</th>
-                        <th class="w-32 px-5 py-3 text-center font-semibold">Target</th>
+                        <th class="w-32 px-5 py-3 text-center font-semibold">Target PK</th>
                         <th class="w-28 px-5 py-3 text-center font-semibold">Satuan</th>
                         <th class="w-36 px-5 py-3 text-center font-semibold">Tim Kerja</th>
                         <th class="w-40 px-5 py-3 text-center font-semibold">Opsi</th>
@@ -103,6 +97,9 @@
                                     <div class="p-6">
                                         <h3 class="text-sm font-semibold text-ink-900">Detail Target IKU {{ $row->kode }}</h3>
                                         <p class="mt-3 text-sm leading-relaxed text-slate-600">{{ $row->deskripsi_target }}</p>
+                                        @if ($row->tipe_iku)
+                                            <p class="mt-3 text-xs text-slate-400">Tipe Capaian Kinerja: <span class="font-semibold text-slate-600">{{ $tipeIkuOptions[$row->tipe_iku]['label'] ?? $row->tipe_iku }}</span></p>
+                                        @endif
                                         <div class="mt-5 flex justify-end">
                                             <button @click="$refs['detail-{{ $row->id }}'].close()" type="button" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100">Tutup</button>
                                         </div>

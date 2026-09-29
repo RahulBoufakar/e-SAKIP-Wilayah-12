@@ -12,34 +12,40 @@ beforeEach(function () {
 it('menyimpan dokumen bukti Capaian Kinerja ke disk private, bukan public', function () {
     $tahun = makeTahunAnggaran();
     $sasaran = makeSasaranKegiatan($tahun);
-    $iku = makeIku($sasaran);
+    $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $timKerja = makeTimKerja();
     $iku->timKerja()->attach($timKerja->id);
 
     $user = userWithRole('tim_kerja');
     $user->timKerja()->attach($timKerja->id);
 
+    activateTriwulan($tahun, 'TW1');
     $capaian = makeCapaianKinerja($iku, $tahun);
 
-    $response = $this->actingAs($user)->post(route('tim-kerja.capaian-kinerja.dokumen.store', $capaian->id), [
-        'dokumen' => [
-            ['nama_dokumen' => 'Bukti Uji', 'file' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf')],
-        ],
+    $response = $this->actingAs($user)->post(route('tim-kerja.capaian-kinerja.baris.store', [
+        'iku' => $iku->id,
+        'komponen' => 'utama',
+        'triwulan_id' => $capaian->triwulan_id,
+    ]), [
+        'total_responden' => 10,
+        'responden_puas' => 9,
+        'file_bukti_dukung' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
     ]);
 
     $response->assertRedirect();
 
-    $dokumen = $capaian->fresh()->dokumen()->first();
+    $baris = $capaian->kepuasanLayanan()->first();
 
-    expect($dokumen)->not->toBeNull();
-    Storage::disk('private')->assertExists($dokumen->file_dokumen);
-    Storage::disk('public')->assertMissing($dokumen->file_dokumen);
+    expect($baris)->not->toBeNull()
+        ->and($baris->file_bukti_dukung)->not->toBeNull();
+    Storage::disk('private')->assertExists($baris->file_bukti_dukung);
+    Storage::disk('public')->assertMissing($baris->file_bukti_dukung);
 });
 
 it('endpoint preview Capaian Kinerja tetap bisa membaca file dari disk private bagi yang berwenang', function () {
     $tahun = makeTahunAnggaran();
     $sasaran = makeSasaranKegiatan($tahun);
-    $iku = makeIku($sasaran);
+    $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $timKerja = makeTimKerja();
     $iku->timKerja()->attach($timKerja->id);
 
@@ -48,13 +54,23 @@ it('endpoint preview Capaian Kinerja tetap bisa membaca file dari disk private b
 
     $capaian = makeCapaianKinerja($iku, $tahun);
     $path = Storage::disk('private')->putFileAs(
-        'capaian-kinerja',
+        'capaian-kinerja-hybrid',
         UploadedFile::fake()->create('bukti.pdf', 50, 'application/pdf'),
         'bukti-uji.pdf'
     );
-    $dokumen = $capaian->dokumen()->create(['nama_dokumen' => 'Bukti Uji', 'file_dokumen' => $path]);
+    $baris = $capaian->kepuasanLayanan()->create([
+        'total_responden' => 10,
+        'responden_puas' => 9,
+        'status_validasi' => 'draft',
+        'file_bukti_dukung' => $path,
+    ]);
 
-    $response = $this->actingAs($user)->get(route('tim-kerja.capaian-kinerja.dokumen.preview', $dokumen->id));
+    $response = $this->actingAs($user)->get(route('tim-kerja.capaian-kinerja.bukti.preview', [
+        'iku' => $iku->id,
+        'komponen' => 'utama',
+        'barisId' => $baris->id,
+        'triwulan_id' => $capaian->triwulan_id,
+    ]));
 
     $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
 });
@@ -142,25 +158,36 @@ it('menyimpan dokumen laporan kegiatan ke disk private saat diunggah', function 
 it('menghapus file lama dari disk private (bukan public) saat dokumen capaian kinerja dihapus', function () {
     $tahun = makeTahunAnggaran();
     $sasaran = makeSasaranKegiatan($tahun);
-    $iku = makeIku($sasaran);
+    $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $timKerja = makeTimKerja();
     $iku->timKerja()->attach($timKerja->id);
 
     $user = userWithRole('tim_kerja');
     $user->timKerja()->attach($timKerja->id);
 
+    activateTriwulan($tahun, 'TW1');
     $capaian = makeCapaianKinerja($iku, $tahun);
     $path = Storage::disk('private')->putFileAs(
-        'capaian-kinerja',
+        'capaian-kinerja-hybrid',
         UploadedFile::fake()->create('bukti.pdf', 20, 'application/pdf'),
         'bukti-hapus.pdf'
     );
-    $dokumen = $capaian->dokumen()->create(['nama_dokumen' => 'Bukti Uji', 'file_dokumen' => $path]);
+    $baris = $capaian->kepuasanLayanan()->create([
+        'total_responden' => 10,
+        'responden_puas' => 9,
+        'status_validasi' => 'draft',
+        'file_bukti_dukung' => $path,
+    ]);
 
-    $this->actingAs($user)->delete(route('tim-kerja.capaian-kinerja.dokumen.destroy', $dokumen->id));
+    $this->actingAs($user)->delete(route('tim-kerja.capaian-kinerja.baris.destroy', [
+        'iku' => $iku->id,
+        'komponen' => 'utama',
+        'barisId' => $baris->id,
+        'triwulan_id' => $capaian->triwulan_id,
+    ]));
 
     Storage::disk('private')->assertMissing($path);
-    $this->assertDatabaseMissing('capaian_kinerja_dokumen', ['id' => $dokumen->id]);
+    $this->assertDatabaseMissing('capaian_kepuasan_layanan', ['id' => $baris->id]);
 });
 
 it('command documents:migrate-to-private memindahkan file lama dari public ke private tanpa mengubah path di database', function () {

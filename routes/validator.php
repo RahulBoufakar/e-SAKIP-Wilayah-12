@@ -55,12 +55,12 @@ Route::middleware(['auth', 'role:validator'])
 
         // Capaian Kinerja
         Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
-        Route::get('capaian-kinerja/{iku}/{triwulan}', [CapaianKinerjaController::class, 'show'])->name('capaian-kinerja.show');
-        Route::put('capaian-kinerja/{capaianKinerja}/setujui', [CapaianKinerjaController::class, 'setujui'])->name('capaian-kinerja.setujui');
-        Route::put('capaian-kinerja/{capaianKinerja}/tolak', [CapaianKinerjaController::class, 'tolak'])->name('capaian-kinerja.tolak');
-
-        Route::get('capaian-kinerja/dokumen/{dokumen}/preview', [CapaianKinerjaDokumenController::class, 'preview'])->name('capaian-kinerja.dokumen.preview');
-        Route::get('capaian-kinerja/dokumen/{dokumen}/unduh', [CapaianKinerjaDokumenController::class, 'unduh'])->name('capaian-kinerja.dokumen.unduh');
+        Route::get('capaian-kinerja/{iku}', [CapaianKinerjaController::class, 'show'])->name('capaian-kinerja.show');
+        Route::put('capaian-kinerja/{iku}/baris/{komponen}/{barisId}/validasi', [CapaianKinerjaController::class, 'validasiBaris'])->name('capaian-kinerja.baris.validasi');
+        Route::put('capaian-kinerja/{iku}/setujui-semua', [CapaianKinerjaController::class, 'setujuiSemua'])->name('capaian-kinerja.setujui-semua');
+        Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/preview', [CapaianKinerjaController::class, 'previewBukti'])->name('capaian-kinerja.bukti.preview');
+        Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/unduh', [CapaianKinerjaController::class, 'unduhBukti'])->name('capaian-kinerja.bukti.unduh');
+        Route::get('capaian-kinerja/{iku}/preview', [CapaianKinerjaController::class, 'previewSetujui'])->name('capaian-kinerja.preview');
 
         // Analisa Kinerja
         Route::get('analisa-kinerja', [AnalisaKinerjaController::class, 'index'])->name('analisa-kinerja.index');
