@@ -2,24 +2,46 @@
 
 namespace App\Models;
 
-use App\Formulas\FormulaRegistry;
-use App\Models\Concerns\HasStatusPengiriman;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use InvalidArgumentException;
 
+/**
+ * Header agregat — 1 baris per (IKU, Triwulan, Tahun) — Spek Capaian Kinerja
+ * Hybrid §2 & §4.1. Sejak refaktor hybrid:
+ *
+ * - `realisasi_otomatis`/`realisasi` dihitung dari baris detail (10 tabel,
+ *   lihat komponenUntukTipe()) berstatus 'disetujui', lewat
+ *   App\Services\CapaianKinerjaHitungService — BUKAN lagi dari `variabel`
+ *   JSON + FormulaRegistry (dihapus, lihat catatan cleanup Fase 7).
+ *
+ * - `status` header di sini adalah NILAI TURUNAN, bukan hasil transisi
+ *   langsung lewat kirim()/setujui()/tolak() pada header (beda dari pola
+ *   HasStatusPengiriman di modul lain). Approve/reject sesungguhnya terjadi
+ *   di level BARIS (App\Models\Concerns\HasRowValidation, kolom
+ *   status_validasi pada 10 tabel detail). Header disinkronkan lewat
+ *   syncStatusFromBaris(), dipanggil controller setiap kali baris berubah.
+ *
+ * - `dokumen()` / CapaianKinerjaDokumen (bukti generik per-header dari
+ *   arsitektur lama) TIDAK dipakai lagi oleh 9 IKU hybrid — tiap baris kini
+ *   punya `file_bukti_dukung` sendiri. Relasi ini DIPERTAHANKAN (tidak
+ *   dihapus) semata untuk kompatibilitas mundur; lihat README refaktor
+ *   bagian cleanup untuk detail.
+ */
 class CapaianKinerja extends Model
 {
-    use HasStatusPengiriman {
-        setujui as protected traitSetujui;
-    }
-
     protected $table = 'capaian_kinerja';
-    protected $fillable = ['iku_id', 'triwulan_id', 'tahun_anggaran_id', 'target', 'realisasi', 'variabel', 'status', 'catatan_revisi'];
+    protected $fillable = [
+        'iku_id', 'triwulan_id', 'tahun_anggaran_id',
+        'target', 'realisasi', 'realisasi_otomatis', 'realisasi_override',
+        'status', 'catatan_revisi',
+    ];
 
     protected $casts = [
         'target' => 'decimal:2',
         'realisasi' => 'decimal:2',
-        'variabel' => 'array',
+        'realisasi_otomatis' => 'decimal:2',
+        'realisasi_override' => 'boolean',
     ];
 
     public function iku()
@@ -37,89 +59,140 @@ class CapaianKinerja extends Model
         return $this->belongsTo(TahunAnggaran::class);
     }
 
+    /**
+     * @deprecated untuk 9 IKU hybrid — lihat catatan class di atas.
+     * Dipertahankan agar tidak menghapus data/fitur di luar scope refaktor ini.
+     */
     public function dokumen()
     {
         return $this->hasMany(CapaianKinerjaDokumen::class, 'capaian_kinerja_id');
     }
 
-    /**
-     * Nilai Realisasi Triwulan Ini = (Realisasi Triwulan Ini ÷ Target PK) x 100%.
-     * Dihitung terhadap Target PK (target akhir/tahunan pada master IKU), BUKAN
-     * terhadap `target` per-triwulan pada tabel ini — supaya persentase tidak
-     * melonjak ratusan persen hanya karena target per-triwulan yang di-set kecil
-     * (mis. target TW1 = 25 sedangkan realisasi = 91 -> 364% pada formula lama).
-     * Wajib eager-load relasi `iku` (dengan kolom target_pk) di pemanggil untuk
-     * menghindari N+1.
-     *
-     * Di-cap maksimal 100%: realisasi seharusnya sudah di-clamp ke Target PK saat
-     * disimpan (lihat FormulaInterface::calculate()), tapi persentase tetap
-     * dijaga di sini sebagai lapis pertahanan kedua (mis. realisasi diinput
-     * manual tanpa formula, atau data lama sebelum capping diterapkan).
-     */
-    public function getCapaianAttribute(): ?float
+    public function kepuasanLayanan(): HasMany
     {
-        if ($this->realisasi === null) {
-            return null;
-        }
+        return $this->hasMany(CapaianKepuasanLayanan::class);
+    }
 
-        $targetPk = (float) ($this->iku?->target_pk ?? 0);
+    public function akreditasiPts(): HasMany
+    {
+        return $this->hasMany(CapaianAkreditasiPts::class);
+    }
 
-        if ($targetPk <= 0) {
-            return null;
-        }
+    public function penggabunganPts(): HasMany
+    {
+        return $this->hasMany(CapaianPenggabunganPts::class);
+    }
 
-        $persen = round(((float) $this->realisasi / $targetPk) * 100, 2);
+    public function tataKelola(): HasMany
+    {
+        return $this->hasMany(CapaianTataKelola::class);
+    }
 
-        return min($persen, 100.0);
+    public function fasilitasiMutuPts(): HasMany
+    {
+        return $this->hasMany(CapaianFasilitasiMutuPts::class);
+    }
+
+    public function kebijakanPpks(): HasMany
+    {
+        return $this->hasMany(CapaianKebijakanPpks::class);
+    }
+
+    public function fasilitasiKemahasiswaan(): HasMany
+    {
+        return $this->hasMany(CapaianFasilitasiKemahasiswaan::class);
+    }
+
+    public function dosenNaikJafung(): HasMany
+    {
+        return $this->hasMany(CapaianDosenNaikJafung::class);
+    }
+
+    public function fasilitasiPenelitian(): HasMany
+    {
+        return $this->hasMany(CapaianFasilitasiPenelitian::class);
+    }
+
+    public function nilaiRka(): HasMany
+    {
+        return $this->hasMany(CapaianNilaiRka::class);
     }
 
     /**
-     * Satu sumber kebenaran untuk "data sudah lengkap": dipakai oleh can_kirim,
-     * guard kirim() di Controller Tim Kerja, guard setujui() di bawah, dan
-     * disabled-state tombol Setujui di view Validator — supaya tidak ada
-     * jalur (form, tombol, request manual) yang bisa meloloskan data kosong.
+     * SATU-SATUNYA tempat pemetaan tipe_iku -> [nama_komponen => model class]
+     * didefinisikan (Spek §9: resolusi eksplisit lewat match/lookup langsung,
+     * BUKAN interface/registry generik — draf awal dengan pivot
+     * iku_capaian_tipe + CapaianTipeInterface sudah ditolak, lihat §2 spek).
+     * Dipakai controller untuk CRUD baris & eager-load, dan oleh relasi()
+     * di bawah.
      */
-    public function isDataLengkap(): bool
+    public static function komponenUntukTipe(?string $tipeIku): array
     {
-        if ($this->realisasi === null) {
-            return false;
-        }
-
-        $formula = FormulaRegistry::resolve($this->iku->formula_kode);
-        if (! $formula) {
-            return true;
-        }
-
-        $variabel = $this->variabel ?? [];
-        foreach ($formula->variables() as $var) {
-            $nilai = $variabel[$var['key']] ?? null;
-            if ($nilai === null || $nilai === '') {
-                return false;
-            }
-        }
-
-        return true;
+        return match ($tipeIku) {
+            'kepuasan_layanan' => ['utama' => CapaianKepuasanLayanan::class],
+            'arsitektur_pts' => [
+                'akreditasi' => CapaianAkreditasiPts::class,
+                'penggabungan' => CapaianPenggabunganPts::class,
+            ],
+            'tata_kelola' => ['utama' => CapaianTataKelola::class],
+            'fasilitasi_mutu_pts' => ['utama' => CapaianFasilitasiMutuPts::class],
+            'kebijakan_ppks' => ['utama' => CapaianKebijakanPpks::class],
+            'fasilitasi_kemahasiswaan' => ['utama' => CapaianFasilitasiKemahasiswaan::class],
+            'dosen_naik_jafung' => ['utama' => CapaianDosenNaikJafung::class],
+            'fasilitasi_penelitian' => ['utama' => CapaianFasilitasiPenelitian::class],
+            'nilai_rka' => ['utama' => CapaianNilaiRka::class],
+            default => [],
+        };
     }
 
+    /**
+     * Relasi hasMany aktif untuk komponen tertentu (mis. 'utama', atau
+     * 'akreditasi'/'penggabungan' khusus arsitektur_pts), sesuai tipe_iku
+     * milik header ini. Ini titik resolusi "{baris} di-resolve controller
+     * berdasarkan tipe_iku" yang diminta Spek §9.
+     */
+    public function relasi(string $komponen): HasMany
+    {
+        $kelasKomponen = static::komponenUntukTipe($this->iku->tipe_iku)[$komponen] ?? null;
+
+        if (! $kelasKomponen) {
+            throw new InvalidArgumentException(
+                "Komponen '{$komponen}' tidak dikenal untuk tipe_iku '{$this->iku->tipe_iku}'."
+            );
+        }
+
+        return $this->hasMany($kelasKomponen);
+    }
+
+    /**
+     * Rekalkulasi status agregat header dari status_validasi seluruh baris
+     * (lintas komponen bila IKU punya >1 tabel, mis. arsitektur_pts) — Spek
+     * §7: "disetujui hanya jika semua baris disetujui". Dipanggil setelah
+     * baris berubah (kirim/setujui/tolak/bulk), BUKAN dipicu aksi langsung
+     * pada header ini.
+     */
+    public function syncStatusFromBaris(): void
+    {
+        $semuaStatusBaris = collect(array_keys($this->iku->komponenCapaian()))
+            ->flatMap(fn ($komponen) => $this->relasi($komponen)->pluck('status_validasi'));
+
+        $this->status = match (true) {
+            $semuaStatusBaris->isEmpty() => 'draft',
+            $semuaStatusBaris->contains('ditolak') => 'ditolak',
+            $semuaStatusBaris->contains('menunggu_validasi') => 'menunggu_validasi',
+            $semuaStatusBaris->every(fn ($s) => $s === 'disetujui') => 'disetujui',
+            default => 'draft',
+        };
+
+        $this->save();
+    }
+
+    /** True jika ada baris draft/ditolak yang siap dikirim untuk validasi. */
     public function getCanKirimAttribute(): bool
     {
-        return $this->isDataLengkap()
-            && $this->dokumen()->count() >= 1
-            && in_array($this->status, ['draft', 'ditolak'], true);
-    }
-
-    /**
-     * Override setujui() dari trait: tambah guard data lengkap sebelum delegasi
-     * ke logika asli trait (state check menunggu_validasi -> disetujui).
-     * Ini pertahanan sisi server — bukan pengganti disabled-state di UI,
-     * melainkan pelengkap kalau ada yang mem-bypass lewat request manual.
-     */
-    public function setujui(): static
-    {
-        if (! $this->isDataLengkap()) {
-            throw new RuntimeException('Data variabel/realisasi belum lengkap, tidak dapat disetujui.');
-        }
-
-        return $this->traitSetujui();
+        return collect(array_keys($this->iku->komponenCapaian()))
+            ->contains(fn ($komponen) => $this->relasi($komponen)
+                ->whereIn('status_validasi', ['draft', 'ditolak'])
+                ->exists());
     }
 }

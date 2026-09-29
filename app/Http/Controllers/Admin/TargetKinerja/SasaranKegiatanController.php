@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin\TargetKinerja;
 
 use App\Events\ActivityOccurred;
-use App\Formulas\FormulaRegistry;
 use App\Http\Controllers\Concerns\HandlesRestrictedDeletes;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -112,16 +111,17 @@ class SasaranKegiatanController extends Controller
             ->withQueryString();
 
         $timKerjaOptions = TimKerja::orderBy('nama_tim')->get(['id', 'nama_tim']);
-        $formulaOptions = FormulaRegistry::list();
 
-        // Prediksi nomor yang akan dipakai model saat IKU baru disimpan (lihat
-        // Iku::booted()), supaya dropdown formula bisa auto-terpilih sebelum submit.
-        $nomorSasaran = (int) str_replace('s.', '', $sasaran->kode);
-        $urutanBerikutnya = Iku::where('sasaran_kegiatan_id', $sasaran->id)->count() + 1;
-        $predictedFormulaKode = FormulaRegistry::resolveByNomor("{$nomorSasaran}.{$urutanBerikutnya}");
+        // REFAKTOR HYBRID: dropdown "Formula Perhitungan" (FormulaRegistry)
+        // diganti dropdown "Tipe Capaian Kinerja" (tipe_iku, §3 spek). Tidak
+        // ada prediksi otomatis berdasarkan nomor IKU (predictedFormulaKode
+        // lama) karena tipe_iku murni pilihan Admin sesuai IKU resmi mana
+        // yang sedang dibuat — tidak ada pemetaan 1:1 nomor->tipe yang aman
+        // diasumsikan seperti formula lama.
+        $tipeIkuOptions = config('capaian_kinerja_tipe');
 
         return view('admin.target-kinerja.iku.index', compact(
-            'sasaran', 'ikuList', 'timKerjaOptions', 'formulaOptions', 'predictedFormulaKode'
+            'sasaran', 'ikuList', 'timKerjaOptions', 'tipeIkuOptions'
         ));
     }
 }

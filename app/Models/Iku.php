@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\DB;
 class Iku extends Model
 {
     protected $table = 'iku';
-    protected $fillable = ['sasaran_kegiatan_id', 'kode', 'jenis','deskripsi', 
-    'target_pk', 'satuan', 'deskripsi_target', 'formula_kode'];
+    protected $fillable = ['sasaran_kegiatan_id', 'kode', 'jenis','deskripsi',
+    'target_pk', 'satuan', 'deskripsi_target', 'tipe_iku'];
 
     protected static function booted(): void
     {
@@ -58,5 +58,16 @@ class Iku extends Model
     public function analisaKinerja()
     {
         return $this->hasMany(AnalisaKinerja::class);
+    }
+
+    /**
+     * Refaktor Capaian Kinerja Hybrid §3/§9 — peta komponen (nama relasi =>
+     * model class) untuk tipe_iku milik IKU ini. Dilimpahkan ke
+     * CapaianKinerja::komponenUntukTipe() supaya satu-satunya tempat definisi
+     * pemetaan tipe_iku -> tabel detail tidak terduplikasi di dua model.
+     */
+    public function komponenCapaian(): array
+    {
+        return CapaianKinerja::komponenUntukTipe($this->tipe_iku);
     }
 }

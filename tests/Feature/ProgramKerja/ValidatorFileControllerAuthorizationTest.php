@@ -71,7 +71,7 @@ it('validator tetap bisa preview & unduh dokumen laporan kegiatan dari tim manap
 it('validator tetap bisa preview & unduh dokumen bukti Capaian Kinerja dari tim manapun', function () {
     $tahun = makeTahunAnggaran();
     $sasaran = makeSasaranKegiatan($tahun);
-    $iku = makeIku($sasaran);
+    $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $timKerja = makeTimKerja();
     $iku->timKerja()->attach($timKerja->id);
 
@@ -79,17 +79,32 @@ it('validator tetap bisa preview & unduh dokumen bukti Capaian Kinerja dari tim 
 
     $capaian = makeCapaianKinerja($iku, $tahun);
     $path = Storage::disk('private')->putFileAs(
-        'capaian-kinerja',
+        'capaian-kinerja-hybrid',
         UploadedFile::fake()->create('bukti.pdf', 20, 'application/pdf'),
         'bukti-b4.pdf'
     );
-    $dokumen = $capaian->dokumen()->create(['nama_dokumen' => 'Bukti Uji', 'file_dokumen' => $path]);
+    $baris = $capaian->kepuasanLayanan()->create([
+        'total_responden' => 10,
+        'responden_puas' => 9,
+        'status_validasi' => 'draft',
+        'file_bukti_dukung' => $path,
+    ]);
 
     $this->actingAs($validator)
-        ->get(route('validator.capaian-kinerja.dokumen.preview', $dokumen->id))
+        ->get(route('validator.capaian-kinerja.bukti.preview', [
+            'iku' => $iku->id,
+            'komponen' => 'utama',
+            'barisId' => $baris->id,
+            'triwulan_id' => $capaian->triwulan_id,
+        ]))
         ->assertOk();
 
     $this->actingAs($validator)
-        ->get(route('validator.capaian-kinerja.dokumen.unduh', $dokumen->id))
+        ->get(route('validator.capaian-kinerja.bukti.unduh', [
+            'iku' => $iku->id,
+            'komponen' => 'utama',
+            'barisId' => $baris->id,
+            'triwulan_id' => $capaian->triwulan_id,
+        ]))
         ->assertOk();
 });

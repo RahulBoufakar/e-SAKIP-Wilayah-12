@@ -1,5 +1,5 @@
 <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">
-    <div x-show="modalOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50"a></div>
+        <div x-show="modalOpen" x-transition.opacity class="absolute inset-0 bg-ink-950/50"a></div>
 
     <div
         x-show="modalOpen"
@@ -87,19 +87,22 @@
                         </div>
                     </div>
                     <div class="md:col-span-2">
-                        <label for="formula_kode" class="mb-1 block text-sm font-medium text-ink-900">
-                            Formula Perhitungan <span class="font-normal text-slate-400">(opsional)</span>
+                        {{-- REFAKTOR HYBRID (spesifikasi-capaian-kinerja-hybrid-final.md §3): dropdown
+                             "Formula Perhitungan" (FormulaRegistry, arsitektur registry generik yang
+                             ditolak) diganti "Tipe Capaian Kinerja" — penanda IKU resmi yang mana dari
+                             9 tipe hybrid, dipakai untuk routing ke halaman Capaian Kinerja Tim Kerja
+                             yang benar. Kosongkan untuk IKK internal / IKU di luar scope 9 tipe. --}}
+                        <label for="tipe_iku" class="mb-1 block text-sm font-medium text-ink-900">
+                            Tipe Capaian Kinerja <span class="font-normal text-slate-400">(opsional)</span>
                         </label>
-                        <select name="formula_kode" id="formula_kode" x-model="form.formula_kode"
+                        <select name="tipe_iku" id="tipe_iku" x-model="form.tipe_iku"
                                 class="w-full rounded-lg border-slate-200 bg-white text-sm shadow-card focus:border-brand-500 focus:ring-brand-500">
-                            <option value="">— Input manual (tanpa formula) —</option>
-                            @foreach ($formulaOptions as $kode => $f)
-                                <option value="{{ $kode }}">{{ $f['label'] }}</option>
+                            <option value="">— Tidak ada (IKK internal / di luar scope hybrid) —</option>
+                            @foreach ($tipeIkuOptions as $kode => $t)
+                                <option value="{{ $kode }}">{{ $t['label'] }}</option>
                             @endforeach
                         </select>
-                        <template x-if="form.formula_kode">
-                            <p class="mt-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600" x-text="formulaDescriptions[form.formula_kode]"></p>
-                        </template>
+                        <p class="mt-1.5 text-xs text-slate-400">Menentukan halaman input Capaian Kinerja Tim Kerja & aturan hitung realisasi otomatis.</p>
                     </div>
                     <x-form.textarea
                         label="Deskripsi Target"
