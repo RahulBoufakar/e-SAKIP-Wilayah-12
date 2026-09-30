@@ -192,7 +192,7 @@
                         <option value="" disabled {{ $bentukKegiatanValue ? '' : 'selected' }}>Pilih bentuk kegiatan</option>
                         <option value="Luring" @selected($bentukKegiatanValue === 'Luring')>Luring</option>
                         <option value="Daring" @selected($bentukKegiatanValue === 'Daring')>Daring</option>
-                        <option value="Hybrid" @selected($bentukKegiatanValue === 'Daring')>Hybrid</option>
+                        <option value="Hybrid" @selected($bentukKegiatanValue === 'Hybrid')>Hybrid</option>
                     </x-form.select>
                     
                     <div>
