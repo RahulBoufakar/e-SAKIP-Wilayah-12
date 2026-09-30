@@ -28,7 +28,7 @@ it('menyimpan dokumen bukti Capaian Kinerja ke disk private, bukan public', func
         'triwulan_id' => $capaian->triwulan_id,
     ]), [
         'total_responden' => 10,
-        'responden_puas' => 9,
+        'hasil_perhitungan_kepuasan' => 90,
         'file_bukti_dukung' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
     ]);
 
@@ -60,7 +60,7 @@ it('endpoint preview Capaian Kinerja tetap bisa membaca file dari disk private b
     );
     $baris = $capaian->kepuasanLayanan()->create([
         'total_responden' => 10,
-        'responden_puas' => 9,
+        'hasil_perhitungan_kepuasan' => 90,
         'status_validasi' => 'draft',
         'file_bukti_dukung' => $path,
     ]);
@@ -174,7 +174,7 @@ it('menghapus file lama dari disk private (bukan public) saat dokumen capaian ki
     );
     $baris = $capaian->kepuasanLayanan()->create([
         'total_responden' => 10,
-        'responden_puas' => 9,
+        'hasil_perhitungan_kepuasan' => 90,
         'status_validasi' => 'draft',
         'file_bukti_dukung' => $path,
     ]);

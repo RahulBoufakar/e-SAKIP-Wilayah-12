@@ -19,7 +19,7 @@ class CapaianKebijakanPpks extends Model
     protected $fillable = [
         'capaian_kinerja_id', 'pts_id',
         'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi',
-        'status_validasi', 'catatan_revisi',
+        'status_validasi', 'catatan_revisi', 'sumber_baris_id',
     ];
 
     public function capaianKinerja()

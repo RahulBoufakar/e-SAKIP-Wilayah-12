@@ -163,14 +163,20 @@ class CapaianKinerjaController extends Controller
         $capaian = $this->resolveCapaian($request, $iku);
         $baris = $capaian->relasi($komponen)->getQuery()->findOrFail($barisId);
 
-        abort_unless($baris->file_bukti_dukung && Storage::disk('private')->exists($baris->file_bukti_dukung), 404);
+        // Whitelist kolom file (sama dengan sisi Tim Kerja): cegah pembacaan kolom sembarang.
+        $field = $request->query('field', 'file_bukti_dukung');
+        abort_unless(in_array($field, self::FIELD_FILE, true), 404);
+
+        // getAttributes(): kolom yang tidak dimiliki komponen ini dianggap null (=> 404), bukan error atribut.
+        $path = $baris->getAttributes()[$field] ?? null;
+        abort_unless($path && Storage::disk('private')->exists($path), 404);
 
         if ($download) {
-            return Storage::disk('private')->download($baris->file_bukti_dukung);
+            return Storage::disk('private')->download($path);
         }
 
-        return response()->stream(function () use ($baris) {
-            fpassthru(Storage::disk('private')->readStream($baris->file_bukti_dukung));
+        return response()->stream(function () use ($path) {
+            fpassthru(Storage::disk('private')->readStream($path));
         }, 200, ['Content-Type' => 'application/pdf']);
     }
 

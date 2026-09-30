@@ -119,10 +119,10 @@
                             <td class="px-4 py-2.5 text-slate-600">{{ $row->pts->nama_pts ?? '—' }}</td>
                             <td class="px-4 py-2.5 text-slate-600">{{ $row->sk_penggabungan }}</td>
                             <td class="px-4 py-2.5 text-center">
-                                @if ($row->file_bukti_dukung)
-                                    <a href="{{ route('tim-kerja.capaian-kinerja.bukti.preview', [$iku->id, 'penggabungan', $row->id]) }}?triwulan_id={{ $triwulanDipilih->id }}&field=file_bukti_dukung"
+                                @if ($row->fileTersedia())
+                                    <a href="{{ route('validator.capaian-kinerja.bukti.preview', [$iku->id, 'penggabungan', $row->id]) }}?triwulan_id={{ $triwulanDipilih->id }}&field=file_bukti_dukung"
                                     target="_blank" rel="noopener" class="font-medium text-blue-600 hover:underline">SK</a>
-                                @else <span class="text-xs text-slate-400">—</span> @endif
+                                @else <span class="text-xs text-slate-400">{{ filled($row->file_bukti_dukung) ? 'File tidak tersedia' : '—' }}</span> @endif
                             </td>
                             <td class="px-4 py-2.5 text-center"><x-status-badge :status="$row->status_validasi" /></td>
                             <td class="px-4 py-2.5 text-center">

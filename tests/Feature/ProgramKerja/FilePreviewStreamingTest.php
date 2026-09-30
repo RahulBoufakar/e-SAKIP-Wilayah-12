@@ -129,7 +129,7 @@ it('preview dokumen bukti Capaian Kinerja (TimKerja) di-stream sebagai binary', 
     Storage::disk('private')->put($path, $content);
     $baris = $capaian->kepuasanLayanan()->create([
         'total_responden' => 10,
-        'responden_puas' => 9,
+        'hasil_perhitungan_kepuasan' => 90,
         'status_validasi' => 'draft',
         'file_bukti_dukung' => $path,
     ]);
@@ -162,7 +162,7 @@ it('preview dokumen bukti Capaian Kinerja (Validator) di-stream sebagai binary',
     Storage::disk('private')->put($path, $content);
     $baris = $capaian->kepuasanLayanan()->create([
         'total_responden' => 10,
-        'responden_puas' => 9,
+        'hasil_perhitungan_kepuasan' => 90,
         'status_validasi' => 'draft',
         'file_bukti_dukung' => $path,
     ]);
