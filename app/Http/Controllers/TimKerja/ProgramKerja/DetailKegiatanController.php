@@ -27,7 +27,7 @@ class DetailKegiatanController extends Controller
         $data = $request->validate([
             'nama_detail' => 'required|string|max:255',
             'tempat_pelaksanaan' => 'required|string|max:255',
-            'bentuk_kegiatan' => 'required|in:Luring,Daring',
+            'bentuk_kegiatan' => 'required|in:Luring,Daring,Hybrid',
             'bulan_kegiatan' => 'required|array|min:1',
             'bulan_kegiatan.*' => 'integer|min:1|max:12',
             'anggaran' => 'required|numeric|min:0',
@@ -35,7 +35,7 @@ class DetailKegiatanController extends Controller
             'nama_detail.required' => 'Nama Detail Kegiatan wajib diisi.',
             'tempat_pelaksanaan.required' => 'Tempat Pelaksanaan wajib diisi.',
             'bentuk_kegiatan.required' => 'Bentuk Kegiatan wajib diisi.',
-            'bentuk_kegiatan.in' => 'Bentuk Kegiatan harus Luring atau Daring.',
+            'bentuk_kegiatan.in' => 'Bentuk Kegiatan harus Luring, Daring, atau Hybrid.',
             'bulan_kegiatan.required' => 'Bulan Kegiatan wajib dipilih minimal satu.',
             'anggaran.required' => 'Anggaran wajib diisi.',
             'anggaran.numeric' => 'Anggaran harus berupa angka.',
