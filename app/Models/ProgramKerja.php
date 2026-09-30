@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class ProgramKerja extends Model
 {
     protected $table = 'program_kerja';
-    protected $fillable = ['usulan_program_kerja_id', 'kode_proker'];
+    protected $fillable = ['usulan_program_kerja_id', 'kode_proker']; //STATUS MASUK DISINI, BUAT YANG BELUM, SEDANG, DAN SELESAI
 
     protected static function booted(): void
     {
