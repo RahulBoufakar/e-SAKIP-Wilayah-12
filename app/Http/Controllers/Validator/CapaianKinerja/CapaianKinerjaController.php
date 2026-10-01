@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Validator\CapaianKinerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
@@ -25,6 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CapaianKinerjaController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
+    use AppliesIkuTimFilter;
 
     private const FILE_RULE = 'file|mimes:pdf|mimetypes:application/pdf|max:5120'; // PDF, maks 5 MB
     private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi'];
@@ -45,14 +47,17 @@ class CapaianKinerjaController extends Controller
 
         $ikuList = collect();
         if ($triwulanDipilih) {
-            $ikuList = Iku::whereNotNull('tipe_iku')
-                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-                ->orderBy('kode')
-                ->get()
+            $query = Iku::whereNotNull('tipe_iku')
+                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId));
+            $this->applyIkuTimFilterOnIku($query, $request);
+
+            $ikuList = $query->orderBy('kode')->get()
                 ->map(fn (Iku $iku) => $this->tempelkanCapaianAktif($iku, $triwulanDipilih->id, $tahunAnggaranId));
         }
 
-        return view('validator.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        $filterOptions = $this->filterOptionsTA($tahunAnggaranId);
+
+        return view('validator.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'filterOptions'));
     }
 
     // GET /validator/capaian-kinerja/{iku} — detail baris utk divalidasi, tab TW1-4

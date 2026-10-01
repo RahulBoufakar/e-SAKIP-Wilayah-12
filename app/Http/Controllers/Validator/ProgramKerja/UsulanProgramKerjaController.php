@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Validator\ProgramKerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -16,6 +17,7 @@ class UsulanProgramKerjaController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     private const STATUS_VALID = ['menunggu_validasi', 'approved', 'rejected'];
 
@@ -38,16 +40,17 @@ class UsulanProgramKerjaController extends Controller
             ? $request->get('status')
             : 'menunggu_validasi';
 
-        $usulanList = UsulanProgramKerja::with(['iku.timKerja'])
+        $query = UsulanProgramKerja::with(['iku.timKerja'])
             ->where('status_validasi', $status)
-            ->where('tahun', $tahun)
-            ->orderByDesc('tgl_validasi')
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->where('tahun', $tahun);
+        $this->applyIkuTimFilter($query, $request);
+
+        $usulanList = $query->orderByDesc('tgl_validasi')->orderByDesc('id')->paginate(15)->withQueryString();
+
+        $filterOptions = $this->filterOptionsTahun($tahun);
 
         return view('validator.program-kerja.usulan-program-kerja.index', compact(
-            'usulanList', 'status', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
+            'usulanList', 'status', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'filterOptions'
         ));
     }
 

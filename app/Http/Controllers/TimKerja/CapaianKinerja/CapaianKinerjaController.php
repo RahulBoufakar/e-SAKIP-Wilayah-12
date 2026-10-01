@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
@@ -41,6 +42,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CapaianKinerjaController extends Controller
 {
     use ResolvesTimKerjaSession;
+    use AppliesIkuTimFilter;
 
     private const FILE_RULE = 'file|mimes:pdf|mimetypes:application/pdf|max:5120'; // PDF, maks 5 MB
     private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi'];
@@ -70,15 +72,18 @@ class CapaianKinerjaController extends Controller
 
         $ikuList = collect();
         if ($triwulanDipilih) {
-            $ikuList = Iku::whereNotNull('tipe_iku')
+            $query = Iku::whereNotNull('tipe_iku')
                 ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
-                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-                ->orderBy('kode')
-                ->get()
+                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId));
+            $this->applyIkuTimFilterOnIku($query, $request);
+
+            $ikuList = $query->orderBy('kode')->get()
                 ->map(fn (Iku $iku) => $this->tempelkanCapaianAktif($iku, $triwulanDipilih->id, $tahunAnggaranId));
         }
 
-        return view('tim-kerja.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        $filterOptions = $this->filterOptionsTA($tahunAnggaranId, $timKerjaIds);
+
+        return view('tim-kerja.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'filterOptions'));
     }
 
     // GET /tim-kerja/capaian-kinerja/{iku} — detail baris per tipe_iku, tab TW1-4

@@ -22,6 +22,9 @@
             },
         }"
     >
+        <div class="mb-3">
+            <x-filter-iku-tim :options="$filterOptions" />
+        </div>
         <!-- Tabs Triwulan: semua dapat diklik untuk melihat periode lain -->
         <div class="flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
             @foreach ($triwulanList as $tw)

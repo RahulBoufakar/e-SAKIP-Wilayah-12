@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -21,6 +22,7 @@ class PelaporanKegiatanController extends Controller
 {
     use ResolvesTimKerjaSession;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     // GET /tim-kerja/pelaporan-kegiatan?tahun=berjalan|h_plus_1
     public function index(Request $request)
@@ -46,17 +48,19 @@ class PelaporanKegiatanController extends Controller
         $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
         $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
-        $prokerList = ProgramKerja::with(['usulanProgramKerja.iku.timKerja', 'laporanKegiatan.dokumen'])
+        $query = ProgramKerja::with(['usulanProgramKerja.iku.timKerja', 'laporanKegiatan.dokumen'])
             ->whereHas('usulanProgramKerja', function ($q) use ($timKerjaIds, $tahun) {
                 $q->where('tahun', $tahun)
-                    ->whereHas('iku.timKerja', fn ($qt) => $qt->whereIn('tim_kerja.id', $timKerjaIds)); // <-- Menggunakan relasi timKerja
-            })
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+                    ->whereHas('iku.timKerja', fn ($qt) => $qt->whereIn('tim_kerja.id', $timKerjaIds));
+            });
+        $this->applyIkuTimFilter($query, $request, 'usulanProgramKerja');
+
+        $prokerList = $query->orderByDesc('id')->paginate(15)->withQueryString();
+
+        $filterOptions = $this->filterOptionsTahun($tahun, $timKerjaIds);
 
         return view('tim-kerja.program-kerja.pelaporan-kegiatan.index', compact(
-            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
+            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'filterOptions'
         ));
     }
 

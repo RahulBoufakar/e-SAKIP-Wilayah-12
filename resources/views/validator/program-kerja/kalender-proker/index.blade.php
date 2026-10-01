@@ -23,7 +23,8 @@
         @endif
     </div>
 
-    <div class="mt-4 flex justify-end">
+    <div class="mt-4 flex items-center justify-between gap-3">
+        <x-filter-iku-tim :options="$filterOptions" />
         <a href="{{ request()->fullUrlWithQuery(['tampilkan_semua' => $tampilkanSemua ? null : 1, 'page' => null]) }}"
            class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors {{ $tampilkanSemua ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50' }}">
             <span class="h-2 w-2 rounded-full {{ $tampilkanSemua ? 'bg-amber-500' : 'bg-slate-300' }}"></span>

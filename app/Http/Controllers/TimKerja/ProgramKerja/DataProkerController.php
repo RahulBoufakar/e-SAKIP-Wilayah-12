@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -14,6 +15,7 @@ class DataProkerController extends Controller
 {
     use ResolvesTimKerjaSession;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     private const BULAN_INDO = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -41,20 +43,20 @@ class DataProkerController extends Controller
         $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
         $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
-        $prokerList = UsulanProgramKerja::with(['iku', 'programKerja', 'detailKegiatan', 'pts'])
+        $query = UsulanProgramKerja::with(['iku', 'programKerja', 'detailKegiatan', 'pts'])
             ->where('status_validasi', 'approved')
             ->where('tahun', $tahun)
-            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Gunakan 'iku.timKerja' & 'tim_kerja.id'
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds));
+        $this->applyIkuTimFilter($query, $request);
+
+        $prokerList = $query->orderByDesc('id')->paginate(15)->withQueryString();
 
         $ptsOptions = Pts::orderBy('nama_pts')->get(['id', 'kode_pts', 'nama_pts']);
-
         $bulanIndo = self::BULAN_INDO;
+        $filterOptions = $this->filterOptionsTahun($tahun, $timKerjaIds);
 
         return view('tim-kerja.program-kerja.data-proker.index', compact(
-            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'bulanIndo', 'ptsOptions'
+            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'bulanIndo', 'ptsOptions', 'filterOptions'
         ));
     }
 }
