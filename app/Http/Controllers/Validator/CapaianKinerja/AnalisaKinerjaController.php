@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Validator\CapaianKinerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
 use App\Models\AnalisaKinerja;
@@ -18,6 +19,7 @@ use RuntimeException;
 class AnalisaKinerjaController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
+    use AppliesIkuTimFilter;
 
     // GET /validator/analisa-kinerja?triwulan=TW1..TW4 — seluruh Tim Kerja, tidak difilter
     public function index(Request $request)
@@ -42,14 +44,17 @@ class AnalisaKinerjaController extends Controller
         $ikuList = collect();
 
         if ($triwulanDipilih) {
-            $ikuList = Iku::with(['timKerja', 'analisaKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
+            $query = Iku::with(['timKerja', 'analisaKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
                     ->where('tahun_anggaran_id', $tahunAnggaranId)])
-                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-                ->orderBy('kode')
-                ->get();
+                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId));
+            $this->applyIkuTimFilterOnIku($query, $request);
+
+            $ikuList = $query->orderBy('kode')->get();
         }
 
-        return view('validator.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        $filterOptions = $this->filterOptionsTA($tahunAnggaranId);
+
+        return view('validator.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'filterOptions'));
     }
 
     // PUT /validator/analisa-kinerja/{analisaKinerja}/validasi

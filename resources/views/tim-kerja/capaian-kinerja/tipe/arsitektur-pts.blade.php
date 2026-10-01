@@ -55,6 +55,8 @@
             </div>
         @endunless
 
+        <x-workflow.file-warning :masalah="$masalahFile" class="mt-4" />
+
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-5 shadow-card">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Realisasi (Akreditasi + Penggabungan) / Target PK</p>
@@ -74,7 +76,8 @@
         </div>
 
         @if ($isTriwulanAktif)
-            <div class="mt-4 flex justify-end">
+            <div class="mt-4 flex flex-wrap justify-end gap-3">
+                <x-workflow.migrasi-triwulan :iku="$iku" :triwulan-id="$triwulanDipilih->id" :ringkasan="$ringkasanMigrasi" />
                 @include('capaian-kinerja._preview-modal', [
                     'previewUrl'   => route('tim-kerja.capaian-kinerja.preview-kirim', $iku->id).'?triwulan_id='.$triwulanDipilih->id,
                     'actionUrl'    => route('tim-kerja.capaian-kinerja.kirim', $iku->id),
@@ -156,10 +159,10 @@
                             <td class="px-4 py-2.5 text-slate-600">{{ $row->pts->nama_pts ?? '—' }}</td>
                             <td class="px-4 py-2.5 text-slate-600">{{ $row->sk_penggabungan }}</td>
                             <td class="px-4 py-2.5 text-center">
-                                @if ($row->file_bukti_dukung)
+                                @if ($row->fileTersedia())
                                     <a href="{{ route('tim-kerja.capaian-kinerja.bukti.preview', [$iku->id, 'penggabungan', $row->id]) }}?triwulan_id={{ $triwulanDipilih->id }}&field=file_bukti_dukung"
                                     target="_blank" rel="noopener" class="font-medium text-blue-600 hover:underline">SK</a>
-                                @else <span class="text-xs text-slate-400">—</span> @endif
+                                @else <span class="text-xs text-slate-400">{{ filled($row->file_bukti_dukung) ? 'File tidak tersedia' : '—' }}</span> @endif
                             </td>
                             <td class="px-4 py-2.5 text-center"><x-status-badge :status="$row->status_validasi" /></td>
                             <td class="px-4 py-2.5 text-center">

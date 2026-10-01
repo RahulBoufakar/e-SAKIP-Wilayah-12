@@ -85,7 +85,7 @@ it('validator tetap bisa preview & unduh dokumen bukti Capaian Kinerja dari tim 
     );
     $baris = $capaian->kepuasanLayanan()->create([
         'total_responden' => 10,
-        'responden_puas' => 9,
+        'hasil_perhitungan_kepuasan' => 90,
         'status_validasi' => 'draft',
         'file_bukti_dukung' => $path,
     ]);

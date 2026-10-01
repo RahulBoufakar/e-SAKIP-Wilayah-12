@@ -81,12 +81,9 @@ class CapaianKinerjaHitungService
     // IKU 1 — Pola 1: rasio SUM. SUM(responden_puas) / SUM(total_responden) x 100%.
     private function kepuasanLayanan(CapaianKinerja $capaian): ?float
     {
-        $baris = $capaian->kepuasanLayanan()->statusIn($this->statusDihitung)->get();
-        $totalResponden = $baris->sum('total_responden');
+        $nilai = $capaian->kepuasanLayanan()->statusIn($this->statusDihitung)->latest()->value('hasil_perhitungan_kepuasan');
 
-        return $totalResponden > 0
-            ? round($baris->sum('responden_puas') / $totalResponden * 100, 2)
-            : null;
+        return $nilai !== null ? (float) $nilai : null;
     }
 
     // IKU 2 — Pola 2: gabungan 2 tabel, rasio COUNT thd Jumlah PTS.

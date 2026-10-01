@@ -4,6 +4,9 @@
 @section('subtitle', 'Ringkasan capaian 9 IKU Tim Kerja Anda per Triwulan')
 
 @section('content')
+    <div class="mb-3">
+        <x-filter-iku-tim :options="$filterOptions" />
+    </div>
     <div class="mt-4 flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
         @foreach ($triwulanList as $tw)
             <a href="{{ request()->fullUrlWithQuery(['triwulan' => $tw->kode]) }}"

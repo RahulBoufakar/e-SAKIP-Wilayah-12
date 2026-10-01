@@ -17,7 +17,7 @@ class CapaianFasilitasiPenelitian extends Model
     protected $table = 'capaian_fasilitasi_penelitian';
     protected $fillable = [
         'capaian_kinerja_id', 'pts_id', 'nidn', 'dosen_perwakilan', 'bentuk_fasilitasi', 'output',
-        'file_bukti_dukung', 'status_validasi', 'catatan_revisi',
+        'file_bukti_dukung', 'status_validasi', 'catatan_revisi', 'sumber_baris_id',
     ];
 
     public function capaianKinerja()

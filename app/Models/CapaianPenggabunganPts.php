@@ -13,7 +13,7 @@ class CapaianPenggabunganPts extends Model
     protected $table = 'capaian_penggabungan_pts';
     protected $fillable = [
         'capaian_kinerja_id', 'pts_id', 'sk_penggabungan',
-        'file_bukti_dukung', 'status_validasi', 'catatan_revisi',
+        'file_bukti_dukung', 'status_validasi', 'catatan_revisi', 'sumber_baris_id',
     ];
 
     public function capaianKinerja()

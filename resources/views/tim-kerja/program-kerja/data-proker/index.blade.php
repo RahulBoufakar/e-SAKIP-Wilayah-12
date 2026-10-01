@@ -4,6 +4,9 @@
 @section('subtitle', 'Program Kerja Tim Kerja Anda yang telah disetujui')
 
 @section('content')
+    <div class="mb-3">
+        <x-filter-iku-tim :options="$filterOptions" />
+    </div>
     <div class="flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
         <a href="{{ route('tim-kerja.data-proker.index', ['tahun' => 'berjalan']) }}"
            class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors

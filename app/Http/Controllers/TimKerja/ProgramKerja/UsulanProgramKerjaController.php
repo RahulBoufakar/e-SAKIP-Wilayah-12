@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -20,6 +21,7 @@ class UsulanProgramKerjaController extends Controller
 {
     use ResolvesTimKerjaSession;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     // GET /tim-kerja/usulan-program-kerja?tahun=berjalan|h_plus_1
     public function index(Request $request)
@@ -45,23 +47,23 @@ class UsulanProgramKerjaController extends Controller
         $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
         $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
-        // IKU untuk modal "Tambah" — dibatasi ke tahun yang sedang aktif di tab ini,
-        // karena tahun Usulan Program Kerja mengikuti tahun IKU yang dipilih (lihat store()).
         $ikuOptions = Iku::with('sasaranKegiatan.tahunAnggaran')
-            ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Spesifikasikan 'tim_kerja.id'
+            ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
             ->whereHas('sasaranKegiatan.tahunAnggaran', fn ($q) => $q->where('tahun', $tahun))
             ->orderBy('kode')
             ->get(['id', 'kode', 'deskripsi', 'sasaran_kegiatan_id']);
 
-        $usulanList = UsulanProgramKerja::with(['iku.timKerja'])
+        $query = UsulanProgramKerja::with(['iku.timKerja'])
             ->where('tahun', $tahun)
-            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Gunakan 'iku.timKerja'
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds));
+        $this->applyIkuTimFilter($query, $request);
+
+        $usulanList = $query->orderByDesc('id')->paginate(15)->withQueryString();
+
+        $filterOptions = $this->filterOptionsTahun($tahun, $timKerjaIds);
 
         return view('tim-kerja.program-kerja.usulan-program-kerja.index', compact(
-            'usulanList', 'ikuOptions', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
+            'usulanList', 'ikuOptions', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'filterOptions'
         ));
     }
 

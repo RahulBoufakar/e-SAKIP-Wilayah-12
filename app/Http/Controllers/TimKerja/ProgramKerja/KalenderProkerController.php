@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\TimKerja\ProgramKerja;
 
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
@@ -13,6 +14,7 @@ class KalenderProkerController extends Controller
 {
     use ResolvesTimKerjaSession;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     private const BULAN_INDO = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -47,22 +49,24 @@ class KalenderProkerController extends Controller
         $statuses = $tampilkanSemua ? ['approved', 'menunggu_validasi'] : ['approved'];
 
         $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja'])
+        $query = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('iku.timKerja', fn ($q) =>  $q->whereIn('tim_kerja.id', $timKerjaIds))
-            ->whereHas('detailKegiatan')
-            ->orderBy('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
+            ->whereHas('detailKegiatan');
+        $this->applyIkuTimFilter($query, $request);
+        $prokerList = $query->orderBy('id')->paginate(15)->withQueryString();
 
         // Agregasi per IKU per bulan untuk tooltip/modal circle kalender: dihitung
         // dari SELURUH data yang lolos filter (bukan hanya halaman pagination aktif).
        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja'])
+        $queryAll = UsulanProgramKerja::with('detailKegiatan')
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Spesifikasikan 'tim_kerja.id'
-            ->whereHas('detailKegiatan')
-            ->get();
+            ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
+            ->whereHas('detailKegiatan');
+        $this->applyIkuTimFilter($queryAll, $request);
+        $semuaProkerFilter = $queryAll->get();
 
         $prokerPerBulan = collect(range(1, 12))->mapWithKeys(function ($b) use ($semuaProkerFilter) {
             $items = $semuaProkerFilter
@@ -79,9 +83,10 @@ class KalenderProkerController extends Controller
         });
 
         $bulanIndo = self::BULAN_INDO;
+        $filterOptions = $this->filterOptionsTahun($tahun, $timKerjaIds);
 
         return view('tim-kerja.program-kerja.kalender-proker.index', compact(
-            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'tampilkanSemua', 'bulanIndo', 'prokerPerBulan'
+            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'tampilkanSemua', 'bulanIndo', 'prokerPerBulan', 'filterOptions'
         ));
     }
 }

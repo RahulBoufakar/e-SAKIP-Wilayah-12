@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Validator\CapaianKinerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
@@ -25,6 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CapaianKinerjaController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
+    use AppliesIkuTimFilter;
 
     private const FILE_RULE = 'file|mimes:pdf|mimetypes:application/pdf|max:5120'; // PDF, maks 5 MB
     private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi'];
@@ -45,14 +47,17 @@ class CapaianKinerjaController extends Controller
 
         $ikuList = collect();
         if ($triwulanDipilih) {
-            $ikuList = Iku::whereNotNull('tipe_iku')
-                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-                ->orderBy('kode')
-                ->get()
+            $query = Iku::whereNotNull('tipe_iku')
+                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId));
+            $this->applyIkuTimFilterOnIku($query, $request);
+
+            $ikuList = $query->orderBy('kode')->get()
                 ->map(fn (Iku $iku) => $this->tempelkanCapaianAktif($iku, $triwulanDipilih->id, $tahunAnggaranId));
         }
 
-        return view('validator.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        $filterOptions = $this->filterOptionsTA($tahunAnggaranId);
+
+        return view('validator.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'filterOptions'));
     }
 
     // GET /validator/capaian-kinerja/{iku} — detail baris utk divalidasi, tab TW1-4
@@ -163,14 +168,20 @@ class CapaianKinerjaController extends Controller
         $capaian = $this->resolveCapaian($request, $iku);
         $baris = $capaian->relasi($komponen)->getQuery()->findOrFail($barisId);
 
-        abort_unless($baris->file_bukti_dukung && Storage::disk('private')->exists($baris->file_bukti_dukung), 404);
+        // Whitelist kolom file (sama dengan sisi Tim Kerja): cegah pembacaan kolom sembarang.
+        $field = $request->query('field', 'file_bukti_dukung');
+        abort_unless(in_array($field, self::FIELD_FILE, true), 404);
+
+        // getAttributes(): kolom yang tidak dimiliki komponen ini dianggap null (=> 404), bukan error atribut.
+        $path = $baris->getAttributes()[$field] ?? null;
+        abort_unless($path && Storage::disk('private')->exists($path), 404);
 
         if ($download) {
-            return Storage::disk('private')->download($baris->file_bukti_dukung);
+            return Storage::disk('private')->download($path);
         }
 
-        return response()->stream(function () use ($baris) {
-            fpassthru(Storage::disk('private')->readStream($baris->file_bukti_dukung));
+        return response()->stream(function () use ($path) {
+            fpassthru(Storage::disk('private')->readStream($path));
         }, 200, ['Content-Type' => 'application/pdf']);
     }
 
