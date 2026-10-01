@@ -34,7 +34,7 @@ class KalenderProkerController extends Controller
         $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
         $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
-        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja'])
+        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja']);
         $query = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->where('status_validasi', 'approved')
             ->where('tahun', $tahun)
@@ -42,7 +42,7 @@ class KalenderProkerController extends Controller
         $this->applyIkuTimFilter($query, $request);
         $prokerList = $query->orderBy('id')->paginate(15)->withQueryString();
 
-        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja'])
+        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja']);
         $queryAll = UsulanProgramKerja::with('detailKegiatan')
             ->where('status_validasi', 'approved')
             ->where('tahun', $tahun)

@@ -37,7 +37,7 @@ class KalenderProkerController extends Controller
         $tampilkanSemua = $request->boolean('tampilkan_semua');
         $statuses = $tampilkanSemua ? ['approved', 'menunggu_validasi'] : ['approved'];
 
-        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja'])
+        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja']);
         $query = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
@@ -45,7 +45,7 @@ class KalenderProkerController extends Controller
         $this->applyIkuTimFilter($query, $request);
         $prokerList = $query->orderBy('id')->paginate(15)->withQueryString();
 
-        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja'])
+        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja']);
         $queryAll = UsulanProgramKerja::with('detailKegiatan')
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)

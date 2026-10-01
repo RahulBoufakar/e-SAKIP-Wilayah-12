@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController;
-use App\Http\Controllers\Admin\ContextController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DokumentasiController;
+use App\Http\Controllers\Admin\DokumentasiFileController;
 use App\Http\Controllers\Admin\MasterData\PtsController;
 use App\Http\Controllers\Admin\MasterData\TimKerjaController;
 use App\Http\Controllers\Admin\MasterData\UserController;
@@ -114,4 +115,15 @@ Route::middleware(['auth', 'role:admin'])
 
         // 8. Pesan Hubungi Kami
         Route::get('pesan-kontak', [PesanKontakController::class, 'index'])->name('pesan-kontak.index');
+    
+        // 9. Dokumentasi (read-only)
+        Route::get('dokumentasi', [DokumentasiController::class, 'index'])->name('dokumentasi.index');
+        Route::prefix('dokumentasi/file')->name('dokumentasi.file.')->group(function () {
+            Route::get('usulan/{usulanProgramKerja}/{field}/preview', [DokumentasiFileController::class, 'usulanPreview'])->name('usulan.preview');
+            Route::get('usulan/{usulanProgramKerja}/{field}/unduh', [DokumentasiFileController::class, 'usulanUnduh'])->name('usulan.unduh');
+            Route::get('laporan/{dokumenLaporanKegiatan}/preview', [DokumentasiFileController::class, 'laporanPreview'])->name('laporan.preview');
+            Route::get('laporan/{dokumenLaporanKegiatan}/unduh', [DokumentasiFileController::class, 'laporanUnduh'])->name('laporan.unduh');
+            Route::get('capaian/{tipe}/{komponen}/{barisId}/preview', [DokumentasiFileController::class, 'capaianPreview'])->name('capaian.preview');
+            Route::get('capaian/{tipe}/{komponen}/{barisId}/unduh', [DokumentasiFileController::class, 'capaianUnduh'])->name('capaian.unduh');
+        });
     });
