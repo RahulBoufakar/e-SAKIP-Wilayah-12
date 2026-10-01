@@ -34,6 +34,7 @@ class KalenderProkerController extends Controller
         $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
         $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
+        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja'])
         $query = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->where('status_validasi', 'approved')
             ->where('tahun', $tahun)
@@ -41,6 +42,7 @@ class KalenderProkerController extends Controller
         $this->applyIkuTimFilter($query, $request);
         $prokerList = $query->orderBy('id')->paginate(15)->withQueryString();
 
+        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja'])
         $queryAll = UsulanProgramKerja::with('detailKegiatan')
             ->where('status_validasi', 'approved')
             ->where('tahun', $tahun)
@@ -51,7 +53,12 @@ class KalenderProkerController extends Controller
         $prokerPerBulan = collect(range(1, 12))->mapWithKeys(function ($b) use ($semuaProkerFilter) {
             $items = $semuaProkerFilter
                 ->filter(fn ($p) => in_array($b, $p->detailKegiatan->bulan_kegiatan ?? []))
-                ->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama_usulan])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'nama' => $p->nama_usulan,
+                    // Usulan yang belum disetujui belum punya ProgramKerja.
+                    'status' => $p->programKerja->status_kegiatan ?? 'Belum Dilaksanakan',
+                ])
                 ->values();
 
             return [$b => $items];

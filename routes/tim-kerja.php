@@ -5,6 +5,7 @@ use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DataProkerController;
+use App\Http\Controllers\TimKerja\ProgramKerja\StatusKegiatanController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DetailKegiatanController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\TimKerja\ProgramKerja\KalenderProkerController;
@@ -40,6 +41,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
         // Data Proker
         Route::get('data-proker', [DataProkerController::class, 'index'])->name('data-proker.index');
         Route::put('data-proker/{usulanProgramKerja}/tag-pts', [PtsTaggingController::class, 'storeOrUpdate'])->name('data-proker.tag-pts');
+        Route::put('data-proker/{programKerja}/status', [StatusKegiatanController::class, 'update'])->name('data-proker.status.update');
 
         // Kalender Proker
         Route::get('kalender-proker', [KalenderProkerController::class, 'index'])->name('kalender-proker.index');
