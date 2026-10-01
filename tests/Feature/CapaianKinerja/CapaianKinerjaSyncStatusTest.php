@@ -74,7 +74,7 @@ it('getCanKirimAttribute() true hanya jika ada baris draft/ditolak yang siap dik
 
     expect($capaian->can_kirim)->toBeFalse();
 
-    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 10, 'responden_puas' => 8, 'status_validasi' => 'draft']);
+    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 10, 'hasil_perhitungan_kepuasan' => 80, 'status_validasi' => 'draft']);
 
     expect($capaian->fresh()->can_kirim)->toBeTrue();
 });
@@ -85,7 +85,7 @@ it('getCanKirimAttribute() false jika seluruh baris sudah menunggu_validasi/dise
     $iku = makeIku($sasaran, ['tipe_iku' => 'kepuasan_layanan']);
     $capaian = makeCapaianKinerja($iku, $tahun);
 
-    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 10, 'responden_puas' => 8, 'status_validasi' => 'disetujui']);
+    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 10, 'hasil_perhitungan_kepuasan' => 80, 'status_validasi' => 'disetujui']);
 
     expect($capaian->fresh()->can_kirim)->toBeFalse();
 });

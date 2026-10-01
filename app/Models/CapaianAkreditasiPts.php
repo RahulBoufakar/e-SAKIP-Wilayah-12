@@ -13,7 +13,7 @@ class CapaianAkreditasiPts extends Model
     protected $table = 'capaian_akreditasi_pts';
     protected $fillable = [
         'capaian_kinerja_id', 'pts_id', 'akreditasi', 'no_sk', 'masa_berlaku',
-        'file_bukti_dukung', 'sumber', 'status_validasi', 'catatan_revisi',
+        'file_bukti_dukung', 'sumber', 'status_validasi', 'catatan_revisi', 'sumber_baris_id',
     ];
 
     protected $casts = ['masa_berlaku' => 'date'];

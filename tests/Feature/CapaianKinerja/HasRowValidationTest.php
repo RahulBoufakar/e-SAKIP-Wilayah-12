@@ -15,7 +15,7 @@ function buatBarisKepuasan(int $capaianId, string $status): CapaianKepuasanLayan
     return CapaianKepuasanLayanan::create([
         'capaian_kinerja_id' => $capaianId,
         'total_responden' => 10,
-        'responden_puas' => 8,
+        'hasil_perhitungan_kepuasan' => 80,
         'status_validasi' => $status,
     ]);
 }
@@ -35,7 +35,7 @@ it('menolak kirim() jika status bukan draft/ditolak', function () {
     $baris = buatBarisKepuasan($this->capaian->id, 'menunggu_validasi');
 
     $baris->kirim();
-})->throws(RuntimeException::class);
+})->throws(RuntimeException::class, 'terkunci');
 
 it('setujui() hanya bisa dilakukan role validator/admin/super_admin', function () {
     $this->actingAs(userWithRole('tim_kerja'));
@@ -59,7 +59,7 @@ it('menolak setujui() kedua kali pada baris yang sama (guard transisi ganda)', f
 
     $baris->setujui();
     $baris->setujui();
-})->throws(RuntimeException::class);
+})->throws(RuntimeException::class, 'Hanya baris berstatus menunggu_validasi yang bisa disetujui');
 
 it('tolak() mewajibkan catatan_revisi dan memindahkan ke ditolak', function () {
     $this->actingAs(userWithRole('validator'));

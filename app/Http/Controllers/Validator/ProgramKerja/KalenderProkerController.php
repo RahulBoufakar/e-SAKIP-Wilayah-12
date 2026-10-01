@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Validator\ProgramKerja;
 
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -13,6 +14,7 @@ class KalenderProkerController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     private const BULAN_INDO = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -35,19 +37,19 @@ class KalenderProkerController extends Controller
         $tampilkanSemua = $request->boolean('tampilkan_semua');
         $statuses = $tampilkanSemua ? ['approved', 'menunggu_validasi'] : ['approved'];
 
-        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
+        $query = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('detailKegiatan')
-            ->orderBy('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->whereHas('detailKegiatan');
+        $this->applyIkuTimFilter($query, $request);
+        $prokerList = $query->orderBy('id')->paginate(15)->withQueryString();
 
-        $semuaProkerFilter = UsulanProgramKerja::with('detailKegiatan')
+        $queryAll = UsulanProgramKerja::with('detailKegiatan')
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
-            ->whereHas('detailKegiatan')
-            ->get();
+            ->whereHas('detailKegiatan');
+        $this->applyIkuTimFilter($queryAll, $request);
+        $semuaProkerFilter = $queryAll->get();
 
         $prokerPerBulan = collect(range(1, 12))->mapWithKeys(function ($b) use ($semuaProkerFilter) {
             $items = $semuaProkerFilter
@@ -59,9 +61,10 @@ class KalenderProkerController extends Controller
         });
 
         $bulanIndo = self::BULAN_INDO;
+        $filterOptions = $this->filterOptionsTahun($tahun);
 
         return view('validator.program-kerja.kalender-proker.index', compact(
-            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'tampilkanSemua', 'bulanIndo', 'prokerPerBulan'
+            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'tampilkanSemua', 'bulanIndo', 'prokerPerBulan', 'filterOptions'
         ));
     }
 }

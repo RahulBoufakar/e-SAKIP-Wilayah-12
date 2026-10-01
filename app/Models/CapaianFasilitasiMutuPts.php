@@ -13,7 +13,7 @@ class CapaianFasilitasiMutuPts extends Model
     protected $table = 'capaian_fasilitasi_mutu_pts';
     protected $fillable = [
         'capaian_kinerja_id', 'pts_id', 'bentuk_fasilitasi', 'tanggal_kegiatan',
-        'file_bukti_dukung', 'status_validasi', 'catatan_revisi',
+        'file_bukti_dukung', 'status_validasi', 'catatan_revisi', 'sumber_baris_id',
     ];
 
     protected $casts = ['tanggal_kegiatan' => 'date'];

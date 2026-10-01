@@ -6,9 +6,9 @@ use App\Models\Concerns\HasRowValidation;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Baris detail IKU 1 (Kepuasan Layanan) — Spek §4.3 tabel 1.
- * Realisasi = SUM(responden_puas) / SUM(total_responden) x 100%, dihitung
- * dari baris berstatus disetujui saja (App\Services\CapaianKinerjaHitungService).
+* Baris detail IKU 1 (Kepuasan Layanan) — Spek §4.3 tabel 1. Entri tunggal per header.
+* Realisasi = hasil_perhitungan_kepuasan (%, diinput langsung, maks 100) pada baris
+* disetujui terbaru (App\Services\CapaianKinerjaHitungService). responden_puas sudah dihapus.
  */
 class CapaianKepuasanLayanan extends Model
 {

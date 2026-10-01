@@ -4,14 +4,18 @@
 @section('subtitle', 'Validasi Usulan Program Kerja Tim Kerja')
 
 @section('content')
+
+    <div class="mb-3">
+        <x-filter-iku-tim :options="$filterOptions" />
+    </div>
     <div class="flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
-        <a href="{{ request()->fullUrlWithQuery(['tahun' => 'berjalan']) }}"
+        <a href="{{ request()->fullUrlWithQuery(['tahun' => 'berjalan', 'iku_id' => null, 'page' => null]) }}"
            class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors
                   {{ $tab === 'berjalan' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-brand-600' }}">
             Tahun Ini ({{ $activeTahun }})
         </a>
         @if ($nextYearAvailable)
-            <a href="{{ request()->fullUrlWithQuery(['tahun' => 'h_plus_1']) }}"
+            <a href="{{ request()->fullUrlWithQuery(['tahun' => 'h_plus_1', 'iku_id' => null, 'page' => null]) }}"
                class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-colors
                       {{ $tab === 'h_plus_1' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-brand-600' }}">
                 Tahun Depan ({{ $nextYear }})

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
@@ -11,17 +12,20 @@ use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use App\Models\User;
 use App\Services\CapaianKinerjaHitungService;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Illuminate\Database\QueryException;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 /**
  * Refaktor Capaian Kinerja Hybrid — Spek §8/§9. Satu controller melayani
  * seluruh 9 tipe_iku sekaligus: bentuk kolom yang berbeda ditangani lewat
@@ -38,6 +42,7 @@ use Illuminate\Validation\Rule;
 class CapaianKinerjaController extends Controller
 {
     use ResolvesTimKerjaSession;
+    use AppliesIkuTimFilter;
 
     private const FILE_RULE = 'file|mimes:pdf|mimetypes:application/pdf|max:5120'; // PDF, maks 5 MB
     private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi'];
@@ -67,15 +72,18 @@ class CapaianKinerjaController extends Controller
 
         $ikuList = collect();
         if ($triwulanDipilih) {
-            $ikuList = Iku::whereNotNull('tipe_iku')
+            $query = Iku::whereNotNull('tipe_iku')
                 ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
-                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-                ->orderBy('kode')
-                ->get()
+                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId));
+            $this->applyIkuTimFilterOnIku($query, $request);
+
+            $ikuList = $query->orderBy('kode')->get()
                 ->map(fn (Iku $iku) => $this->tempelkanCapaianAktif($iku, $triwulanDipilih->id, $tahunAnggaranId));
         }
 
-        return view('tim-kerja.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        $filterOptions = $this->filterOptionsTA($tahunAnggaranId, $timKerjaIds);
+
+        return view('tim-kerja.capaian-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'filterOptions'));
     }
 
     // GET /tim-kerja/capaian-kinerja/{iku} — detail baris per tipe_iku, tab TW1-4
@@ -103,11 +111,14 @@ class CapaianKinerjaController extends Controller
             ? \App\Models\Pts::orderBy('nama_pts')->get(['id', 'kode_pts', 'nama_pts'])
             : collect();
 
+        $ringkasanMigrasi = $isTriwulanAktif ? $this->ringkasanMigrasi($capaian) : null;
+        $masalahFile = $isTriwulanAktif ? $this->masalahFile($capaian) : collect();
+
         $view = $iku->tipe_iku === 'arsitektur_pts'
             ? 'tim-kerja.capaian-kinerja.tipe.arsitektur-pts'
             : 'tim-kerja.capaian-kinerja.tipe.generik';
 
-        return view($view, compact('iku', 'capaian', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'config', 'ptsOptions'));
+        return view($view, compact('iku', 'capaian', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'config', 'ptsOptions', 'ringkasanMigrasi', 'masalahFile'));
     }
 
     // POST /tim-kerja/capaian-kinerja/{iku}/baris/{komponen}
@@ -158,14 +169,18 @@ class CapaianKinerjaController extends Controller
         $fileLama = Arr::only($baris->getAttributes(), array_keys($file));
 
         try {
-            $baris->update($data + $file);
+            // Diedit di triwulan ini = milik triwulan ini: putus tautan sinkronisasi migrasi.
+            // (Hanya untuk model yang punya kolomnya; 3 tabel entri tunggal tidak.)
+            $putusTautan = in_array('sumber_baris_id', $baris->getFillable(), true) ? ['sumber_baris_id' => null] : [];
+            $baris->update($data + $file + $putusTautan);
         } catch (QueryException $e) {
             Storage::disk('private')->delete(array_values($file));
 
             return $this->responsDuplikat($e);
         }
 
-        Storage::disk('private')->delete(array_filter($fileLama)); // hapus file lama hanya setelah update sukses
+        // Hapus file lama yang tidak lagi dirujuk di baris manapun (mis. file_bukti_dukung)
+        $this->hapusFileBilaTakDirujuk($iku, $komponen, $fileLama, $this->fileFields($config));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data berhasil diperbarui.']);
     }
@@ -182,9 +197,11 @@ class CapaianKinerjaController extends Controller
             return back()->with('feedback', ['type' => 'error', 'message' => 'Data ini sedang terkunci dan tidak dapat dihapus.']);
         }
 
-        if ($baris->file_bukti_dukung) {
-            Storage::disk('private')->delete($baris->file_bukti_dukung);
-        }
+        $fields = $this->fileFields($this->configKomponen($iku->tipe_iku, $komponen));
+        $paths = Arr::only($baris->getAttributes(), $fields);
+        $baris->delete();
+        $this->hapusFileBilaTakDirujuk($iku, $komponen, $paths, $fields);
+        
         $baris->delete();
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
@@ -209,6 +226,14 @@ class CapaianKinerjaController extends Controller
         ], [
             'realisasi_override_value.lte' => 'Realisasi tidak boleh melebihi Target PK ('.$iku->target_pk.').',
         ]);
+
+        $wajibBermasalah = $this->masalahFile($capaian)->where('jenis', 'wajib');
+        if ($wajibBermasalah->isNotEmpty()) {
+            $daftar = $wajibBermasalah->take(5)->map(fn ($m) => "{$m['baris']} ({$m['field']})")->implode('; ');
+            $sisa = $wajibBermasalah->count() - 5;
+
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Data belum dapat dikirim, bukti wajib belum lengkap: '.$daftar.($sisa > 0 ? " dan {$sisa} lainnya" : '').'. Unggah lewat tombol Edit pada baris terkait.']);
+        }
 
         $jumlahDikirim = 0;
         foreach (array_keys($iku->komponenCapaian()) as $komponen) {
@@ -240,6 +265,243 @@ class CapaianKinerjaController extends Controller
         ));
 
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data berhasil dikirim untuk validasi.']);
+    }
+
+        // POST /tim-kerja/capaian-kinerja/{iku}/migrasi-triwulan
+    public function migrasiTriwulan(Request $request, Iku $iku)
+    {
+        $capaian = $this->resolveCapaianAktif($request, $iku);
+        $this->guardTriwulanAktif($capaian);
+
+        abort_if(config("capaian_kinerja_tipe.{$iku->tipe_iku}.entri_tunggal"), 422, 'IKU ini tidak mendukung migrasi triwulan.');
+
+        $sumber = $this->headerTriwulanSebelumnya($capaian);
+        if (! $sumber) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Tidak ada data triwulan sebelumnya untuk dimigrasi.']);
+        }
+
+        [$rencana, $yatim] = DB::transaction(function () use ($capaian, $sumber, $iku) {
+            // Kunci header tujuan: klik ganda menunggu di sini, lalu melihat hasil klik pertama.
+            CapaianKinerja::whereKey($capaian->id)->lockForUpdate()->firstOrFail();
+
+            $rencana = $this->rencanaMigrasi($capaian, $sumber);
+            $yatim = [];
+
+            foreach ($rencana['perbarui'] as [$komponen, $baris, $salinan]) {
+                $fields = $this->fileFields($this->configKomponen($iku->tipe_iku, $komponen));
+                $yatim[] = [$komponen, Arr::only($salinan->getRawOriginal(), $fields), $fields];
+                $salinan->update($this->dataMigrasi($baris)); // status salinan tidak disentuh
+            }
+
+            foreach ($rencana['baru'] as [$komponen, $baris]) {
+                // Path file ikut tersalin apa adanya => shared reference, tanpa duplikasi fisik.
+                $capaian->relasi($komponen)->create(
+                    $this->dataMigrasi($baris) + ['sumber_baris_id' => $baris->id, 'status_validasi' => 'draft']
+                );
+            }
+
+            return [$rencana, $yatim];
+        });
+
+        // File lama salinan yang diperbarui dibersihkan SETELAH commit (hanya jika tak lagi dirujuk siapa pun).
+        foreach ($yatim as [$komponen, $paths, $fields]) {
+            $this->hapusFileBilaTakDirujuk($iku, $komponen, $paths, $fields);
+        }
+
+        $baru = count($rencana['baru']);
+        $diperbarui = count($rencana['perbarui']);
+        $pesan = implode(', ', array_filter([
+            $baru ? "{$baru} data baru disalin" : null,
+            $diperbarui ? "{$diperbarui} data diperbarui" : null,
+            $rencana['terkunci'] ? "{$rencana['terkunci']} data sudah divalidasi dan berbeda dari triwulan sebelumnya (tidak diubah)" : null,
+            $rencana['bentrok'] ? "{$rencana['bentrok']} data tidak dapat diperbarui karena kuncinya bentrok dengan data lain" : null,
+            $rencana['dilewati'] ? "{$rencana['dilewati']} data dilewati (sudah ada)" : null,
+        ]));
+
+        if ($baru + $diperbarui === 0) {
+            return back()->with('feedback', [
+                'type' => 'error',
+                'message' => $pesan ? ucfirst($pesan).'.' : 'Tidak ada data tervalidasi di triwulan sebelumnya untuk dimigrasi.',
+            ]);
+        }
+
+        event(new ActivityOccurred(
+            subject: $capaian,
+            description: "memigrasi Capaian Kinerja IKU {$iku->kode} dari triwulan sebelumnya ke {$capaian->triwulan->kode} ({$baru} baru, {$diperbarui} diperbarui)",
+            causer: Auth::user(),
+        ));
+
+        return back()->with('feedback', [
+            'type' => 'success',
+            'message' => ucfirst($pesan).'. Data hasil migrasi berstatus draft; periksa bukti dukung lalu kirim untuk validasi.',
+        ]);
+    }
+
+    /**
+     * Pencocokan tiap baris `disetujui` triwulan sebelumnya:
+     * 1. Ada salinan bertaut (sumber_baris_id):
+     *    - data sama                       -> dilewati
+     *    - salinan menunggu/disetujui      -> terkunci (hanya dilaporkan)
+     *    - kunci baru bentrok baris lain   -> bentrok (dilaporkan)
+     *    - selain itu                      -> perbarui
+     * 2. Tanpa salinan, tapi kunci unik sama dengan baris mandiri di tujuan -> dilewati (tidak diadopsi/ditimpa)
+     * 3. Selain itu -> baru
+     * Pengecekan lewat query DB (bukan banding di PHP) supaya collation sama dengan unique constraint.
+     */
+    private function rencanaMigrasi(CapaianKinerja $capaian, CapaianKinerja $sumber): array
+    {
+        $kunci = CapaianKinerja::kunciUnik($capaian->iku->tipe_iku);
+        $rencana = ['baru' => [], 'perbarui' => [], 'terkunci' => 0, 'bentrok' => 0, 'dilewati' => 0];
+
+        foreach (array_keys($capaian->iku->komponenCapaian()) as $komponen) {
+            foreach ($sumber->relasi($komponen)->disetujui()->get() as $baris) {
+                $kunciBaris = Arr::only($baris->getRawOriginal(), $kunci);
+                $salinan = $capaian->relasi($komponen)->where('sumber_baris_id', $baris->id)->first();
+
+                if (! $salinan) {
+                    if ($capaian->relasi($komponen)->where($kunciBaris)->exists()) {
+                        $rencana['dilewati']++;
+                    } else {
+                        $rencana['baru'][] = [$komponen, $baris];
+                    }
+                    continue;
+                }
+
+                if ($this->dataMigrasi($salinan) === $this->dataMigrasi($baris)) {
+                    $rencana['dilewati']++;
+                    continue;
+                }
+
+                if (in_array($salinan->status_validasi, ['menunggu_validasi', 'disetujui'], true)) {
+                    $rencana['terkunci']++;
+                    continue;
+                }
+
+                if ($capaian->relasi($komponen)->where($kunciBaris)->where('id', '!=', $salinan->id)->exists()) {
+                    $rencana['bentrok']++;
+                    continue;
+                }
+
+                $rencana['perbarui'][] = [$komponen, $baris, $salinan];
+            }
+        }
+
+        return $rencana;
+    }
+
+    /** Kolom data yang disalin/dibandingkan (tanpa identitas, status, tautan, timestamp). */
+    private function dataMigrasi(Model $baris): array
+    {
+        return Arr::except($baris->getRawOriginal(), [
+            'id', 'capaian_kinerja_id', 'sumber_baris_id', 'status_validasi', 'catatan_revisi', 'created_at', 'updated_at',
+        ]);
+    }
+
+    /** Untuk tombol/keterangan di view. Semua nol = tidak ada yang perlu ditampilkan. */
+    private function ringkasanMigrasi(CapaianKinerja $capaian): array
+    {
+        $kosong = ['baru' => 0, 'perbarui' => 0, 'terkunci' => 0, 'bentrok' => 0, 'dilewati' => 0];
+
+        if (config("capaian_kinerja_tipe.{$capaian->iku->tipe_iku}.entri_tunggal")) {
+            return $kosong;
+        }
+
+        $sumber = $this->headerTriwulanSebelumnya($capaian);
+        if (! $sumber) {
+            return $kosong;
+        }
+
+        $rencana = $this->rencanaMigrasi($capaian, $sumber);
+
+        return [
+            'baru' => count($rencana['baru']),
+            'perbarui' => count($rencana['perbarui']),
+        ] + Arr::only($rencana, ['terkunci', 'bentrok', 'dilewati']);
+    }
+
+    /** Header capaian (IKU, TA sama) untuk triwulan urutan-1; null bila TW1 atau belum ada. */
+    private function headerTriwulanSebelumnya(CapaianKinerja $capaian): ?CapaianKinerja
+    {
+        $sebelumnyaId = Triwulan::where('urutan', $capaian->triwulan->urutan - 1)->value('id');
+        if (! $sebelumnyaId) {
+            return null;
+        }
+
+        $header = CapaianKinerja::where('iku_id', $capaian->iku_id)
+            ->where('tahun_anggaran_id', $capaian->tahun_anggaran_id)
+            ->where('triwulan_id', $sebelumnyaId)
+            ->first();
+        $header?->setRelation('iku', $capaian->iku);
+
+        return $header;
+    }
+
+    /**
+     * Hapus file fisik hanya jika tidak ada baris lain di tabel komponen yang sama
+     * yang masih merujuk path itu (file dipakai bersama antar triwulan hasil migrasi).
+     * Panggil SETELAH baris dihapus/diupdate.
+     */
+    private function hapusFileBilaTakDirujuk(Iku $iku, string $komponen, array $paths, array $fields): void
+    {
+        $model = CapaianKinerja::komponenUntukTipe($iku->tipe_iku)[$komponen];
+
+        foreach (array_filter($paths) as $path) {
+            $masihDirujuk = $model::where(function ($q) use ($fields, $path) {
+                foreach ($fields as $field) {
+                    $q->orWhere($field, $path);
+                }
+            })->exists();
+
+            if (! $masihDirujuk) {
+                Storage::disk('private')->delete($path);
+            }
+        }
+    }
+
+    /**
+     * Baris draft/ditolak (yang akan dikirim) dengan file bermasalah.
+     * jenis 'wajib'  = file wajib belum ada / hilang dari disk  -> memblokir kirim().
+     * jenis 'hilang' = file opsional berpath tapi hilang dari disk -> peringatan saja.
+     */
+    private function masalahFile(CapaianKinerja $capaian): Collection
+    {
+        $tipe = $capaian->iku->tipe_iku;
+        $masalah = collect();
+
+        foreach (array_keys($capaian->iku->komponenCapaian()) as $komponen) {
+            $config = $this->configKomponen($tipe, $komponen);
+            $butuhPts = $config['butuh_pts'] ?? false;
+            $kolom = collect($config['kolom']);
+
+            $wajib = $kolom->where('tipe', 'file')->where('required', true)->pluck('field')->all();
+            if ($config['bukti_wajib'] ?? false) {
+                $wajib[] = 'file_bukti_dukung';
+            }
+            $label = $kolom->pluck('label', 'field')->all() + ['file_bukti_dukung' => 'Bukti Dukung'];
+
+            $query = $capaian->relasi($komponen)->getQuery()->whereIn('status_validasi', ['draft', 'ditolak']);
+            if ($butuhPts) {
+                $query->with('pts');
+            }
+
+            foreach ($query->get() as $baris) {
+                $nidn = $baris->getAttributes()['nidn'] ?? null;
+                $nama = trim(($butuhPts ? ($baris->pts->nama_pts ?? '') : '').($nidn ? " [NIDN {$nidn}]" : '')) ?: "Data #{$baris->id}";
+
+                foreach ($this->fileFields($config) as $field) {
+                    if ($baris->fileTersedia($field)) {
+                        continue;
+                    }
+
+                    $isWajib = in_array($field, $wajib, true);
+                    if ($isWajib || filled($baris->{$field})) {
+                        $masalah->push(['baris' => $nama, 'field' => $label[$field] ?? $field, 'jenis' => $isWajib ? 'wajib' : 'hilang']);
+                    }
+                }
+            }
+        }
+
+        return $masalah;
     }
 
     public function previewBukti(Request $request, Iku $iku, string $komponen, int $barisId): StreamedResponse
@@ -380,21 +642,22 @@ class CapaianKinerjaController extends Controller
         return Arr::except($validated, $this->fileFields($config)); // file disimpan terpisah lewat simpanFile()
     }
 
-    /** Pencegahan duplikasi di level aplikasi (constraint DB = lapis kedua). */
+    /** Pencegahan duplikasi di level aplikasi (constraint DB = lapis kedua). Daftar kunci: CapaianKinerja::kunciUnik(). */
     private function aturanUnik(Request $request, CapaianKinerja $capaian, string $tipeIku, string $komponen, ?int $barisId): array
     {
-        $tabel = (new (CapaianKinerja::komponenUntukTipe($tipeIku)[$komponen]))->getTable();
-        $unik = fn (string $kolom, array $serta = []) => Rule::unique($tabel, $kolom)
-            ->where(fn ($q) => $q->where('capaian_kinerja_id', $capaian->id)->where($serta))
-            ->ignore($barisId);
+        $kunci = CapaianKinerja::kunciUnik($tipeIku);
+        if (! $kunci) {
+            return [];
+        }
 
-        return match ($tipeIku) {
-            'dosen_naik_jafung'                                   => ['nidn' => $unik('nidn')],
-            'arsitektur_pts', 'kebijakan_ppks'                    => ['pts_id' => $unik('pts_id')],
-            'fasilitasi_mutu_pts', 'fasilitasi_kemahasiswaan'     => ['pts_id' => $unik('pts_id', $request->only('bentuk_fasilitasi', 'tanggal_kegiatan'))],
-            'fasilitasi_penelitian'                               => ['pts_id' => $unik('pts_id', $request->only('nidn', 'bentuk_fasilitasi'))],
-            default                                               => [],
-        };
+        $tabel = (new (CapaianKinerja::komponenUntukTipe($tipeIku)[$komponen]))->getTable();
+        $utama = array_shift($kunci); // kolom pertama = tempat aturan unique; sisanya = scope
+
+        return [
+            $utama => Rule::unique($tabel, $utama)
+                ->where(fn ($q) => $q->where('capaian_kinerja_id', $capaian->id)->where($request->only($kunci)))
+                ->ignore($barisId),
+        ];
     }
 
     private function responsDuplikat(QueryException $e): RedirectResponse

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Validator\ProgramKerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\GatesUsulanProgramKerja;
 use App\Http\Controllers\Concerns\ResolvesActiveTahunAnggaran;
 use App\Http\Controllers\Controller;
@@ -19,6 +20,7 @@ class PelaporanKegiatanController extends Controller
 {
     use ResolvesActiveTahunAnggaran;
     use GatesUsulanProgramKerja;
+    use AppliesIkuTimFilter;
 
     // GET /validator/pelaporan-kegiatan?tahun=berjalan|h_plus_1 — semua Tim Kerja, tidak difilter
     public function index(Request $request)
@@ -35,14 +37,16 @@ class PelaporanKegiatanController extends Controller
         $tab = $request->get('tahun') === 'h_plus_1' && $nextYearAvailable ? 'h_plus_1' : 'berjalan';
         $tahun = $tab === 'h_plus_1' ? $nextYear : $activeTahun;
 
-        $prokerList = ProgramKerja::with(['usulanProgramKerja.iku.timKerja', 'laporanKegiatan.dokumen'])
-            ->whereHas('usulanProgramKerja', fn ($q) => $q->where('tahun', $tahun))
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+        $query = ProgramKerja::with(['usulanProgramKerja.iku.timKerja', 'laporanKegiatan.dokumen'])
+            ->whereHas('usulanProgramKerja', fn ($q) => $q->where('tahun', $tahun));
+        $this->applyIkuTimFilter($query, $request, 'usulanProgramKerja');
+
+        $prokerList = $query->orderByDesc('id')->paginate(15)->withQueryString();
+
+        $filterOptions = $this->filterOptionsTahun($tahun);
 
         return view('validator.program-kerja.pelaporan-kegiatan.index', compact(
-            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable'
+            'prokerList', 'tab', 'tahun', 'activeTahun', 'nextYear', 'nextYearAvailable', 'filterOptions'
         ));
     }
 

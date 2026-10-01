@@ -86,11 +86,11 @@
                                     @elseif ($k['tipe'] === 'date')
                                         {{ \Illuminate\Support\Carbon::parse($row->{$k['field']})->format('d/m/Y') }}
                                     @elseif ($k['tipe'] === 'file')
-                                        @if ($row->{$k['field']})
+                                        @if ($row->fileTersedia($k['field']))
                                             <a href="{{ route('validator.capaian-kinerja.bukti.preview', [$iku->id, 'utama', $row->id]) }}?triwulan_id={{ $triwulanDipilih->id }}&field={{ $k['field'] }}"
                                             target="_blank" rel="noopener" class="font-medium text-blue-600 hover:underline">{{ $k['link_teks'] ?? 'lihat dokumen' }}</a>
                                         @else
-                                            <span class="text-xs text-slate-400">—</span>
+                                            <span class="text-xs text-slate-400">{{ filled($row->{$k['field']}) ? 'File tidak tersedia' : '—' }}</span>
                                         @endif
                                     @else
                                         {{ $row->{$k['tampil'] ?? $k['field']} }}
@@ -98,7 +98,7 @@
                                 </td>
                             @endforeach
                             <td class="px-4 py-3 text-center">
-                                @if ($row->file_bukti_dukung)
+                                @if ($row->fileTersedia())
                                     <x-file-preview
                                         :id="'bukti-'.$row->id"
                                         label="Bukti Dukung"
@@ -108,7 +108,7 @@
                                         :hide-label="true"
                                     />
                                 @else
-                                    <span class="text-xs text-slate-400">—</span>
+                                    <span class="text-xs text-slate-400">{{ filled($row->file_bukti_dukung) ? 'File tidak tersedia' : '—' }}</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center"><x-status-badge :status="$row->status_validasi" /></td>

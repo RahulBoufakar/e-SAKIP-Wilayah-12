@@ -18,7 +18,7 @@ class CapaianDosenNaikJafung extends Model
     protected $fillable = [
         'capaian_kinerja_id', 'pts_id', 'nama_dosen', 'nidn', 'tipe_kepegawaian',
         'jenjang_asal', 'jenjang_baru', 'no_sk', 'tanggal_sk',
-        'file_bukti_dukung', 'status_validasi', 'catatan_revisi',
+        'file_bukti_dukung', 'status_validasi', 'catatan_revisi', 'sumber_baris_id',
     ];
 
     protected $casts = ['tanggal_sk' => 'date'];

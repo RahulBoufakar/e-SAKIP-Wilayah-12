@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\TimKerja\CapaianKinerja;
 
 use App\Events\ActivityOccurred;
+use App\Http\Controllers\Concerns\AppliesIkuTimFilter;
 use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\AnalisaKinerja;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 class AnalisaKinerjaController extends Controller
 {
     use ResolvesTimKerjaSession;
+    use AppliesIkuTimFilter;
 
     // GET /tim-kerja/analisa-kinerja?triwulan=TW1..TW4
     public function index(Request $request)
@@ -49,15 +51,18 @@ class AnalisaKinerjaController extends Controller
         $ikuList = collect();
 
         if ($triwulanDipilih) {
-            $ikuList = Iku::with(['capaianKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
+            $query = Iku::with(['capaianKinerja' => fn ($q) => $q->where('triwulan_id', $triwulanDipilih->id)
                     ->where('tahun_anggaran_id', $tahunAnggaranId)])
                 ->whereHas('timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds))
-                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId))
-                ->orderBy('kode')
-                ->get();
+                ->whereHas('sasaranKegiatan', fn ($q) => $q->where('tahun_anggaran_id', $tahunAnggaranId));
+            $this->applyIkuTimFilterOnIku($query, $request);
+
+            $ikuList = $query->orderBy('kode')->get();
         }
 
-        return view('tim-kerja.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif'));
+        $filterOptions = $this->filterOptionsTA($tahunAnggaranId, $timKerjaIds);
+
+        return view('tim-kerja.capaian-kinerja.analisa-kinerja.index', compact('ikuList', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'filterOptions'));
     }
 
     // PUT /tim-kerja/analisa-kinerja/{iku}/{triwulan}

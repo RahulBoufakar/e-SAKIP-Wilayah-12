@@ -8,18 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // // IKU 1.1: responden_puas (hitung manual) -> hasil_perhitungan_kepuasan (input langsung, %)
-        // Schema::table('capaian_kepuasan_layanan', function (Blueprint $table) {
-        //     $table->decimal('hasil_perhitungan_kepuasan', 5, 2)->nullable()->after('total_responden');
-        // });
-        // Schema::table('capaian_kepuasan_layanan', function (Blueprint $table) {
-        //     $table->dropColumn('responden_puas');
-        // });
+        // IKU 1.1: responden_puas (hitung manual) -> hasil_perhitungan_kepuasan (input langsung, %)
+        Schema::table('capaian_kepuasan_layanan', function (Blueprint $table) {
+            $table->decimal('hasil_perhitungan_kepuasan', 5, 2)->nullable()->after('total_responden');
+        });
+        Schema::table('capaian_kepuasan_layanan', function (Blueprint $table) {
+            $table->dropColumn('responden_puas');
+        });
 
-        // // IKU 1.3: hapus no_sk (tidak dipakai lagi)
-        // Schema::table('capaian_tata_kelola', function (Blueprint $table) {
-        //     $table->dropColumn('no_sk');
-        // });
+        // IKU 1.3: hapus no_sk (tidak dipakai lagi)
+        Schema::table('capaian_tata_kelola', function (Blueprint $table) {
+            $table->dropColumn('no_sk');
+        });
 
         // IKU 3.2: nidn -> nidn/nuptk maks 16 karakter, + tipe_kepegawaian
         Schema::table('capaian_dosen_naik_jafung', function (Blueprint $table) {

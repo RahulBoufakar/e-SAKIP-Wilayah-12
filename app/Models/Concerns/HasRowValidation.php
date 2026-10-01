@@ -2,8 +2,10 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\Concerns\LocksRowForTransition;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -133,5 +135,14 @@ trait HasRowValidation
     public function scopeStatusIn($query, array $statuses)
     {
         return $query->whereIn('status_validasi', $statuses);
+    }
+
+    /**
+        * True jika path terisi DAN file fisiknya masih ada di disk private.
+        * Path bisa "menggantung" bila file asal (hasil migrasi triwulan) terhapus.
+    */
+    public function fileTersedia(string $field = 'file_bukti_dukung'): bool
+    {
+        return filled($this->{$field}) && Storage::disk('private')->exists($this->{$field});
     }
 }

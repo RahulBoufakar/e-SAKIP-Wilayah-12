@@ -14,6 +14,7 @@ use App\Models\JumlahPts;
 use App\Models\JumlahPublikasi;
 use App\Models\Pts;
 use App\Services\CapaianKinerjaHitungService;
+use Illuminate\Support\Facades\Schema;
 
 /** Buat header CapaianKinerja untuk tipe_iku tertentu, IKU & Tahun Anggaran baru. */
 function buatCapaianUntukTipe(string $tipeIku): \App\Models\CapaianKinerja
@@ -29,12 +30,17 @@ beforeEach(function () {
     $this->hitung = app(CapaianKinerjaHitungService::class);
 });
 
-// --- IKU 1: kepuasan_layanan (entri tunggal sejak migrasi perketat) ---
+// --- IKU 1: kepuasan_layanan (entri tunggal, nilai % diinput langsung) ---
 
-it('kepuasan_layanan = responden_puas / total_responden x 100%, baris disetujui', function () {
+it('skema capaian_kepuasan_layanan memakai hasil_perhitungan_kepuasan dan tidak lagi responden_puas', function () {
+    expect(Schema::hasColumn('capaian_kepuasan_layanan', 'hasil_perhitungan_kepuasan'))->toBeTrue()
+        ->and(Schema::hasColumn('capaian_kepuasan_layanan', 'responden_puas'))->toBeFalse();
+});
+
+it('kepuasan_layanan = hasil_perhitungan_kepuasan pada baris disetujui', function () {
     $capaian = buatCapaianUntukTipe('kepuasan_layanan');
 
-    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 100, 'responden_puas' => 85, 'status_validasi' => 'disetujui']);
+    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 100, 'hasil_perhitungan_kepuasan' => 85, 'status_validasi' => 'disetujui']);
 
     expect($this->hitung->hitung($capaian->fresh()))->toBe(85.0);
 });
@@ -48,7 +54,7 @@ it('kepuasan_layanan null saat belum ada baris disetujui', function () {
 it('kepuasan_layanan abaikan baris menunggu_validasi', function () {
     $capaian = buatCapaianUntukTipe('kepuasan_layanan');
 
-    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 100, 'responden_puas' => 85, 'status_validasi' => 'menunggu_validasi']);
+    CapaianKepuasanLayanan::create(['capaian_kinerja_id' => $capaian->id, 'total_responden' => 100, 'hasil_perhitungan_kepuasan' => 85, 'status_validasi' => 'menunggu_validasi']);
 
     expect($this->hitung->hitung($capaian->fresh()))->toBeNull();
 });

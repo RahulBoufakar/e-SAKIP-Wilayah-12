@@ -195,4 +195,19 @@ class CapaianKinerja extends Model
                 ->whereIn('status_validasi', ['draft', 'ditolak'])
                 ->exists());
     }
+
+    /**
+     * Kunci unik untuk baris detail, sesuai tipe_iku. Dipakai controller untuk
+     * validasi input & mencegah duplikasi baris.
+     */
+    public static function kunciUnik(?string $tipeIku): array
+    {
+        return match ($tipeIku) {
+            'arsitektur_pts', 'kebijakan_ppks' => ['pts_id'],
+            'dosen_naik_jafung' => ['nidn'],
+            'fasilitasi_mutu_pts', 'fasilitasi_kemahasiswaan' => ['pts_id', 'bentuk_fasilitasi', 'tanggal_kegiatan'],
+            'fasilitasi_penelitian' => ['pts_id', 'nidn', 'bentuk_fasilitasi'],
+            default => [],
+        };
+    }
 }
