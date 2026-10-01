@@ -35,7 +35,7 @@ class KalenderProkerController extends Controller
         $tampilkanSemua = $request->boolean('tampilkan_semua');
         $statuses = $tampilkanSemua ? ['approved', 'menunggu_validasi'] : ['approved'];
 
-        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
+        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
             ->whereHas('detailKegiatan')
@@ -43,7 +43,7 @@ class KalenderProkerController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $semuaProkerFilter = UsulanProgramKerja::with('detailKegiatan')
+        $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
             ->whereHas('detailKegiatan')
@@ -52,7 +52,12 @@ class KalenderProkerController extends Controller
         $prokerPerBulan = collect(range(1, 12))->mapWithKeys(function ($b) use ($semuaProkerFilter) {
             $items = $semuaProkerFilter
                 ->filter(fn ($p) => in_array($b, $p->detailKegiatan->bulan_kegiatan ?? []))
-                ->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama_usulan])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'nama' => $p->nama_usulan,
+                    // Usulan yang belum disetujui belum punya ProgramKerja.
+                    'status' => $p->programKerja->status_kegiatan ?? 'Belum Dilaksanakan',
+                ])
                 ->values();
 
             return [$b => $items];

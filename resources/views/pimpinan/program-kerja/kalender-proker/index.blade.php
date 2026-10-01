@@ -23,6 +23,8 @@
         @endif
     </div>
 
+    <x-legenda-status-kegiatan />
+
     <div class="mt-3 overflow-x-auto rounded-2xl bg-white shadow-card">
         <table class="w-full text-left text-xs">
             <thead>
@@ -46,6 +48,8 @@
                     @php
                         $detail = $row->detailKegiatan;
                         $bulanAktif = $detail?->bulan_kegiatan ?? [];
+                        // Proker yang belum disetujui belum punya ProgramKerja -> dianggap Belum Dilaksanakan.
+                        $warnaStatus = \App\Models\ProgramKerja::WARNA_STATUS_KEGIATAN[$row->programKerja->status_kegiatan ?? 'Belum Dilaksanakan'];
                     @endphp
                     <tr class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
                         <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
@@ -76,7 +80,7 @@
                                 @if ($aktifBulanIni)
                                     <div x-data class="group relative mx-auto flex w-fit justify-center">
                                         <button type="button" @click="$refs['circle-{{ $row->id }}-{{ $b }}'].showModal()"
-                                                class="h-4 w-4 cursor-pointer rounded-full bg-brand-500 hover:bg-brand-600">
+                                                class="h-4 w-4 cursor-pointer rounded-full {{ $warnaStatus }}">
                                         </button>
 
                                         <span class="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
@@ -89,8 +93,11 @@
                                                 <p class="mt-1 text-xs text-slate-400">Program yang direncanakan pada bulan {{ $bulanIndo[$b] }} {{ $tahun }}.</p>
                                                 <ul class="mt-4 space-y-2">
                                                     @foreach ($itemsBulanIku as $item)
-                                                        <li class="rounded-lg bg-slate-50 px-3 py-2">
-                                                            <span class="min-w-0 truncate text-sm text-ink-900">{{ $item['nama'] }}</span>
+                                                        <li class="rounded-lg border-l-4 {{ \App\Models\ProgramKerja::LATAR_STATUS_KEGIATAN[$item['status']] }} px-3 py-2">
+                                                            <span class="min-w-0">
+                                                                <span class="block truncate text-sm text-ink-900">{{ $item['nama'] }}</span>
+                                                                <span class="block text-[10px] font-semibold text-slate-500">{{ $item['status'] }}</span>
+                                                            </span>
                                                         </li>
                                                     @endforeach
                                                 </ul>

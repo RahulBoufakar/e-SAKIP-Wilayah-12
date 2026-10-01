@@ -17,4 +17,10 @@ class ProgramKerjaPolicy
     {
         return $user->hasRole('tim_kerja') && $this->teamOwnership->ownsProgramKerja($user, $programKerja);
     }
+
+    // Status kegiatan hanya boleh diubah oleh Tim Kerja pemilik IKU proker ini.
+    public function updateStatus(User $user, ProgramKerja $programKerja): bool
+    {
+        return $user->hasRole('tim_kerja') && $this->teamOwnership->ownsProgramKerja($user, $programKerja);
+    }
 }

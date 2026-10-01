@@ -32,12 +32,16 @@
                     <th class="w-24 px-3 py-2.5 font-semibold">IKU / IKK</th>
                     <th class="w-48 px-3 py-2.5 font-semibold">Permasalahan</th>
                     <th class="w-28 px-3 py-2.5 text-right font-semibold">Total Anggaran</th>
+                    <th class="w-32 px-3 py-2.5 text-center font-semibold">Status Kegiatan</th>
                     <th class="w-24 px-3 py-2.5 text-center font-semibold">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse ($prokerList as $row)
-                    @php $detail = $row->detailKegiatan; @endphp
+                    @php
+                        $detail = $row->detailKegiatan;
+                        $statusKegiatan = $row->programKerja->status_kegiatan ?? null;
+                    @endphp
                     <tr id="proker-{{ $row->id }}" class="{{ $loop->even ? 'bg-slate-50/60' : '' }} hover:bg-brand-50/40">
                         <td class="px-3 py-2 text-slate-600">{{ $row->iku->timKerja->pluck('nama_tim')->join(', ') ?: '—' }}</td>
                         <td class="max-w-[12rem] px-3 py-2">
@@ -53,8 +57,24 @@
                         </td>
                         <td class="px-3 py-2 text-right text-slate-600">{{ $detail ? 'Rp '.number_format($detail->anggaran, 0, ',', '.') : '—' }}</td>
                         <td class="px-3 py-2 text-center">
+                            @if ($statusKegiatan)
+                                <span @class([
+                                    'inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                                    'bg-slate-100 text-slate-600' => $statusKegiatan === 'Belum Dilaksanakan',
+                                    'bg-amber-50 text-amber-700' => $statusKegiatan === 'Sedang Dilaksanakan',
+                                    'bg-emerald-50 text-emerald-700' => $statusKegiatan === 'Selesai Dilaksanakan',
+                                ])>{{ $statusKegiatan }}</span>
+                            @else
+                                <span class="text-slate-400">—</span>
+                            @endif
+                        </td>
+                        <td class="px-3 py-2 text-center">
                             <div x-data class="flex items-center justify-center gap-1.5">
                                 <button type="button" @click="$refs['detail-{{ $row->id }}'].showModal()" class="rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100">Detail</button>
+
+                                @if ($row->programKerja)
+                                    <button type="button" @click="$refs['status-{{ $row->id }}'].showModal()" class="rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100">Status</button>
+                                @endif
 
                                 {{-- Tag PTS: khusus Tim Kerja, visibility-only, belum ada logika aksi --}}
                                 @if ($detail && $detail->jenis_kegiatan === 'kunjungan_lapangan')
@@ -127,6 +147,33 @@
                                         </div>
                                     </div>
                                 </dialog>
+                                @if ($row->programKerja)
+                                    <dialog x-ref="status-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-sm rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
+                                        <div class="p-6 text-left">
+                                            <h3 class="text-sm font-bold text-ink-900">Ubah Status Kegiatan</h3>
+                                            <p class="mt-1 text-xs text-slate-400">{{ $row->programKerja->kode_proker ?? '—' }} — {{ $row->nama_usulan }}</p>
+
+                                            <form method="POST" action="{{ route('tim-kerja.data-proker.status.update', $row->programKerja->id) }}" class="mt-4">
+                                                @csrf
+                                                @method('PUT')
+
+                                                <div class="space-y-1.5">
+                                                    @foreach (\App\Models\ProgramKerja::STATUS_KEGIATAN as $opsi)
+                                                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                                                            <input type="radio" name="status_kegiatan" value="{{ $opsi }}" @checked($statusKegiatan === $opsi) required>
+                                                            <span>{{ $opsi }}</span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+
+                                                <div class="mt-5 flex justify-end gap-3">
+                                                    <button type="button" @click="$refs['status-{{ $row->id }}'].close()" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                                                    <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </dialog>
+                                @endif
                                 @if ($detail && $detail->jenis_kegiatan === 'kunjungan_lapangan')
                                     <dialog x-ref="tag-pts-{{ $row->id }}" @click.self="$el.close()" class="m-auto w-full max-w-sm rounded-2xl border border-slate-200 p-0 backdrop:bg-ink-950/50">
                                         <div class="p-6">
@@ -162,7 +209,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">
+                        <td colspan="7" class="px-4 py-12 text-center text-sm text-slate-400">
                             Belum ada Data Proker yang disetujui untuk Tim Kerja Anda pada tahun ini.
                         </td>
                     </tr>

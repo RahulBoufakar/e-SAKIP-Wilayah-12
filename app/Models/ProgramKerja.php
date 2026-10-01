@@ -8,7 +8,28 @@ use Illuminate\Support\Facades\DB;
 class ProgramKerja extends Model
 {
     protected $table = 'program_kerja';
-    protected $fillable = ['usulan_program_kerja_id', 'kode_proker']; //STATUS MASUK DISINI, BUAT YANG BELUM, SEDANG, DAN SELESAI
+    public const STATUS_KEGIATAN = ['Belum Dilaksanakan', 'Sedang Dilaksanakan', 'Selesai Dilaksanakan'];
+
+    // Warna penanda status pada Kalender Proker (kelas Tailwind) + legendanya.
+    public const WARNA_STATUS_KEGIATAN = [
+        'Belum Dilaksanakan' => 'bg-slate-400 hover:bg-slate-500',
+        'Sedang Dilaksanakan' => 'bg-blue-500 hover:bg-blue-600',
+        'Selesai Dilaksanakan' => 'bg-red-500 hover:bg-red-600',
+    ];
+
+    // Latar baris program pada popup detail Kalender Proker.
+    public const LATAR_STATUS_KEGIATAN = [
+        'Belum Dilaksanakan' => 'border-slate-400 bg-slate-100',
+        'Sedang Dilaksanakan' => 'border-blue-500 bg-blue-50',
+        'Selesai Dilaksanakan' => 'border-red-500 bg-red-50',
+    ];
+
+    protected $fillable = ['usulan_program_kerja_id', 'kode_proker', 'status_kegiatan'];
+
+    // Default model sama dengan default kolom, supaya proker yang baru dibuat langsung punya status.
+    protected $attributes = [
+        'status_kegiatan' => 'Belum Dilaksanakan',
+    ];
 
     protected static function booted(): void
     {

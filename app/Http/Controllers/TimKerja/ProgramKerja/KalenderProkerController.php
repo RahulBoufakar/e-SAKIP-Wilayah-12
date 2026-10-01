@@ -46,7 +46,7 @@ class KalenderProkerController extends Controller
         $tampilkanSemua = $request->boolean('tampilkan_semua');
         $statuses = $tampilkanSemua ? ['approved', 'menunggu_validasi'] : ['approved'];
 
-        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan'])
+        $prokerList = UsulanProgramKerja::with(['iku.timKerja', 'detailKegiatan', 'programKerja'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
             ->whereHas('iku.timKerja', fn ($q) =>  $q->whereIn('tim_kerja.id', $timKerjaIds))
@@ -57,7 +57,7 @@ class KalenderProkerController extends Controller
 
         // Agregasi per IKU per bulan untuk tooltip/modal circle kalender: dihitung
         // dari SELURUH data yang lolos filter (bukan hanya halaman pagination aktif).
-       $semuaProkerFilter = UsulanProgramKerja::with('detailKegiatan')
+       $semuaProkerFilter = UsulanProgramKerja::with(['detailKegiatan', 'programKerja'])
             ->whereIn('status_validasi', $statuses)
             ->where('tahun', $tahun)
             ->whereHas('iku.timKerja', fn ($q) => $q->whereIn('tim_kerja.id', $timKerjaIds)) // <-- Spesifikasikan 'tim_kerja.id'
@@ -67,7 +67,12 @@ class KalenderProkerController extends Controller
         $prokerPerBulan = collect(range(1, 12))->mapWithKeys(function ($b) use ($semuaProkerFilter) {
             $items = $semuaProkerFilter
                 ->filter(fn ($p) => in_array($b, $p->detailKegiatan->bulan_kegiatan ?? []))
-                ->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama_usulan])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'nama' => $p->nama_usulan,
+                    // Usulan yang belum disetujui belum punya ProgramKerja.
+                    'status' => $p->programKerja->status_kegiatan ?? 'Belum Dilaksanakan',
+                ])
                 ->values();
 
             return [$b => $items];
