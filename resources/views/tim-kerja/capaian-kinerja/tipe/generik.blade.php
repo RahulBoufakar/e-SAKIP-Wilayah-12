@@ -75,6 +75,9 @@
             </div>
             <x-status-badge :status="$capaian->status" />
         </div>
+        
+        {{-- Jumlah Publikasi (pembagi realisasi) --}}
+        @includeWhen($iku->tipe_iku === 'fasilitasi_penelitian', 'tim-kerja.capaian-kinerja.tipe._jumlah-publikasi')
 
         @if ($isTriwulanAktif)
             <div class="mt-4 flex flex-wrap justify-end gap-3">

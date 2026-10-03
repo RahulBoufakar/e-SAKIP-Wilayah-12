@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\CapaianKinerja;
 use App\Models\JumlahPts;
-use App\Models\JumlahPublikasi;
 use App\Support\SkorSakipZi;
 
 /**
@@ -115,13 +114,11 @@ class CapaianKinerjaHitungService
         return $totalPts > 0 ? round($jumlahPtsDifasilitasi / $totalPts * 100, 2) : null;
     }
 
-    // IKU 5 — Pola 4: rasio COUNT DISTINCT PTS dengan syarat 3 komponen implementasi terisi.
+    // IKU  5 - IKU 2.2 — rasio COUNT DISTINCT PTS dengan syarat dokumen implementasi wajib terisi.
     private function kebijakanPpks(CapaianKinerja $capaian): ?float
     {
         $jumlahPtsLengkap = $capaian->kebijakanPpks()->statusIn($this->statusDihitung)
-            ->whereNotNull('file_implementasi_ppks')
-            ->whereNotNull('file_implementasi_anti_narkoba')
-            ->whereNotNull('file_implementasi_anti_korupsi')
+            ->whereNotNull('file_implementasi_ppks_antinarkoba_antikorupsi')
             ->distinct('pts_id')->count('pts_id');
         $totalPts = $this->jumlahPts($capaian);
 
@@ -144,10 +141,11 @@ class CapaianKinerjaHitungService
     }
 
     // IKU 8 — sama pola rasio COUNT DISTINCT PTS, TAPI denominator jumlah_publikasi (bukan jumlah_pts).
+    // IKU 3.3 — rasio COUNT DISTINCT PTS, denominator jumlah_publikasi milik header ini (per triwulan).
     private function fasilitasiPenelitian(CapaianKinerja $capaian): ?float
     {
         $jumlahPtsDifasilitasi = $capaian->fasilitasiPenelitian()->statusIn($this->statusDihitung)->distinct('pts_id')->count('pts_id');
-        $totalPublikasi = (int) JumlahPublikasi::where('tahun_anggaran_id', $capaian->tahun_anggaran_id)->value('jumlah');
+        $totalPublikasi = (int) $capaian->jumlahPublikasi()->value('jumlah');
 
         return $totalPublikasi > 0 ? round($jumlahPtsDifasilitasi / $totalPublikasi * 100, 2) : null;
     }

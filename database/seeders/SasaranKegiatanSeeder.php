@@ -9,38 +9,38 @@ use Illuminate\Database\Seeder;
 
 class SasaranKegiatanSeeder extends Seeder
 {
-    /**
-     * Setiap IKU: [deskripsi, target_pk, satuan].
+        /**
+     * Setiap IKU: [deskripsi, target_pk, satuan, tipe_iku].
      * Nilai target/realisasi per triwulan sengaja TIDAK di sini — lihat NilaiTriwulan1Seeder.
      */
     private const DATA = [
         [
             'nama_sasaran' => 'Meningkatnya kualitas layanan Lembaga Layanan Pendidikan Tinggi (LLDIKTI)',
             'iku' => [
-                ['Keunggulan layanan LLDIKTI', 100, '%'],
-                ['Arsitektur Perguruan Tinggi Swasta (PTS)', 100, '%'],
-                ['Tata kelola LLDIKTI yang berkualitas dan berintegritas', 80, 'Nilai'],
+                ['Keunggulan layanan LLDIKTI', 100, '%', 'kepuasan_layanan'],
+                ['Arsitektur Perguruan Tinggi Swasta (PTS)', 100, '%', 'arsitektur_pts'],
+                ['Tata kelola LLDIKTI yang berkualitas dan berintegritas', 80, 'Nilai', 'tata_kelola'],
             ],
         ],
         [
             'nama_sasaran' => 'Meningkatnya efektivitas sosialisasi kebijakan pendidikan tinggi',
             'iku' => [
-                ['Fasilitasi peningkatan mutu pendidikan pada perguruan tinggi swasta oleh LLDIKTI', 97.72, '%'],
-                ['Pencegahan dan penanganan kekerasan, narkoba, dan korupsi', 97.72, '%'],
+                ['Fasilitasi peningkatan mutu pendidikan pada perguruan tinggi swasta oleh LLDIKTI', 97.72, '%', 'fasilitasi_mutu_pts'],
+                ['Pencegahan dan penanganan kekerasan, narkoba, dan korupsi', 97.72, '%', 'kebijakan_ppks'],
             ],
         ],
         [
             'nama_sasaran' => 'Meningkatnya inovasi perguruan tinggi dalam rangka meningkatkan mutu pendidikan',
             'iku' => [
-                ['Fasilitasi pengembangan kemahasiswaan dan prestasi oleh LLDIKTI', 97.72, '%'],
-                ['Jumlah dosen PTS yang meningkat jabatan fungsionalnya', 135, 'Orang'],
-                ['Fasilitasi Peningkatan Kinerja Penelitian, Publikasi, Pengabdian pada Masyarakat dan Kemitraan PTS', 2.15, '%'],
+                ['Fasilitasi pengembangan kemahasiswaan dan prestasi oleh LLDIKTI', 97.72, '%', 'fasilitasi_kemahasiswaan'],
+                ['Jumlah dosen PTS yang meningkat jabatan fungsionalnya', 135, 'Orang', 'dosen_naik_jafung'],
+                ['Fasilitasi Peningkatan Kinerja Penelitian, Publikasi, Pengabdian pada Masyarakat dan Kemitraan PTS', 2.15, '%', 'fasilitasi_penelitian'],
             ],
         ],
         [
             'nama_sasaran' => 'Meningkatnya tata kelola Lembaga Layanan Pendidikan Tinggi (LLDIKTI)',
             'iku' => [
-                ['Nilai Kinerja Anggaran atas Pelaksanaan RKA-K/L', 98, 'Nilai'],
+                ['Nilai Kinerja Anggaran atas Pelaksanaan RKA-K/L', 98, 'Nilai', 'nilai_rka'],
             ],
         ],
     ];
@@ -61,15 +61,21 @@ class SasaranKegiatanSeeder extends Seeder
                 'nama_sasaran' => $s['nama_sasaran'],
             ]);
 
-            foreach ($s['iku'] as [$deskripsi, $targetPk, $satuan]) {
-                Iku::firstOrCreate([
+            foreach ($s['iku'] as [$deskripsi, $targetPk, $satuan, $tipeIku]) {
+                $iku = Iku::firstOrCreate([
                     'sasaran_kegiatan_id' => $sasaran->id,
                     'deskripsi' => $deskripsi,
                 ], [
                     'jenis' => 'IKU',
                     'target_pk' => $targetPk,
                     'satuan' => $satuan,
+                    'tipe_iku' => $tipeIku,
                 ]);
+
+                // Baris lama (dibuat sebelum tipe_iku ada) ikut diisi
+                if ($iku->tipe_iku !== $tipeIku) {
+                    $iku->update(['tipe_iku' => $tipeIku]);
+                }
             }
         }
 

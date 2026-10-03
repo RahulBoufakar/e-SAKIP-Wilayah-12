@@ -29,7 +29,7 @@ class CapaianKinerjaController extends Controller
     use AppliesIkuTimFilter;
 
     private const FILE_RULE = 'file|mimes:pdf|mimetypes:application/pdf|max:5120'; // PDF, maks 5 MB
-    private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi'];
+    private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks_antinarkoba_antikorupsi'];
 
     public function __construct(private CapaianKinerjaHitungService $hitungService)
     {

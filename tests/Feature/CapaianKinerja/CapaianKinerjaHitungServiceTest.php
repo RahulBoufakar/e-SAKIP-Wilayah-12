@@ -7,13 +7,16 @@ use App\Models\CapaianFasilitasiMutuPts;
 use App\Models\CapaianFasilitasiPenelitian;
 use App\Models\CapaianKebijakanPpks;
 use App\Models\CapaianKepuasanLayanan;
+use App\Models\CapaianKinerja;
 use App\Models\CapaianNilaiRka;
 use App\Models\CapaianPenggabunganPts;
 use App\Models\CapaianTataKelola;
 use App\Models\JumlahPts;
 use App\Models\JumlahPublikasi;
 use App\Models\Pts;
+use App\Models\Triwulan;
 use App\Services\CapaianKinerjaHitungService;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
 
 /** Buat header CapaianKinerja untuk tipe_iku tertentu, IKU & Tahun Anggaran baru. */
@@ -96,9 +99,9 @@ it('fasilitasi_mutu_pts = COUNT DISTINCT pts / jumlah_pts x 100%, dedup PTS yang
     expect($this->hitung->hitung($capaian))->toBe(25.0); // 1 (dedup) / 4
 });
 
-// --- IKU 5: kebijakan_ppks (syarat 3 kolom terisi) ---
+// --- IKU 5 / 2.2: kebijakan_ppks (syarat 1 dokumen wajib terisi) ---
 
-it('kebijakan_ppks hanya menghitung PTS yang ketiga kolom implementasinya terisi', function () {
+it('kebijakan_ppks hanya menghitung PTS yang dokumen implementasi wajibnya terisi', function () {
     $capaian = buatCapaianUntukTipe('kebijakan_ppks');
     JumlahPts::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'jumlah' => 2]);
     $ptsLengkap = Pts::create(['kode_pts' => 'PTS-C1', 'nama_pts' => 'C1', 'status_pts' => 'aktif']);
@@ -106,16 +109,28 @@ it('kebijakan_ppks hanya menghitung PTS yang ketiga kolom implementasinya terisi
 
     CapaianKebijakanPpks::create([
         'capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsLengkap->id,
-        'file_implementasi_ppks' => 'ppks.pdf', 'file_implementasi_anti_narkoba' => 'narkoba.pdf', 'file_implementasi_anti_korupsi' => 'korupsi.pdf',
+        'file_implementasi_ppks_antinarkoba_antikorupsi' => 'implementasi.pdf',
         'status_validasi' => 'disetujui',
     ]);
     CapaianKebijakanPpks::create([
         'capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsTidakLengkap->id,
-        'file_implementasi_ppks' => 'ppks2.pdf', 'file_implementasi_anti_narkoba' => null, 'file_implementasi_anti_korupsi' => 'korupsi2.pdf',
+        'file_implementasi_ppks_antinarkoba_antikorupsi' => null,
         'status_validasi' => 'disetujui',
     ]);
 
-    expect($this->hitung->hitung($capaian))->toBe(50.0); // hanya 1 dari 2 PTS lengkap
+    expect($this->hitung->hitung($capaian))->toBe(50.0); // hanya 1 dari 2 PTS punya dokumen wajib
+});
+
+it('kebijakan_ppks: file_bukti_dukung opsional, tidak menentukan PTS dihitung atau tidak', function () {
+    $capaian = buatCapaianUntukTipe('kebijakan_ppks');
+    JumlahPts::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'jumlah' => 2]);
+    $ptsTanpaBukti = Pts::create(['kode_pts' => 'PTS-C3', 'nama_pts' => 'C3', 'status_pts' => 'aktif']);
+    $ptsHanyaBukti = Pts::create(['kode_pts' => 'PTS-C4', 'nama_pts' => 'C4', 'status_pts' => 'aktif']);
+
+    CapaianKebijakanPpks::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsTanpaBukti->id, 'file_implementasi_ppks_antinarkoba_antikorupsi' => 'impl.pdf', 'file_bukti_dukung' => null, 'status_validasi' => 'disetujui']);
+    CapaianKebijakanPpks::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsHanyaBukti->id, 'file_implementasi_ppks_antinarkoba_antikorupsi' => null, 'file_bukti_dukung' => 'bukti.pdf', 'status_validasi' => 'disetujui']);
+
+    expect($this->hitung->hitung($capaian))->toBe(50.0);
 });
 
 // --- IKU 6: fasilitasi_kemahasiswaan (pola sama IKU 4) ---
@@ -128,6 +143,19 @@ it('fasilitasi_kemahasiswaan = COUNT DISTINCT pts / jumlah_pts x 100%', function
     CapaianFasilitasiKemahasiswaan::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $pts->id, 'bentuk_fasilitasi' => 'Lomba', 'tanggal_kegiatan' => now(), 'file_bukti_dukung' => 'bukti.pdf', 'status_validasi' => 'disetujui']);
 
     expect($this->hitung->hitung($capaian))->toBe(20.0);
+});
+
+it('fasilitasi_kemahasiswaan menghitung satu PTS sekali walau punya banyak fasilitasi (distinct pts_id)', function () {
+    $capaian = buatCapaianUntukTipe('fasilitasi_kemahasiswaan');
+    JumlahPts::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'jumlah' => 4]);
+    $ptsA = Pts::create(['kode_pts' => 'PTS-D2', 'nama_pts' => 'D2', 'status_pts' => 'aktif']);
+    $ptsB = Pts::create(['kode_pts' => 'PTS-D3', 'nama_pts' => 'D3', 'status_pts' => 'aktif']);
+
+    CapaianFasilitasiKemahasiswaan::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsA->id, 'bentuk_fasilitasi' => 'Lomba', 'tanggal_kegiatan' => now(), 'file_bukti_dukung' => 'a1.pdf', 'status_validasi' => 'disetujui']);
+    CapaianFasilitasiKemahasiswaan::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsA->id, 'bentuk_fasilitasi' => 'Seminar', 'tanggal_kegiatan' => now(), 'file_bukti_dukung' => 'a2.pdf', 'status_validasi' => 'disetujui']);
+    CapaianFasilitasiKemahasiswaan::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $ptsB->id, 'bentuk_fasilitasi' => 'Lomba', 'tanggal_kegiatan' => now(), 'file_bukti_dukung' => 'b1.pdf', 'status_validasi' => 'disetujui']);
+
+    expect($this->hitung->hitung($capaian))->toBe(50.0); // 2 PTS / 4, bukan 3 / 4
 });
 
 // --- IKU 7: dosen_naik_jafung (dedup NIDN, satuan Orang) ---
@@ -153,17 +181,72 @@ it('constraint DB mencegah duplikasi NIDN pada header yang sama', function () {
 })->throws(\Illuminate\Database\QueryException::class);
 
 // --- IKU 8: fasilitasi_penelitian (denominator jumlah_publikasi, BUKAN jumlah_pts) ---
+// --- IKU 3.3: fasilitasi_penelitian (denominator jumlah_publikasi milik header, BUKAN jumlah_pts) ---
 
-it('fasilitasi_penelitian memakai jumlah_publikasi sebagai denominator, bukan jumlah_pts', function () {
+function barisPenelitian(int $capaianId, int $ptsId, string $bentuk, string $tanggal = '2026-03-10'): CapaianFasilitasiPenelitian
+{
+    return CapaianFasilitasiPenelitian::create([
+        'capaian_kinerja_id' => $capaianId, 'pts_id' => $ptsId,
+        'bentuk_fasilitasi' => $bentuk, 'tanggal_kegiatan' => $tanggal,
+        'status_validasi' => 'disetujui',
+    ]);
+}
+
+it('fasilitasi_penelitian memakai jumlah_publikasi milik header ini sebagai denominator, bukan jumlah_pts', function () {
     $capaian = buatCapaianUntukTipe('fasilitasi_penelitian');
-    JumlahPts::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'jumlah' => 999]); // sengaja jauh beda, harus DIABAIKAN
-    JumlahPublikasi::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'jumlah' => 5]);
+    JumlahPts::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'jumlah' => 999]); // harus DIABAIKAN
+    JumlahPublikasi::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'capaian_kinerja_id' => $capaian->id, 'jumlah' => 5]);
     $pts = Pts::create(['kode_pts' => 'PTS-F1', 'nama_pts' => 'F1', 'status_pts' => 'aktif']);
 
-    CapaianFasilitasiPenelitian::create(['capaian_kinerja_id' => $capaian->id, 'pts_id' => $pts->id, 'dosen_perwakilan' => 'Dosen X', 'bentuk_fasilitasi' => 'Hibah', 'output' => 'Jurnal', 'file_bukti_dukung' => 'bukti.pdf', 'status_validasi' => 'disetujui']);
+    barisPenelitian($capaian->id, $pts->id, 'Hibah');
 
-    expect($this->hitung->hitung($capaian))->toBe(20.0); // 1/5 x 100, bukan 1/999
+    expect($this->hitung->hitung($capaian))->toBe(20.0); // 1/5 x 100
 });
+
+it('fasilitasi_penelitian menghitung satu PTS sekali walau punya banyak fasilitasi (distinct pts_id)', function () {
+    $capaian = buatCapaianUntukTipe('fasilitasi_penelitian');
+    JumlahPublikasi::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'capaian_kinerja_id' => $capaian->id, 'jumlah' => 4]);
+    $ptsA = Pts::create(['kode_pts' => 'PTS-F2', 'nama_pts' => 'F2', 'status_pts' => 'aktif']);
+    $ptsB = Pts::create(['kode_pts' => 'PTS-F3', 'nama_pts' => 'F3', 'status_pts' => 'aktif']);
+
+    barisPenelitian($capaian->id, $ptsA->id, 'Hibah');
+    barisPenelitian($capaian->id, $ptsA->id, 'Workshop');
+    barisPenelitian($capaian->id, $ptsB->id, 'Hibah');
+
+    expect($this->hitung->hitung($capaian))->toBe(50.0); // 2 PTS / 4, bukan 3 / 4
+});
+
+it('fasilitasi_penelitian null bila jumlah publikasi belum diisi atau 0', function () {
+    $capaian = buatCapaianUntukTipe('fasilitasi_penelitian');
+    $pts = Pts::create(['kode_pts' => 'PTS-F4', 'nama_pts' => 'F4', 'status_pts' => 'aktif']);
+    barisPenelitian($capaian->id, $pts->id, 'Hibah');
+
+    expect($this->hitung->hitung($capaian->fresh()))->toBeNull(); // belum ada baris jumlah_publikasi
+
+    JumlahPublikasi::create(['tahun_anggaran_id' => $capaian->tahun_anggaran_id, 'capaian_kinerja_id' => $capaian->id, 'jumlah' => 0]);
+
+    expect($this->hitung->hitung($capaian->fresh()))->toBeNull();
+});
+
+it('fasilitasi_penelitian tidak memakai jumlah publikasi milik triwulan lain', function () {
+    $tw1 = buatCapaianUntukTipe('fasilitasi_penelitian');
+    $tw2Id = Triwulan::where('kode', 'TW2')->value('id');
+    $tw2 = makeCapaianKinerja($tw1->iku, $tw1->tahunAnggaran, ['triwulan_id' => $tw2Id]);
+    $pts = Pts::create(['kode_pts' => 'PTS-F5', 'nama_pts' => 'F5', 'status_pts' => 'aktif']);
+
+    JumlahPublikasi::create(['tahun_anggaran_id' => $tw1->tahun_anggaran_id, 'capaian_kinerja_id' => $tw1->id, 'jumlah' => 5]);
+    barisPenelitian($tw2->id, $pts->id, 'Hibah');
+
+    expect($this->hitung->hitung($tw2))->toBeNull();
+});
+
+it('constraint DB menolak baris penelitian dengan pts, bentuk, dan tanggal yang sama pada header yang sama', function () {
+    $capaian = buatCapaianUntukTipe('fasilitasi_penelitian');
+    $pts = Pts::create(['kode_pts' => 'PTS-F6', 'nama_pts' => 'F6', 'status_pts' => 'aktif']);
+
+    barisPenelitian($capaian->id, $pts->id, 'Hibah');
+    barisPenelitian($capaian->id, $pts->id, 'Hibah');
+})->throws(QueryException::class);
 
 // --- IKU 9: nilai_rka ---
 

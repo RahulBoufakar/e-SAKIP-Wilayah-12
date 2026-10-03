@@ -66,6 +66,7 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/preview', [CapaianKinerjaController::class, 'previewBukti'])->name('capaian-kinerja.bukti.preview');
         Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/unduh', [CapaianKinerjaController::class, 'unduhBukti'])->name('capaian-kinerja.bukti.unduh');
         Route::post('capaian-kinerja/{iku}/migrasi-triwulan', [CapaianKinerjaController::class, 'migrasiTriwulan'])->name('capaian-kinerja.migrasi-triwulan');
+        Route::put('capaian-kinerja/{iku}/jumlah-publikasi', [CapaianKinerjaController::class, 'simpanJumlahPublikasi'])->name('capaian-kinerja.jumlah-publikasi.update');
 
         // Analisa Kinerja
         Route::get('analisa-kinerja', [AnalisaKinerjaController::class, 'index'])->name('analisa-kinerja.index');

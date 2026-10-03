@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\JumlahPublikasi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use InvalidArgumentException;
 
 /**
@@ -118,6 +120,11 @@ class CapaianKinerja extends Model
         return $this->hasMany(CapaianNilaiRka::class);
     }
 
+    public function jumlahPublikasi(): HasOne
+    {
+        return $this->hasOne(JumlahPublikasi::class);
+    }
+
     /**
      * SATU-SATUNYA tempat pemetaan tipe_iku -> [nama_komponen => model class]
      * didefinisikan (Spek §9: resolusi eksplisit lewat match/lookup langsung,
@@ -205,8 +212,7 @@ class CapaianKinerja extends Model
         return match ($tipeIku) {
             'arsitektur_pts', 'kebijakan_ppks' => ['pts_id'],
             'dosen_naik_jafung' => ['nidn'],
-            'fasilitasi_mutu_pts', 'fasilitasi_kemahasiswaan' => ['pts_id', 'bentuk_fasilitasi', 'tanggal_kegiatan'],
-            'fasilitasi_penelitian' => ['pts_id', 'nidn', 'bentuk_fasilitasi'],
+            'fasilitasi_mutu_pts', 'fasilitasi_kemahasiswaan', 'fasilitasi_penelitian' => ['pts_id', 'bentuk_fasilitasi', 'tanggal_kegiatan'],
             default => [],
         };
     }
