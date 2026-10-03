@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\ResolvesTimKerjaSession;
 use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
+use App\Models\JumlahPublikasi;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use App\Models\User;
@@ -45,7 +46,7 @@ class CapaianKinerjaController extends Controller
     use AppliesIkuTimFilter;
 
     private const FILE_RULE = 'file|mimes:pdf|mimetypes:application/pdf|max:5120'; // PDF, maks 5 MB
-    private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks', 'file_implementasi_anti_narkoba', 'file_implementasi_anti_korupsi'];
+    private const FIELD_FILE = ['file_bukti_dukung', 'file_implementasi_ppks_antinarkoba_antikorupsi'];
 
     public function __construct(private CapaianKinerjaHitungService $hitungService)
     {
@@ -267,7 +268,49 @@ class CapaianKinerjaController extends Controller
         return back()->with('feedback', ['type' => 'success', 'message' => 'Data berhasil dikirim untuk validasi.']);
     }
 
-        // POST /tim-kerja/capaian-kinerja/{iku}/migrasi-triwulan
+    // PUT /tim-kerja/capaian-kinerja/{iku}/jumlah-publikasi — pembagi IKU 3.3 per triwulan
+    public function simpanJumlahPublikasi(Request $request, Iku $iku)
+    {
+        $capaian = $this->resolveCapaianAktif($request, $iku);
+        $this->guardTriwulanAktif($capaian);
+        abort_unless($iku->tipe_iku === 'fasilitasi_penelitian', 404);
+
+        if (in_array($capaian->status, ['menunggu_validasi', 'disetujui'], true)) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'Jumlah publikasi terkunci karena data sedang menunggu validasi atau sudah disetujui.']);
+        }
+
+        // Error bag terpisah supaya $errors->any() di halaman tidak ikut membuka modal Tambah Data.
+        $data = $request->validateWithBag('jumlahPublikasi', [
+            'jumlah' => 'required|integer|min:0',
+        ], [
+            'jumlah.required' => 'Jumlah publikasi wajib diisi.',
+            'jumlah.integer' => 'Jumlah publikasi harus berupa bilangan bulat.',
+            'jumlah.min' => 'Jumlah publikasi tidak boleh negatif.',
+        ]);
+
+        $lama = $capaian->jumlahPublikasi()->value('jumlah');
+        $lama = $lama !== null ? (int) $lama : null;
+
+        JumlahPublikasi::updateOrCreate(
+            ['capaian_kinerja_id' => $capaian->id],
+            [
+                'tahun_anggaran_id' => $capaian->tahun_anggaran_id,
+                'jumlah' => (int) $data['jumlah'],
+                'diperbarui_oleh' => Auth::id(),
+            ]
+        );
+
+        event(new ActivityOccurred(
+            subject: $capaian,
+            description: "mengubah Jumlah Publikasi IKU {$iku->kode} — {$capaian->triwulan->kode}: ".($lama ?? '—').' → '.(int) $data['jumlah'],
+            causer: Auth::user(),
+            properties: ['jumlah_lama' => $lama, 'jumlah_baru' => (int) $data['jumlah']],
+        ));
+
+        return back()->with('feedback', ['type' => 'success', 'message' => 'Jumlah publikasi berhasil disimpan.']);
+    }
+
+    // POST /tim-kerja/capaian-kinerja/{iku}/migrasi-triwulan
     public function migrasiTriwulan(Request $request, Iku $iku)
     {
         $capaian = $this->resolveCapaianAktif($request, $iku);

@@ -58,11 +58,8 @@ return [
         'label' => 'Pencegahan & Penanganan Kekerasan/Narkoba/Korupsi',
         'satuan' => '%',
         'butuh_pts' => true,
-        'bukti' => false, // tabel ini tidak punya kolom file_bukti_dukung
         'kolom' => [
-            ['field' => 'file_implementasi_ppks',          'label' => 'Bentuk Implementasi PPKS',         'tipe' => 'file', 'required' => true, 'link_teks' => 'implementasi'],
-            ['field' => 'file_implementasi_anti_narkoba',  'label' => 'Bentuk Implementasi Anti Narkoba', 'tipe' => 'file', 'required' => true, 'link_teks' => 'implementasi'],
-            ['field' => 'file_implementasi_anti_korupsi',  'label' => 'Bentuk Implementasi Anti Korupsi', 'tipe' => 'file', 'required' => true, 'link_teks' => 'implementasi'],
+            ['field' => 'file_implementasi_ppks_antinarkoba_antikorupsi', 'label' => 'Implementasi PPKS / Anti Narkoba / Anti Korupsi', 'tipe' => 'file', 'required' => true, 'link_teks' => 'implementasi'],
         ],
     ],
 
@@ -97,12 +94,9 @@ return [
         'label' => 'Fasilitasi Penelitian/Publikasi/PkM/Kemitraan PTS',
         'satuan' => '%',
         'butuh_pts' => true,
-        'bukti_wajib' => true,
         'kolom' => [
-            ['field' => 'nidn', 'label' => 'NIDN Dosen Perwakilan', 'tipe' => 'text', 'required' => true, 'rule' => 'digits:10'],
-            ['field' => 'dosen_perwakilan', 'label' => 'Dosen Perwakilan', 'tipe' => 'text', 'required' => true],
             ['field' => 'bentuk_fasilitasi', 'label' => 'Bentuk Fasilitasi', 'tipe' => 'text', 'required' => true],
-            ['field' => 'output', 'label' => 'Output', 'tipe' => 'textarea', 'required' => true],
+            ['field' => 'tanggal_kegiatan', 'label' => 'Tanggal Kegiatan', 'tipe' => 'date', 'required' => true],
         ],
     ],
 

@@ -52,6 +52,16 @@
             <x-status-badge :status="$capaian->status" />
         </div>
 
+        // Jumlah Publikasi (pembagi realisasi)
+        @if ($iku->tipe_iku === 'fasilitasi_penelitian')
+            @php $publikasi = $capaian->jumlahPublikasi?->load('diperbaruiOleh.timKerja'); @endphp
+            <div class="mt-4 rounded-2xl bg-white p-5 shadow-card">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Jumlah Publikasi (pembagi realisasi {{ $triwulanDipilih->kode }})</p>
+                <p class="mt-1 text-2xl font-bold text-ink-900">{{ $publikasi->jumlah ?? '—' }}</p>
+                @include('capaian-kinerja._jumlah-publikasi-info')
+            </div>
+        @endif
+
         <div class="mt-4 flex justify-end">
             @include('capaian-kinerja._preview-modal', [
                 'previewUrl'   => route('validator.capaian-kinerja.preview', $iku->id).'?triwulan_id='.$triwulanDipilih->id,
