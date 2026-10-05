@@ -24,6 +24,6 @@
         "flatpickr": "^4.6.13",
         "jspdf": "^4.2.1",
         "jspdf-autotable": "^5.0.8",
-        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+        "write-excel-file": "^4.1.1"
     }
 }

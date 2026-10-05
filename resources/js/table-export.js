@@ -87,13 +87,14 @@ const ekspor = {
     },
 
     async excel({ header, rows }, nama, judul) {
-        const XLSX = await import('xlsx');
-        const sheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
-        sheet['!cols'] = header.map((_, i) =>
-            ({ wch: Math.min(60, Math.max(8, ...[header, ...rows].map((r) => (r[i] ?? '').length))) }));
-        const book = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(book, sheet, judul.slice(0, 31).replace(/[\\/?*[\]:]/g, ' '));
-        XLSX.writeFile(book, `${nama}.xlsx`);
+        const { default: writeExcelFile } = await import('write-excel-file/browser');
+        const columns = header.map((_, i) =>
+            ({ width: Math.min(60, Math.max(8, ...[header, ...rows].map((r) => (r[i] ?? '').length))) }));
+        const blob = await writeExcelFile([header.map((value) => ({ value, fontWeight: 'bold' })), ...rows], {
+            columns,
+            sheet: judul.slice(0, 31).replace(/[\\/?*[\]:]/g, ' '),
+        }).toBlob();
+        unduh(blob, `${nama}.xlsx`);
     },
 
     async pdf({ header, rows }, nama, judul) {
