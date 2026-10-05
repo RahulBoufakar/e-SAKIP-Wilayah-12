@@ -107,7 +107,7 @@ class DashboardController extends Controller
         $detailList = DetailKegiatan::whereHas(
             'usulanProgramKerja',
             fn ($q) => $q->where('status_validasi', 'approved')->where('tahun', $tahun)
-        )->get(['bulan_kegiatan']);
+        )->get(['tanggal_mulai', 'tanggal_selesai']);
 
         $perBulan = array_fill(1, 12, 0);
         foreach ($detailList as $detail) {

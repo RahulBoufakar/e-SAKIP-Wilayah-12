@@ -26,15 +26,17 @@
         </div>
     @endunless
 
-    <div class="mt-4 overflow-hidden rounded-b-2xl bg-white shadow-card">
-        <table class="w-full text-left text-sm">
+    <x-export-buttons class="mt-4 justify-end" target="tabel-capaian-kinerja" title="Capaian Kinerja {{ $triwulanDipilih->kode ?? '' }}" />
+
+    <div class="mt-2 overflow-hidden rounded-b-2xl bg-white shadow-card">
+        <table id="tabel-capaian-kinerja" class="w-full text-left text-sm">
             <thead>
                 <tr class="bg-ink-900 text-white">
                     <th class="w-2/5 px-4 py-3 font-semibold">Indikator Kinerja Utama (IKU)</th>
                     <th class="w-28 px-4 py-3 text-center font-semibold">Target PK</th>
                     <th class="w-28 px-4 py-3 text-center font-semibold">Realisasi</th>
                     <th class="w-36 px-4 py-3 text-center font-semibold">Status</th>
-                    <th class="w-24 px-4 py-3 text-center font-semibold">Aksi</th>
+                    <th data-export-ignore class="w-24 px-4 py-3 text-center font-semibold">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">

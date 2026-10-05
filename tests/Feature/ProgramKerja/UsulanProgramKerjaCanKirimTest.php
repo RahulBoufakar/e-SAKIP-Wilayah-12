@@ -36,7 +36,7 @@ it('true hanya saat file, detail kegiatan, dan status semuanya terpenuhi', funct
         'nama_detail' => 'Detail Uji',
         'tempat_pelaksanaan' => 'Kantor',
         'bentuk_kegiatan' => 'Luring',
-        'bulan_kegiatan' => [1, 2],
+        'tanggal_mulai' => '2026-01-01', 'tanggal_selesai' => '2026-02-28',
         'anggaran' => 1000000,
     ]);
 
@@ -56,7 +56,7 @@ it('false saat status sudah menunggu_validasi meskipun data lengkap', function (
         'nama_detail' => 'Detail Uji',
         'tempat_pelaksanaan' => 'Kantor',
         'bentuk_kegiatan' => 'Luring',
-        'bulan_kegiatan' => [1, 2],
+        'tanggal_mulai' => '2026-01-01', 'tanggal_selesai' => '2026-02-28',
         'anggaran' => 1000000,
     ]);
 
