@@ -25,8 +25,9 @@
     <div
         x-data="{
             modalOpen: {{ $errors->any() ? 'true' : 'false' }},
-            mode: 'create',
-            form: { id: null, pts_id: '', @foreach ($config['kolom'] as $k) {{ $k['field'] }}: '', @endforeach },
+            {{-- Gagal validasi: buka lagi modal dengan mode & isian terakhir, bukan form kosong mode tambah --}}
+            mode: @js(old('_method') === 'PUT' ? 'edit' : 'create'),
+            form: { id: @js(old('baris_id')), pts_id: @js(old('pts_id', '')), @foreach ($config['kolom'] as $k) {{ $k['field'] }}: @js($k['tipe'] === 'file' ? '' : old($k['field'], '')), @endforeach },
             openCreate() {
                 this.mode = 'create';
                 this.form = { id: null, pts_id: '', @foreach ($config['kolom'] as $k) {{ $k['field'] }}: '', @endforeach };
@@ -202,8 +203,14 @@
                         @method('PUT')
                     </template>
                     <input type="hidden" name="triwulan_id" value="{{ $triwulanDipilih->id }}">
+                    <input type="hidden" name="baris_id" :value="form.id">
 
                     <div class="flex-1 space-y-3 overflow-y-auto px-6 py-4">
+                        @if ($errors->any())
+                            <ul class="list-inside list-disc rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                                @foreach ($errors->all() as $pesan)<li>{{ $pesan }}</li>@endforeach
+                            </ul>
+                        @endif
                         @if ($config['butuh_pts'] ?? false)
                             <div>
                                 <label class="block text-sm font-medium text-ink-900">PTS</label>
