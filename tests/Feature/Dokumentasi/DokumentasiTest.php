@@ -193,13 +193,13 @@ it('filter triwulan=TW2 hanya menampilkan capaian TW2', function () {
         ->assertOk()->assertSee('Univ Triwulan Dua')->assertDontSee('Univ Triwulan Satu');
 });
 
-// (6) Triwulan diturunkan dari bulan_kegiatan
+// (6) Triwulan diturunkan dari bulan kegiatan (rentang tanggal)
 
-it('proker dengan bulan_kegiatan [3,4] muncul di TW1 dan TW2, tidak di TW3', function () {
+it('proker bulan Mar-Apr muncul di TW1 dan TW2, tidak di TW3', function () {
     $usulan = dokumentasiUsulan($this->iku, 'Usulan Lintas Triwulan');
     DetailKegiatan::create([
         'usulan_program_kerja_id' => $usulan->id, 'nama_detail' => 'Detail', 'tempat_pelaksanaan' => 'Kantor',
-        'bentuk_kegiatan' => 'Luring', 'bulan_kegiatan' => [3, 4], 'anggaran' => 1000,
+        'bentuk_kegiatan' => 'Luring', 'tanggal_mulai' => '2026-03-10', 'tanggal_selesai' => '2026-04-10', 'anggaran' => 1000,
     ]);
     $admin = userWithRole('admin');
 

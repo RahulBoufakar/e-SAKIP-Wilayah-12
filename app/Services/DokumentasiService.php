@@ -202,7 +202,7 @@ class DokumentasiService
         return $rows;
     }
 
-    /** bulan_kegiatan [3,4,5] => ['TW1','TW2'] */
+    /** bulan kegiatan [3,4,5] (dari rentang tanggal) => ['TW1','TW2'] */
     private function triwulanDariBulan(?array $bulan): array
     {
         return collect($bulan ?? [])

@@ -8,9 +8,16 @@ Alpine.plugin(collapse);
 // Impor Store Workflow Status
 import './stores/workflow-status';
 
+// Komponen tombol export tabel & tombol copy
+import { tableExport, copyButton } from './table-export';
+import { tanggalPicker } from './date-picker';
+
 // Set Global Variables
 window.Alpine = Alpine;
 window.Chart = Chart;
+window.tableExport = tableExport;
+window.copyButton = copyButton;
+window.tanggalPicker = tanggalPicker;
 
 // Komponen bell notifikasi in-app — dipakai bareng di navbar Admin, Tim Kerja, dan Validator
 window.notificationBell = function () {

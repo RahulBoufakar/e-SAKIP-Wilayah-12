@@ -38,8 +38,10 @@
             </button>
         </div>
 
-        <div class="mt-3 overflow-x-auto rounded-2xl bg-white shadow-card">
-            <table class="w-full text-left text-xs">
+        <x-export-buttons class="mt-3 justify-end" target="tabel-usulan-proker" title="Usulan Program Kerja {{ $tahun }}" />
+
+        <div class="mt-2 overflow-x-auto rounded-2xl bg-white shadow-card">
+            <table id="tabel-usulan-proker" class="w-full text-left text-xs">
                 <thead>
                     <tr class="bg-ink-900 text-white">
                         <th class="w-10 px-3 py-2.5 font-semibold">No</th>
@@ -49,7 +51,7 @@
                         <th class="w-48 px-3 py-2.5 font-semibold">Deskripsi</th>
                         <th class="w-48 px-3 py-2.5 font-semibold">Permasalahan</th>
                         <th class="w-32 px-3 py-2.5 text-center font-semibold">Status</th>
-                        <th class="w-20 px-3 py-2.5 text-center font-semibold">Aksi</th>
+                        <th data-export-ignore class="w-20 px-3 py-2.5 text-center font-semibold">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">

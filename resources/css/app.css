@@ -8,3 +8,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Date picker satu tahun (resources/js/date-picker.js): tahun di header kalender tidak bisa diubah. */
+.fp-tahun-terkunci .flatpickr-current-month .numInputWrapper {
+    pointer-events: none;
+}
+.fp-tahun-terkunci .flatpickr-current-month .numInputWrapper span.arrowUp,
+.fp-tahun-terkunci .flatpickr-current-month .numInputWrapper span.arrowDown {
+    display: none;
+}

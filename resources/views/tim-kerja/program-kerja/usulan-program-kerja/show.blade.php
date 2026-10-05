@@ -195,18 +195,64 @@
                         <option value="Hybrid" @selected($bentukKegiatanValue === 'Hybrid')>Hybrid</option>
                     </x-form.select>
                     
-                    <div>
+                    @php
+                        $awalTahun = "{$usulan->tahun}-01-01";
+                        $akhirTahun = "{$usulan->tahun}-12-31";
+                    @endphp
+                    <div x-data="{
+                            mulai: @js(old('tanggal_mulai', $detail?->tanggal_mulai?->toDateString() ?? '')),
+                            selesai: @js(old('tanggal_selesai', $detail?->tanggal_selesai?->toDateString() ?? '')),
+                            namaBulan: @js(array_slice($bulanIndo, 1)),
+                            // Bulan yang tercakup rentang tanggal, mis. 2026-03-03 s/d 2026-05-15 => [3, 4, 5].
+                            get bulan() {
+                                if (! this.mulai || ! this.selesai || this.selesai < this.mulai) return [];
+                                const dari = Number(this.mulai.slice(5, 7)), sampai = Number(this.selesai.slice(5, 7));
+                                return Array.from({ length: sampai - dari + 1 }, (_, i) => dari + i);
+                            },
+                            init() {
+                                // x-ref anak baru terdaftar setelah init(), jadi picker dibuat di $nextTick.
+                                this.$nextTick(() => this.pasangPicker());
+                            },
+                            pasangPicker() {
+                                const awal = @js($awalTahun), akhir = @js($akhirTahun);
+                                const pickerSelesai = tanggalPicker(this.$refs.selesai, {
+                                    min: this.mulai || awal, max: akhir,
+                                    onChange: (t) => this.selesai = t,
+                                });
+                                tanggalPicker(this.$refs.mulai, {
+                                    min: awal, max: akhir,
+                                    onChange: (t) => {
+                                        this.mulai = t;
+                                        // Tanggal selesai tidak boleh sebelum tanggal mulai.
+                                        pickerSelesai.set('minDate', t || awal);
+                                        if (this.selesai && t && this.selesai < t) pickerSelesai.clear();
+                                    },
+                                });
+                            },
+                         }">
                         <label class="block text-sm font-medium text-ink-900">Bulan Kegiatan</label>
-                        <div class="mt-1.5 grid grid-cols-4 gap-2 sm:grid-cols-6">
-                            @foreach ($bulanIndo as $angka => $nama)
-                                @continue($angka === 0)
-                                <label class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-medium text-slate-600">
-                                    <input type="checkbox" name="bulan_kegiatan[]" value="{{ $angka }}" @checked(in_array($angka, old('bulan_kegiatan', $detail->bulan_kegiatan ?? [])))>
-                                    {{ $nama }}
-                                </label>
-                            @endforeach
+                        <div class="mt-1.5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <label for="tanggal_mulai" class="block text-xs font-medium text-slate-500">Tanggal Mulai</label>
+                                <input type="text" id="tanggal_mulai" name="tanggal_mulai" x-ref="mulai" value="{{ old('tanggal_mulai', $detail?->tanggal_mulai?->toDateString()) }}" placeholder="Pilih tanggal mulai"
+                                       class="mt-1 w-full rounded-lg border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:ring-brand-500">
+                                @error('tanggal_mulai')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label for="tanggal_selesai" class="block text-xs font-medium text-slate-500">Tanggal Selesai</label>
+                                <input type="text" id="tanggal_selesai" name="tanggal_selesai" x-ref="selesai" value="{{ old('tanggal_selesai', $detail?->tanggal_selesai?->toDateString()) }}" placeholder="Pilih tanggal selesai"
+                                       class="mt-1 w-full rounded-lg border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:ring-brand-500">
+                                @error('tanggal_selesai')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+                            </div>
                         </div>
-                        @error('bulan_kegiatan')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+                        <div class="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+                            <template x-for="(nama, i) in namaBulan" :key="i">
+                                <span x-text="nama"
+                                      :class="bulan.includes(i + 1) ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-400'"
+                                      class="rounded-lg border px-2 py-1.5 text-center text-xs font-medium"></span>
+                            </template>
+                        </div>
+                        <p class="mt-1.5 text-xs text-slate-400">Bulan terisi otomatis dari rentang tanggal (tahun {{ $usulan->tahun }}).</p>
                     </div>
 
                     <div>

@@ -14,7 +14,7 @@ it('hanya menampilkan proker berstatus approved pada Kalender Proker Pimpinan', 
         'nama_detail' => 'Detail Disetujui',
         'tempat_pelaksanaan' => 'Kantor',
         'bentuk_kegiatan' => 'Luring',
-        'bulan_kegiatan' => [3],
+        'tanggal_mulai' => '2026-03-01', 'tanggal_selesai' => '2026-03-31',
         'anggaran' => 1000000,
     ]);
 
@@ -24,7 +24,7 @@ it('hanya menampilkan proker berstatus approved pada Kalender Proker Pimpinan', 
         'nama_detail' => 'Detail Menunggu',
         'tempat_pelaksanaan' => 'Kantor',
         'bentuk_kegiatan' => 'Daring',
-        'bulan_kegiatan' => [3],
+        'tanggal_mulai' => '2026-03-01', 'tanggal_selesai' => '2026-03-31',
         'anggaran' => 500000,
     ]);
 

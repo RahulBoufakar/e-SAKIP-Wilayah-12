@@ -5,8 +5,9 @@
 
 @section('content')
 
-    <div class="mb-3">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <x-filter-iku-tim :options="$filterOptions" />
+        <x-export-buttons target="tabel-usulan-proker" title="Usulan Program Kerja {{ $tab === 'h_plus_1' ? $nextYear : $activeTahun }}" />
     </div>
     <div class="flex w-full overflow-hidden rounded-t-2xl bg-white shadow-card">
         <a href="{{ request()->fullUrlWithQuery(['tahun' => 'berjalan', 'iku_id' => null, 'page' => null]) }}"
@@ -38,7 +39,7 @@
     </div>
 
     <div class="overflow-x-auto rounded-b-2xl bg-white shadow-card">
-        <table class="w-full text-left text-sm">
+        <table id="tabel-usulan-proker" class="w-full text-left text-sm">
             <thead>
                 <tr class="bg-ink-900 text-white">
                     <th class="w-24 px-4 py-3 font-semibold">IKU</th>
@@ -46,7 +47,7 @@
                     <th class="px-4 py-3 font-semibold">Permasalahan</th>
                     <th class="w-40 px-4 py-3 font-semibold">Tim Kerja</th>
                     <th class="w-24 px-4 py-3 text-center font-semibold">Tahun</th>
-                    <th class="w-28 px-4 py-3 text-center font-semibold">Aksi</th>
+                    <th data-export-ignore class="w-28 px-4 py-3 text-center font-semibold">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
