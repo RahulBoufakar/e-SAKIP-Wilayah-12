@@ -678,7 +678,11 @@ class CapaianKinerjaController extends Controller
         $validated = ValidatorFacade::make(
             $request->all(),
             $rules,
-            ['unique' => 'Data yang sama sudah tercatat pada triwulan ini.', 'mimes' => 'File harus berformat PDF.', 'mimetypes' => 'File harus berformat PDF.', 'max' => 'Ukuran file maksimal 5 MB.'],
+            [
+                'unique' => 'Data yang sama sudah tercatat pada triwulan ini.', 'mimes' => 'File harus berformat PDF.', 'mimetypes' => 'File harus berformat PDF.',
+                // 'max' global akan menimpa max:100 / max:16 pada kolom non-file, jadi khusus field file saja
+                ...collect($this->fileFields($config))->mapWithKeys(fn ($f) => ["{$f}.max" => 'Ukuran file maksimal 5 MB.'])->all(),
+            ],
             collect($config['kolom'])->pluck('label', 'field')->all()
         )->validate();
 

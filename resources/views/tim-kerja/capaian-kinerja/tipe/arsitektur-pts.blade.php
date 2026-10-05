@@ -20,16 +20,19 @@
         $akreditasiList = $capaian->relasi('akreditasi')->with('pts')->latest()->get();
         $penggabunganList = $capaian->relasi('penggabungan')->with('pts')->latest()->get();
         $ptsOptions = \App\Models\Pts::orderBy('nama_pts')->get(['id', 'kode_pts', 'nama_pts']);
+        $akr = old('komponen_form') === 'akreditasi';
+        $gab = old('komponen_form') === 'penggabungan';
     @endphp
 
     <div
         x-data="{
-            modalAkreditasiOpen: false,
-            modalPenggabunganOpen: false,
-            modeAkreditasi: 'create',
-            modePenggabungan: 'create',
-            formAkreditasi: { id: null, pts_id: '', akreditasi: '', no_sk: '', masa_berlaku: '' },
-            formPenggabungan: { id: null, pts_id: '', sk_penggabungan: '' },
+            {{-- Gagal validasi: buka lagi modal yang tadi disubmit dengan mode & isian terakhir --}}
+            modalAkreditasiOpen: @js($errors->any() && $akr),
+            modalPenggabunganOpen: @js($errors->any() && $gab),
+            modeAkreditasi: @js($akr && old('_method') === 'PUT' ? 'edit' : 'create'),
+            modePenggabungan: @js($gab && old('_method') === 'PUT' ? 'edit' : 'create'),
+            formAkreditasi: @js(['id' => $akr ? old('baris_id') : null, 'pts_id' => $akr ? old('pts_id', '') : '', 'akreditasi' => $akr ? old('akreditasi', '') : '', 'no_sk' => $akr ? old('no_sk', '') : '', 'masa_berlaku' => $akr ? old('masa_berlaku', '') : '']),
+            formPenggabungan: @js(['id' => $gab ? old('baris_id') : null, 'pts_id' => $gab ? old('pts_id', '') : '', 'sk_penggabungan' => $gab ? old('sk_penggabungan', '') : '']),
             openCreateAkreditasi() { this.modeAkreditasi = 'create'; this.formAkreditasi = { id: null, pts_id: '', akreditasi: '', no_sk: '', masa_berlaku: '' }; this.modalAkreditasiOpen = true; },
             openEditAkreditasi(row) { this.modeAkreditasi = 'edit'; this.formAkreditasi = { id: row.id, pts_id: row.pts_id, akreditasi: row.akreditasi, no_sk: row.no_sk, masa_berlaku: row.masa_berlaku }; this.modalAkreditasiOpen = true; },
             openCreatePenggabungan() { this.modePenggabungan = 'create'; this.formPenggabungan = { id: null, pts_id: '', sk_penggabungan: '' }; this.modalPenggabunganOpen = true; },
@@ -198,6 +201,8 @@
                     @csrf
                     <template x-if="modeAkreditasi === 'edit'">@method('PUT')</template>
                     <input type="hidden" name="triwulan_id" value="{{ $triwulanDipilih->id }}">
+                    <input type="hidden" name="komponen_form" value="akreditasi">
+                    <input type="hidden" name="baris_id" :value="formAkreditasi.id">
 
                     <div class="space-y-3">
                         <div>
@@ -206,6 +211,7 @@
                                 <option value="" disabled>Pilih PTS</option>
                                 @foreach ($ptsOptions as $pts)<option value="{{ $pts->id }}">{{ $pts->kode_pts }} — {{ $pts->nama_pts }}</option>@endforeach
                             </select>
+                            @error('pts_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                         </div>
                         <x-form.input label="Akreditasi" name="akreditasi" type="text" x-model="formAkreditasi.akreditasi" required />
                         <x-form.input label="No. SK" name="no_sk" type="text" x-model="formAkreditasi.no_sk" required />
@@ -236,6 +242,8 @@
                     @csrf
                     <template x-if="modePenggabungan === 'edit'">@method('PUT')</template>
                     <input type="hidden" name="triwulan_id" value="{{ $triwulanDipilih->id }}">
+                    <input type="hidden" name="komponen_form" value="penggabungan">
+                    <input type="hidden" name="baris_id" :value="formPenggabungan.id">
 
                     <div class="space-y-3">
                         <div>
@@ -244,6 +252,7 @@
                                 <option value="" disabled>Pilih PTS</option>
                                 @foreach ($ptsOptions as $pts)<option value="{{ $pts->id }}">{{ $pts->kode_pts }} — {{ $pts->nama_pts }}</option>@endforeach
                             </select>
+                            @error('pts_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                         </div>
                         <x-form.input label="No. SK Penggabungan" name="sk_penggabungan" type="text" x-model="formPenggabungan.sk_penggabungan" required />
                     </div>
@@ -253,6 +262,7 @@
                         <input type="file" name="file_bukti_dukung" accept="application/pdf" :required="modePenggabungan === 'create'"
                             class="mt-1.5 w-full rounded-lg border-slate-200 text-sm">
                         <p class="mt-1 text-xs text-slate-400" x-show="modePenggabungan === 'edit'">Kosongkan jika tidak ingin mengganti file.</p>
+                        @error('file_bukti_dukung')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>
 
                     <div class="mt-5 flex justify-end gap-3">
