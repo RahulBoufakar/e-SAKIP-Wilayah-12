@@ -49,10 +49,16 @@
                     <x-form.textarea label="Deskripsi" name="deskripsi" :rows="3" x-model="form.deskripsi" />
                     <x-form.textarea label="Permasalahan" name="permasalahan" :rows="3" x-model="form.permasalahan" />
 
-                    @if ($templateList->isNotEmpty())
+                    {{-- RAB Generator: bila aktif (flag + ada file master aktif), template rab_excel statis digantikan modal pilihan. --}}
+                    @php $rabGeneratorAktif = config('rab_generator.enabled') && \App\Models\FileExcel::aktif()->exists(); @endphp
+                    @if ($templateList->isNotEmpty() || $rabGeneratorAktif)
                         <div class="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-3">
                             <span class="text-xs font-semibold text-slate-500">Unduh Template:</span>
+                            @if ($rabGeneratorAktif)
+                                <x-rab-generator.modal />
+                            @endif
                             @foreach ($templateList as $template)
+                                @continue($rabGeneratorAktif && $template->kode === 'rab_excel')
                                 <a href="{{ $template->file_url }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm hover:bg-brand-50">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 12m0 0l4.5-4.5M12 12V3" /></svg>
                                     {{ $template->nama }}
