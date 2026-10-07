@@ -140,11 +140,11 @@
                                 </div>
 
                                 @if (! $laporan->is_locked && in_array($dok->status_validasi, ['ditolak', 'belum_diunggah'], true))
-                                    @include('admin.layout.confirm-delete', [
-                                        'refName' => 'confirm-dok-'.$dok->id,
-                                        'action' => route('tim-kerja.pelaporan-kegiatan.dokumen.destroy', $dok->id),
-                                        'label' => 'dokumen "'.$dok->nama_dokumen.'"',
-                                    ])
+                                    <x-confirm-delete
+                                        refName="confirm-dok-{{ $dok->id }}"
+                                        :action="route('tim-kerja.pelaporan-kegiatan.dokumen.destroy', $dok->id)"
+                                        label='dokumen "{{ $dok->nama_dokumen }}"'
+                                    />
                                 @endif
                             </td>
                         </tr>

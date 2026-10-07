@@ -32,6 +32,18 @@
                       style="animation: fb-draw .35s .35s ease-out forwards;" />
             </svg>
         </template>
+        <template x-if="type === 'warning'">
+            <svg class="h-16 w-16 text-amber-500" viewBox="0 0 52 52" fill="none">
+                <circle cx="26" cy="26" r="24" stroke="currentColor" stroke-width="3" class="opacity-20" />
+                <circle cx="26" cy="26" r="24" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                        stroke-dasharray="151" stroke-dashoffset="151" pathLength="151"
+                        style="animation: fb-draw .5s ease-out forwards;" />
+                <path d="M26 16v13" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"
+                      stroke-dasharray="13" stroke-dashoffset="13" pathLength="13"
+                      style="animation: fb-draw .3s .35s ease-out forwards;" />
+                <circle cx="26" cy="35" r="1.75" fill="currentColor" />
+            </svg>
+        </template>
         <template x-if="type === 'error'">
             <svg class="h-16 w-16 text-rose-500" viewBox="0 0 52 52" fill="none">
                 <circle cx="26" cy="26" r="24" stroke="currentColor" stroke-width="3" class="opacity-20" />
@@ -44,7 +56,7 @@
             </svg>
         </template>
 
-        <p class="text-sm font-semibold text-ink-900" x-text="type === 'success' ? 'Berhasil' : 'Gagal'"></p>
+        <p class="text-sm font-semibold text-ink-900" x-text="type === 'success' ? 'Berhasil' : (type === 'warning' ? 'Perhatian' : 'Gagal')"></p>
         <p class="text-sm text-slate-500">{{ $feedback['message'] ?? '' }}</p>
     </div>
 </div>
@@ -54,3 +66,4 @@
         to { stroke-dashoffset: 0; }
     }
 </style>
+

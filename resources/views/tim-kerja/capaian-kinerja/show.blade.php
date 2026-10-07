@@ -131,11 +131,11 @@
                 </div>
 
                 @unless ($locked)
-                    @include('admin.layout.confirm-delete', [
-                        'refName' => 'confirm-dok-'.$dok->id,
-                        'action' => route('tim-kerja.capaian-kinerja.dokumen.destroy', $dok->id),
-                        'label' => 'dokumen "'.$dok->nama_dokumen.'"',
-                    ])
+                    <x-confirm-delete
+                        refName="confirm-dok-{{ $dok->id }}"
+                        :action="route('tim-kerja.capaian-kinerja.dokumen.destroy', $dok->id)"
+                        label='dokumen "{{ $dok->nama_dokumen }}"'
+                    />
                 @endunless
             @empty
                 <p class="py-4 text-sm text-slate-400">Belum ada dokumen.</p>
