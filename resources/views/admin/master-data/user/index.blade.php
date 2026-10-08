@@ -91,11 +91,11 @@
                                         <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
                                     @endcan
                                 </div>
-                                @include('admin.layout.confirm-delete', [
-                                    'refName' => 'confirm-'.$row->id,
-                                    'action' => route('admin.master-data.user.destroy', $row->id),
-                                    'label' => $row->name,
-                                ])
+                                <x-confirm-delete
+                                    refName="confirm-{{ $row->id }}"
+                                    :action="route('admin.master-data.user.destroy', $row->id)"
+                                    label="{{ $row->name }}"
+                                />
                             </td>
                         </tr>
                     @empty

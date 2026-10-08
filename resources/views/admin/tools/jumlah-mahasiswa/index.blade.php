@@ -31,11 +31,11 @@
                                 <div class="flex items-center justify-end mr-3">
                                     <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
                                 </div>
-                                @include('admin.layout.confirm-delete', [
-                                    'refName' => 'confirm-'.$row->id,
-                                    'action' => route('admin.tools.jumlah-mahasiswa.destroy', $row->id),
-                                    'label' => 'data Jumlah Mahasiswa TA '.$row->tahunAnggaran->tahun,
-                                ])
+                                <x-confirm-delete
+                                    refName="confirm-{{ $row->id }}"
+                                    :action="route('admin.tools.jumlah-mahasiswa.destroy', $row->id)"
+                                    label="data Jumlah Mahasiswa TA {{ $row->tahunAnggaran->tahun }}"
+                                />
                             </td>
                         </tr>
                     @empty

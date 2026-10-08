@@ -125,7 +125,11 @@
                                 @if (! $row->isFieldLocked() && $isTriwulanAktif)
                                     <button @click="openEditAkreditasi(@js($row))" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Edit</button>
                                     <button @click="$refs['confirm-akr-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
-                                    @include('admin.layout.confirm-delete', ['refName' => 'confirm-akr-'.$row->id, 'action' => route('tim-kerja.capaian-kinerja.baris.destroy', [$iku->id, 'akreditasi', $row->id]).'?triwulan_id='.$triwulanDipilih->id, 'label' => 'data akreditasi ini'])
+                                    <x-confirm-delete
+                                        refName="confirm-akr-{{ $row->id }}"
+                                        :action="route('tim-kerja.capaian-kinerja.baris.destroy', [$iku->id, 'akreditasi', $row->id]).'?triwulan_id='.$triwulanDipilih->id"
+                                        label="data akreditasi ini"
+                                    />
                                 @else
                                     <span class="text-xs text-slate-300">Terkunci</span>
                                 @endif
@@ -172,7 +176,11 @@
                                 @if (! $row->isFieldLocked() && $isTriwulanAktif)
                                     <button @click="openEditPenggabungan(@js($row))" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Edit</button>
                                     <button @click="$refs['confirm-gab-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
-                                    @include('admin.layout.confirm-delete', ['refName' => 'confirm-gab-'.$row->id, 'action' => route('tim-kerja.capaian-kinerja.baris.destroy', [$iku->id, 'penggabungan', $row->id]).'?triwulan_id='.$triwulanDipilih->id, 'label' => 'data penggabungan ini'])
+                                    <x-confirm-delete
+                                        refName="confirm-gab-{{ $row->id }}"
+                                        :action="route('tim-kerja.capaian-kinerja.baris.destroy', [$iku->id, 'penggabungan', $row->id]).'?triwulan_id='.$triwulanDipilih->id"
+                                        label="data penggabungan ini"
+                                    />
                                 @else
                                     <span class="text-xs text-slate-300">Terkunci</span>
                                 @endif

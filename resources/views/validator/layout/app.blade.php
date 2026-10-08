@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    @include('admin.layout.feedback-popup')
+    <x-feedback-popup />
 
     @stack('scripts')
 </body>

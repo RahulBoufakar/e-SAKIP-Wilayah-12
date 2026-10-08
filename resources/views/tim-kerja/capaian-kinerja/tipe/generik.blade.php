@@ -165,11 +165,11 @@
                                         <button @click="openEdit(@js($row))" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Edit</button>
                                         <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
                                     </div>
-                                    @include('admin.layout.confirm-delete', [
-                                        'refName' => 'confirm-'.$row->id,
-                                        'action' => route('tim-kerja.capaian-kinerja.baris.destroy', [$iku->id, 'utama', $row->id]).'?triwulan_id='.$triwulanDipilih->id,
-                                        'label' => 'data ini',
-                                    ])
+                                    <x-confirm-delete
+                                        refName="confirm-{{ $row->id }}"
+                                        :action="route('tim-kerja.capaian-kinerja.baris.destroy', [$iku->id, 'utama', $row->id]).'?triwulan_id='.$triwulanDipilih->id"
+                                        label="data ini"
+                                    />
                                 @else
                                     <span class="text-xs text-slate-300">Terkunci</span>
                                 @endif

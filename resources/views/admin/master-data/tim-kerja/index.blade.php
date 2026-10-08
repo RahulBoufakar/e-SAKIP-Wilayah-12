@@ -47,11 +47,11 @@
                                     <button @click="openEdit(@js($row))" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Edit</button>
                                     <button @click="$refs['confirm-{{ $row->id }}'].showModal()" type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button>
                                 </div>
-                                @include('admin.layout.confirm-delete', [
-                                    'refName' => 'confirm-'.$row->id,
-                                    'action' => route('admin.master-data.tim-kerja.destroy', $row->id),
-                                    'label' => $row->nama_tim,
-                                ])
+                                <x-confirm-delete
+                                    refName="confirm-{{ $row->id }}"
+                                    :action="route('admin.master-data.tim-kerja.destroy', $row->id)"
+                                    label="{{ $row->nama_tim }}"
+                                />
                             </td>
                         </tr>
                     @empty
