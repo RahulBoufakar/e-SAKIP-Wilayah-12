@@ -73,6 +73,13 @@ function unduh(blob, namaFile) {
 
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+function sisipkanPemisah(teks, n = 15) {
+    if (typeof teks !== 'string') return teks ?? '';
+    return teks.replace(/\S{15,}/g, (kata) =>
+        kata.replace(new RegExp(`(.{${n}})`, 'g'), '$1\u200B')
+    );
+}
+
 const ekspor = {
     async copy({ header, rows }) {
         await salinTeks([header, ...rows].map((r) => r.join('\t')).join('\n'));
@@ -100,15 +107,34 @@ const ekspor = {
     async pdf({ header, rows }, nama, judul) {
         const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+        const marginLR = 40;
+        const lebarTersedia = doc.internal.pageSize.getWidth() - marginLR * 2;
+
+        const headerSiap = header.map((h) => sisipkanPemisah(h));
+        const rowsSiap = rows.map((r) => r.map((sel) => sisipkanPemisah(sel)));
+
+        const columnStyles = {};
+        const jumlahKolom = headerSiap.length;
+        if (jumlahKolom > 0) {
+            const minLebar = Math.max(35, (lebarTersedia / jumlahKolom) * 0.5);
+            headerSiap.forEach((_, i) => {
+                columnStyles[i] = {
+                    cellWidth: 'auto',
+                    minCellWidth: minLebar,
+                };
+            });
+        }
+
         doc.setFontSize(13);
-        doc.text(judul, 40, 40);
+        doc.text(judul, marginLR, 40);
         autoTable(doc, {
-            head: [header],
-            body: rows,
+            head: [headerSiap],
+            body: rowsSiap,
             startY: 55,
             styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
             headStyles: { fillColor: [15, 23, 42] },
-            margin: { left: 40, right: 40 },
+            margin: { left: marginLR, right: marginLR },
+            columnStyles,
         });
         doc.save(`${nama}.pdf`);
     },
@@ -124,7 +150,7 @@ const ekspor = {
                 body { font-family: system-ui, sans-serif; font-size: 11px; margin: 24px; color: #0f172a; }
                 h1 { font-size: 15px; margin: 0 0 12px; }
                 table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; }
+                th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; word-break: break-word; overflow-wrap: anywhere; }
                 th { background: #0f172a; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 @page { size: landscape; }
             </style></head><body>
@@ -142,6 +168,30 @@ export function tableExport(targetId, judul) {
     return {
         sibuk: null,
         pesan: '',
+        formatDipilih: null,
+
+        bukaKonfirmasi(format, label) {
+            if (this.sibuk) return;
+            if (format === 'copy') {
+                this.jalankan('copy');
+                return;
+            }
+            this.formatDipilih = { id: format, label: label };
+            this.$refs.dialogKonfirmasi?.showModal();
+        },
+
+        tutupKonfirmasi() {
+            this.$refs.dialogKonfirmasi?.close();
+            this.formatDipilih = null;
+        },
+
+        lanjutkanEkspor() {
+            if (! this.formatDipilih) return;
+            const format = this.formatDipilih.id;
+            this.tutupKonfirmasi();
+            this.jalankan(format);
+        },
+
         async jalankan(format) {
             const tabel = document.getElementById(targetId);
             if (! tabel || this.sibuk) {
