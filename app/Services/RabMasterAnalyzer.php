@@ -129,6 +129,9 @@ class RabMasterAnalyzer
         $kategori = [];
         $k = null; // indeks kategori aktif
         $g = null; // indeks kelompok aktif dalam kategori aktif
+        $barisKomponen = null; // baris komponen / sub aktif, untuk memetakan induk -> anak (peringatan rumus)
+        $barisSub = null;
+        $anak = []; // baris induk => baris anak langsung (RO -> komponen -> sub -> akun)
 
         foreach ($segmen as $no => $tipe) {
             $kode = $rows[$no][0];
@@ -145,6 +148,9 @@ class RabMasterAnalyzer
                 ];
                 $k = count($kategori) - 1;
                 $g = null;
+                $barisKomponen = $no;
+                $barisSub = null;
+                $anak[$roBaris][] = $no;
             } elseif ($tipe === 'sub') {
                 if ($k === null) {
                     $peringatan[] = "Sub {$kode} (baris {$no}) berada sebelum komponen manapun; baris ini tidak dapat dipilih.";
@@ -160,6 +166,8 @@ class RabMasterAnalyzer
                     'urutan' => count($kategori[$k]['kelompok']) + 1,
                 ];
                 $g = count($kategori[$k]['kelompok']) - 1;
+                $barisSub = $no;
+                $anak[$barisKomponen][] = $no;
             } elseif ($tipe === 'akun') {
                 if ($g === null) {
                     $peringatan[] = "Akun {$kode} (baris {$no}) tidak berada di dalam kelompok; baris ini tidak dapat dipilih.";
@@ -168,12 +176,15 @@ class RabMasterAnalyzer
                 }
 
                 $kategori[$k]['kelompok'][$g]['baris_akhir'] = $akhir[$no];
+                $anak[$barisSub][] = $no;
             }
         }
 
         array_push($peringatan, ...$this->peringatanStruktur($kategori));
 
         [$kolomAkhir, $barisCetakAkhir] = $this->areaCetak($ws);
+
+        array_push($peringatan, ...$this->peringatanRumusInduk($ws, $kolomAkhir, $anak, $segmen, $rows));
 
         return [
             'kode_sheet' => $ws->getTitle(),
@@ -250,6 +261,88 @@ class RabMasterAnalyzer
         }
 
         return [$ws->getHighestDataColumn(), $ws->getHighestDataRow()];
+    }
+
+    /**
+     * Q3 (07-risiko): rumus total induk yang lupa menjumlahkan salah satu anaknya, mis. sub `=X76+X83`
+     * padahal akun di baris 79 juga ada nilainya. Berdasarkan pola, bukan nilai:
+     * - induk = RO, komponen, sub; anak = tingkat di bawahnya (komponen, sub, akun);
+     * - kolom total = kolom akhir area cetak;
+     * - ditandai hanya bila rumus merujuk SEBAGIAN anak (minimal satu, tetapi tidak semua). Rumus yang tidak
+     *   merujuk satu anak pun (angka tetap, merujuk cucu) dilewati agar tidak berisik;
+     * - anak yang sel totalnya kosong tidak dihitung (tidak ada yang bisa dijumlahkan).
+     * Perakit tetap menyalin rumus apa adanya; ini hanya peringatan untuk admin.
+     *
+     * @param  array<int, int[]>  $anak  baris induk => baris anak
+     * @param  array<int, string>  $segmen  baris => tipe (ro/komponen/sub/akun)
+     * @param  array<int, array{0: string, 1: string}>  $rows
+     * @return string[]
+     */
+    private function peringatanRumusInduk(Worksheet $ws, string $kolom, array $anak, array $segmen, array $rows): array
+    {
+        $jenis = ['ro' => 'RO', 'komponen' => 'komponen', 'sub' => 'sub', 'akun' => 'akun'];
+        $peringatan = [];
+
+        foreach ($anak as $induk => $daftarAnak) {
+            $rumus = $this->nilaiSel($ws, $kolom, $induk);
+            if (! is_string($rumus) || ! str_starts_with($rumus, '=')) {
+                continue;
+            }
+
+            $dirujuk = $this->barisDirujuk($rumus, $kolom);
+            $berNilai = array_filter($daftarAnak, fn (int $no) => $this->nilaiSel($ws, $kolom, $no) !== null);
+            $terlewat = array_values(array_filter($berNilai, fn (int $no) => ! in_array($no, $dirujuk, true)));
+
+            // Bukan pola jumlah anak (tidak merujuk satu anak pun) atau sudah lengkap.
+            if ($terlewat === [] || count($terlewat) === count($berNilai)) {
+                continue;
+            }
+
+            $daftar = implode(', ', array_map(
+                fn (int $no) => "{$jenis[$segmen[$no]]} {$rows[$no][0]} (baris {$no})",
+                $terlewat,
+            ));
+            $peringatan[] = "Rumus total {$jenis[$segmen[$induk]]} {$rows[$induk][0]} (baris {$induk}) tidak menjumlahkan {$daftar}; "
+                .'total di master bisa lebih kecil dari rinciannya.';
+        }
+
+        return $peringatan;
+    }
+
+    /** Nilai sel (rumus atau angka); null bila sel tidak ada atau kosong. Tidak membuat sel baru. */
+    private function nilaiSel(Worksheet $ws, string $kolom, int $baris): mixed
+    {
+        if (! $ws->cellExists($kolom.$baris)) {
+            return null;
+        }
+
+        $nilai = $ws->getCell($kolom.$baris)->getValue();
+
+        return $nilai === '' ? null : $nilai;
+    }
+
+    /**
+     * Nomor baris yang dirujuk rumus pada kolom total: sel tunggal (`X22`) dan rentang (`X22:X30`, semua
+     * barisnya dihitung). Rujukan ke kolom lain atau sheet lain tidak dihitung.
+     *
+     * @return int[]
+     */
+    private function barisDirujuk(string $rumus, string $kolom): array
+    {
+        $rumus = str_replace('$', '', strtoupper($rumus));
+        $kolom = preg_quote(strtoupper($kolom), '/');
+        $baris = [];
+
+        $rumus = preg_replace_callback('/(?<![A-Z])'.$kolom.'(\d+):'.$kolom.'(\d+)(?!\d)/', function (array $m) use (&$baris) {
+            array_push($baris, ...range((int) $m[1], (int) $m[2]));
+
+            return '';
+        }, $rumus);
+
+        preg_match_all('/(?<![A-Z!])'.$kolom.'(\d+)(?!\d)/', $rumus, $cocok);
+        array_push($baris, ...array_map('intval', $cocok[1]));
+
+        return array_values(array_unique($baris));
     }
 
     /**

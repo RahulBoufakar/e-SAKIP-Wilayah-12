@@ -146,6 +146,40 @@ class RabMasterController extends Controller
         return back()->with('feedback', ['type' => 'success', 'message' => 'File master diaktifkan.']);
     }
 
+    // DELETE /admin/rab-generator/{fileExcel} — hapus file master lama yang tidak aktif
+    public function destroy(FileExcel $fileExcel)
+    {
+        $this->authorize('delete', $fileExcel);
+
+        // Snapshot untuk log: setelah baris dan berkas hilang, tidak ada lagi yang bisa dilihat.
+        $snapshot = [
+            'nama_file' => $fileExcel->nama_file,
+            'path' => $fileExcel->path,
+            'hash_sha256' => $fileExcel->hash_sha256,
+            'jumlah_sheet' => $fileExcel->sheets()->count(),
+            'tanggal_upload' => $fileExcel->tanggal_upload?->toIso8601String(),
+        ];
+
+        // Satu query bersyarat (bukan cek lalu hapus): bila file ini diaktifkan orang lain di sela-sela itu,
+        // tidak ada baris yang terhapus. Sheet, header, footer, kategori, dan kelompok ikut terhapus lewat cascade.
+        if (FileExcel::whereKey($fileExcel->id)->where('aktif', false)->delete() === 0) {
+            return back()->with('feedback', ['type' => 'error', 'message' => 'File master yang sedang aktif tidak dapat dihapus. Aktifkan file lain terlebih dahulu.']);
+        }
+
+        // Baris dihapus lebih dulu: bila penghapusan berkas gagal, yang tersisa hanya berkas yatim di disk private.
+        Storage::disk('private')->delete($fileExcel->path);
+
+        event(new ActivityOccurred(
+            subject: $fileExcel,
+            description: "menghapus file master RAB \"{$fileExcel->nama_file}\"",
+            causer: Auth::user(),
+            properties: $snapshot,
+        ));
+
+        return redirect()->route('admin.rab-generator.index')
+            ->with('feedback', ['type' => 'success', 'message' => "File master \"{$fileExcel->nama_file}\" dihapus."]);
+    }
+
     // PUT /admin/rab-generator/sheet/{sheet} — koreksi header/footer dan nama kelompok
     public function updateSheet(Request $request, Sheet $sheet, RabMasterInspector $inspector)
     {

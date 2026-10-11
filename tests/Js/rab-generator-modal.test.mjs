@@ -265,3 +265,99 @@ test('regresi: iframe pratinjau dibuat di dalam <template x-if>, bukan di wadah 
     assert.ok(blok.includes('<iframe'), 'iframe harus berada di dalam blok x-if');
     assert.ok(! /x-show/.test(sebelumIframe), 'tidak boleh ada x-show di antara x-if dan iframe');
 });
+
+// --- Perbesar dan zoom pratinjau ---
+
+const PRATINJAU_OK = balas(200, { status: 'ok', preview_token: 'tok-1', previews: [{ judul: '7735.951', html: '<p>x</p>' }] });
+
+test('perbesar: default mati, toggle bolak-balik, dan tidak menyentuh pilihan, token, atau pratinjau', async () => {
+    const { c } = await siap([PRATINJAU_OK]);
+    c.pilih[1].on = true;
+    c.toggleKategori(c.sheets[0], c.sheets[0].kategori[0]);
+    await c.pratinjau();
+
+    assert.equal(c.diperbesar, false);
+    const pilihSebelum = JSON.stringify(c.pilih);
+
+    c.toggleBesar();
+    assert.equal(c.diperbesar, true);
+    c.toggleBesar();
+    assert.equal(c.diperbesar, false);
+
+    c.toggleBesar();
+    assert.equal(JSON.stringify(c.pilih), pilihSebelum);
+    assert.equal(c.token, 'tok-1');
+    assert.equal(c.previews.length, 1);
+    assert.equal(c.basi, false, 'memperbesar bukan perubahan pilihan: Unduh tetap aktif');
+});
+
+test('Esc saat diperbesar hanya mengecilkan; Esc berikutnya menutup modal', async () => {
+    const { c } = await siap();
+    c.toggleBesar();
+
+    c.escape();
+    assert.equal(c.diperbesar, false);
+    assert.equal(c.open, true, 'modal tetap terbuka setelah Esc pertama');
+
+    c.escape();
+    assert.equal(c.open, false);
+});
+
+test('tutup() mereset mode perbesar, tetapi zoom pilihan pengguna dipertahankan', async () => {
+    const { c } = await siap();
+    c.toggleBesar();
+    c.setZoom(75);
+
+    c.tutup();
+
+    assert.equal(c.diperbesar, false);
+    assert.equal(c.zoom, 75);
+});
+
+test('zoom: hanya 50/75/100 yang diterima, nilai lain diabaikan', async () => {
+    const { c } = await siap();
+    assert.equal(c.zoom, 100);
+
+    c.setZoom(50);
+    assert.equal(c.zoom, 50);
+    c.setZoom(33);
+    c.setZoom('75'); // string bukan salah satu opsi
+    c.setZoom(0);
+    assert.equal(c.zoom, 50);
+});
+
+test('gaya iframe: 100% tanpa transform; 50% dan 75% dikompensasi agar tetap memenuhi wadah', async () => {
+    const { c } = await siap();
+
+    assert.equal(c.gayaIframe, '');
+
+    c.setZoom(50);
+    assert.equal(c.gayaIframe, 'width:200%;height:200%;transform:scale(0.5);transform-origin:0 0;');
+
+    c.setZoom(75);
+    assert.match(c.gayaIframe, /^width:133\.3+\d*%;height:133\.3+\d*%;transform:scale\(0\.75\);transform-origin:0 0;$/);
+});
+
+test('regresi markup: pohon disembunyikan dengan x-show (bukan x-if), grid satu kolom saat diperbesar, Esc lewat escape()', () => {
+    const awalPohon = blade.indexOf('{{-- Pohon pilihan');
+    assert.notEqual(awalPohon, -1);
+    const tagPohon = /<div[^>]*>/.exec(blade.slice(blade.indexOf('<div', awalPohon)))[0];
+
+    assert.ok(tagPohon.includes('x-show="! diperbesar"'), 'pohon harus disembunyikan lewat x-show');
+    assert.ok(! /<template[^>]*x-if="[^"]*diperbesar/.test(blade), 'pohon tidak boleh dibuang dengan x-if (pilihan harus utuh)');
+
+    assert.ok(/:class="diperbesar \? '' : 'lg:grid-cols-2'"/.test(blade), 'dua kolom hanya saat tidak diperbesar');
+    assert.ok(blade.includes('@keydown.escape.window="escape()"'));
+    assert.ok(! blade.includes('@keydown.escape.window="tutup()"'));
+});
+
+test('markup: tombol Perbesar/Kecilkan dan grup zoom ada, dan iframe dibungkus tanpa x-show', () => {
+    assert.ok(blade.includes('@click="toggleBesar()"'));
+    assert.ok(blade.includes("diperbesar ? 'Kecilkan' : 'Perbesar'"));
+    assert.ok(blade.includes('@click="setZoom(z)"'));
+    assert.ok(blade.includes(':style="gayaIframe"'));
+
+    const iframe = blade.indexOf('<iframe');
+    const pembungkus = blade.lastIndexOf('<div', iframe);
+    assert.ok(! /x-show|x-if/.test(blade.slice(pembungkus, iframe)), 'pembungkus iframe tidak boleh x-show/x-if');
+});

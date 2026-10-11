@@ -311,3 +311,117 @@ it('aktifkan menjadikan hanya satu file master aktif dan mencatat audit log', fu
 
     Event::assertDispatched(ActivityOccurred::class, fn ($e) => str_contains($e->description, 'mengaktifkan file master RAB'));
 });
+
+it('Q3: rumus total induk yang melewatkan anak disimpan sebagai peringatan sheet dan tampil di halaman tinjau', function () {
+    unggahMasterRab($this, function (Spreadsheet $s) {
+        $ws = $s->getSheetByName('7735.951');
+        $ws->getCell('X21')->setValue('=X22'); // komponen 051 lupa sub B (baris 28)
+        $ws->getCell('X22')->setValue(100);
+        $ws->getCell('X28')->setValue(200);
+    });
+    $file = FileExcel::first();
+    $pesan = 'Rumus total komponen 051 (baris 21) tidak menjumlahkan sub B (baris 28)';
+
+    expect($file->peringatan['sheet']['7735.951'])->toHaveCount(1)
+        ->and($file->peringatan['sheet']['7735.951'][0])->toContain($pesan)
+        ->and($file->jumlah_peringatan)->toBe(2); // + sheet "Catatan" tanpa RO
+
+    $this->actingAs($this->admin)->get(route('admin.rab-generator.show', $file))
+        ->assertOk()->assertSee($pesan);
+});
+
+// --- Hapus file master lama yang tidak aktif ---
+
+/** Dua master terunggah: [lama (tidak aktif), baru (aktif)]. */
+function duaMasterRab($test): array
+{
+    unggahMasterRab($test);
+    unggahMasterRab($test);
+    [$lama, $baru] = FileExcel::orderBy('id')->get()->all();
+    $baru->aktifkan();
+
+    return [$lama->fresh(), $baru->fresh()];
+}
+
+it('hapus file master tidak aktif: baris, hasil deteksi (cascade), dan berkas di disk private hilang; log mencatat snapshot', function () {
+    [$lama, $baru] = duaMasterRab($this);
+    $path = $lama->path;
+    $sheetBaru = Sheet::where('file_excel_id', $baru->id)->count();
+    Storage::disk('private')->assertExists($path);
+
+    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))
+        ->assertRedirect(route('admin.rab-generator.index'))
+        ->assertSessionHas('feedback.type', 'success');
+
+    expect(FileExcel::find($lama->id))->toBeNull()
+        ->and(Sheet::where('file_excel_id', $lama->id)->count())->toBe(0)
+        ->and(Header::count())->toBe($sheetBaru)    // hanya milik master baru yang tersisa
+        ->and(Footer::count())->toBe($sheetBaru)
+        ->and(Kategori::count())->toBe(Kategori::whereIn('sheet_id', Sheet::pluck('id'))->count())
+        ->and(Kelompok::count())->toBe(Kelompok::whereIn('kategori_id', Kategori::pluck('id'))->count());
+    Storage::disk('private')->assertMissing($path);
+    Storage::disk('private')->assertExists($baru->path);
+
+    Event::assertDispatched(ActivityOccurred::class, fn ($e) => $e->description === 'menghapus file master RAB "master-uji.xlsx"'
+        && $e->causer->is($this->admin)
+        && $e->properties['path'] === $path
+        && $e->properties['hash_sha256'] === $lama->hash_sha256
+        && $e->properties['jumlah_sheet'] === 1
+        && isset($e->properties['tanggal_upload']));
+});
+
+it('file master AKTIF tidak dapat dihapus: baris, berkas, dan hasil deteksi utuh, tanpa log', function () {
+    [, $baru] = duaMasterRab($this);
+
+    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $baru))
+        ->assertRedirect()->assertSessionHas('feedback.type', 'error');
+
+    expect(FileExcel::find($baru->id))->not->toBeNull()
+        ->and(Sheet::where('file_excel_id', $baru->id)->count())->toBeGreaterThan(0);
+    Storage::disk('private')->assertExists($baru->path);
+    Event::assertNotDispatched(ActivityOccurred::class, fn ($e) => str_contains($e->description, 'menghapus file master'));
+});
+
+it('file master yang baru diaktifkan di sela-sela tidak terhapus (penghapusan bersyarat atomik)', function () {
+    [$lama] = duaMasterRab($this);
+    $lama->aktifkan(); // diaktifkan sebelum permintaan hapus diproses
+
+    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))
+        ->assertSessionHas('feedback.type', 'error');
+
+    expect(FileExcel::find($lama->id))->not->toBeNull();
+    Storage::disk('private')->assertExists($lama->path);
+});
+
+it('hapus file master hanya untuk admin; flag mati 404; tamu ke halaman login; file utuh', function () {
+    [$lama] = duaMasterRab($this);
+
+    $this->actingAs(userWithRole('tim_kerja'))->delete(route('admin.rab-generator.destroy', $lama))->assertForbidden();
+
+    auth()->logout();
+    $this->delete(route('admin.rab-generator.destroy', $lama))->assertRedirect(route('login'));
+
+    config(['rab_generator.enabled' => false]);
+    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))->assertNotFound();
+
+    expect(FileExcel::find($lama->id))->not->toBeNull();
+    Storage::disk('private')->assertExists($lama->path);
+});
+
+it('daftar file master: tombol Hapus hanya pada file tidak aktif, dengan konfirmasi', function () {
+    duaMasterRab($this);
+
+    $html = $this->actingAs($this->admin)->get(route('admin.rab-generator.index'))->assertOk()->getContent();
+
+    expect(substr_count($html, 'name="_method" value="DELETE"'))->toBe(1)
+        ->and($html)->toContain('Hapus file master');
+});
+
+it('menghapus master lama tidak mengganggu pembuatan pratinjau dari master aktif', function () {
+    [$lama, $baru] = duaMasterRab($this);
+
+    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))->assertRedirect();
+
+    expect(FileExcel::aktif()->first()->id)->toBe($baru->id)
+        ->and(Storage::disk('private')->exists($baru->path))->toBeTrue();
+});

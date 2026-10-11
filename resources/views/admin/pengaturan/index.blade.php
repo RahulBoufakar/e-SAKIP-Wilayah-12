@@ -68,7 +68,45 @@
             
         @elseif ($tab === 'template')
             <div class="space-y-4">
+                {{-- RAB Generator: template RAB Excel kini dibuat dari satu file master. Kartu ini mengarahkan admin ke halaman kelolanya. --}}
+                @if ($rabGeneratorEnabled)
+                    <div class="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-semibold text-ink-900">Generator Template RAB (Excel)</p>
+                                    @if ($fileMasterAktif)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            File master aktif
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                            Belum ada file master aktif
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500">Dibuat otomatis dari satu file master: tim kerja memilih sheet, komponen, dan kelompok, lalu mengunduh hasilnya.</p>
+                                @if ($fileMasterAktif)
+                                    <p class="mt-1 text-xs text-slate-400">Master aktif: <span class="font-semibold text-slate-600">{{ $fileMasterAktif->nama_file }}</span>, diunggah {{ $fileMasterAktif->tanggal_upload->format('d/m/Y') }}</p>
+                                @else
+                                    <p class="mt-1 text-xs font-medium text-amber-700">Unggah dan aktifkan file master agar tim kerja dapat memakainya. Sementara itu template lama tetap dipakai.</p>
+                                @endif
+                            </div>
+
+                            <a href="{{ route('admin.rab-generator.index') }}" class="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Kelola File Master RAB</a>
+                        </div>
+                    </div>
+                @endif
+
                 @foreach ($templateList as $template)
+                    {{--
+                        Kartu unggah template rab_excel lama DISEMBUNYIKAN (bukan dihapus) begitu RAB Generator menggantikannya
+                        di sisi tim kerja (flag aktif dan ada file master aktif; sama dengan syarat di usulan-program-kerja/show).
+                        Datanya tetap ada. Untuk menampilkannya lagi, hapus baris @continue di bawah ini.
+                    --}}
+                    @continue($fileMasterAktif && $template->kode === 'rab_excel')
                     <div class="rounded-xl border border-slate-200 p-4">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>

@@ -237,3 +237,65 @@ it('analyze() dari file xlsx menghasilkan peta yang sama dengan analisis workboo
         @unlink($path);
     }
 });
+
+// --- Peringatan Q3: rumus total induk yang lupa menjumlahkan anaknya (07-risiko) ---
+
+/**
+ * Master uji dengan rumus total lengkap di kolom X (kolom akhir area cetak). Sheet lengkap:
+ * RO 19 -> komponen 21 (sub A 22: akun 23, 26 | sub B 28: akun 29), komponen 32 (sub A 33: akun 34).
+ *
+ * @param  array<string, mixed>  $ganti  koordinat => nilai pengganti (null menghapus sel)
+ * @return string[] peringatan sheet pertama yang menyangkut rumus total
+ */
+function peringatanRumus(array $ganti = []): array
+{
+    $s = new Spreadsheet;
+    masterUjiSheetLengkap($ws = $s->getActiveSheet());
+
+    $nilai = [
+        'X19' => '=X21+X32', 'X21' => '=X22+X28', 'X32' => '=X33',
+        'X22' => '=X23+X26', 'X28' => '=X29', 'X33' => '=X34',
+        'X23' => 100, 'X26' => 200, 'X29' => 300, 'X34' => 400,
+    ];
+    foreach (array_merge($nilai, $ganti) as $koordinat => $v) {
+        if ($v !== null) {
+            $ws->getCell($koordinat)->setValue($v);
+        }
+    }
+
+    $semua = (new RabMasterAnalyzer)->analyzeSpreadsheet($s)['sheets'][0]['peringatan'];
+
+    return array_values(array_filter($semua, fn ($p) => str_starts_with($p, 'Rumus total')));
+}
+
+it('Q3: rumus total lengkap tidak menghasilkan peringatan', function () {
+    expect(peringatanRumus())->toBe([]);
+});
+
+it('Q3: sub yang lupa menjumlahkan satu akun diperingatkan dengan baris akun yang terlewat', function () {
+    expect(peringatanRumus(['X22' => '=X23']))->toBe([
+        'Rumus total sub A (baris 22) tidak menjumlahkan akun 521213 (baris 26); total di master bisa lebih kecil dari rinciannya.',
+    ]);
+});
+
+it('Q3: komponen dan RO yang melewatkan anak juga diperingatkan, berurutan sesuai baris induknya', function () {
+    $peringatan = peringatanRumus(['X19' => '=X21', 'X21' => '=X22']);
+
+    expect($peringatan)->toHaveCount(2)
+        ->and($peringatan[0])->toContain('RO 7735.EBB.951 (baris 19)')->toContain('komponen 052 (baris 32)')
+        ->and($peringatan[1])->toContain('komponen 051 (baris 21)')->toContain('sub B (baris 28)');
+});
+
+it('Q3: rentang SUM, rujukan absolut, dan kolom lain dibaca dengan benar', function () {
+    expect(peringatanRumus(['X22' => '=SUM(X23:X26)']))->toBe([], 'rentang yang mencakup kedua akun lengkap')
+        ->and(peringatanRumus(['X22' => '=$X$23+$X$26']))->toBe([], 'rujukan absolut dihitung')
+        ->and(peringatanRumus(['X22' => '=$X$23']))->toHaveCount(1, 'rujukan absolut yang tidak lengkap tetap diperingatkan')
+        ->and(peringatanRumus(['X22' => '=X23+W26']))->toHaveCount(1, 'rujukan ke kolom lain bukan anak yang dijumlahkan');
+});
+
+it('Q3: bukan pola jumlah anak tidak diperingatkan (angka tetap, tanpa rumus, merujuk cucu, anak tanpa nilai)', function () {
+    expect(peringatanRumus(['X22' => 300]))->toBe([], 'angka tetap')
+        ->and(peringatanRumus(['X22' => null]))->toBe([], 'tanpa isi')
+        ->and(peringatanRumus(['X22' => '=X24+X25']))->toBe([], 'tidak merujuk satu akun pun')
+        ->and(peringatanRumus(['X22' => '=X23', 'X26' => null]))->toBe([], 'akun tanpa nilai tidak wajib dijumlahkan');
+});

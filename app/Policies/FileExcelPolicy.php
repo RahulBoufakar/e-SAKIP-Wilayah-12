@@ -33,6 +33,12 @@ class FileExcelPolicy
         return $user->hasRole('admin');
     }
 
+    // Hanya soal peran. Larangan menghapus file master AKTIF dijaga atomik di controller.
+    public function delete(User $user, FileExcel $fileExcel): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     // Tim kerja membuat pratinjau/unduhan template RAB dari file master aktif (RabReportController).
     public function generate(User $user): bool
     {
