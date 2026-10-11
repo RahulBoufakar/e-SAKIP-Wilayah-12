@@ -39,6 +39,9 @@
                     tab: 0,
                     token: null,        // ada hanya selama pratinjau sesuai dengan pilihan saat ini
                     basi: false,        // pilihan berubah sesudah pratinjau dibuat
+                    diperbesar: false,  // pratinjau memenuhi modal, pohon pilihan disembunyikan (tidak dibuang)
+                    zoom: 100,          // persen; hanya pilihan di zoomOpsi
+                    zoomOpsi: [50, 75, 100],
 
                     async buka() {
                         this.open = true;
@@ -49,6 +52,38 @@
 
                     tutup() {
                         this.open = false;
+                        this.diperbesar = false;
+                    },
+
+                    // Esc: saat diperbesar hanya mengecilkan; Esc berikutnya baru menutup modal.
+                    escape() {
+                        if (this.diperbesar) {
+                            this.diperbesar = false;
+                            return;
+                        }
+                        this.tutup();
+                    },
+
+                    toggleBesar() {
+                        this.diperbesar = ! this.diperbesar;
+                    },
+
+                    setZoom(persen) {
+                        if (this.zoomOpsi.includes(persen)) {
+                            this.zoom = persen;
+                        }
+                    },
+
+                    // Iframe bersandbox tidak bisa diukur isinya, jadi zoom memakai skala CSS: iframe dilebarkan
+                    // 100/skala % lalu diperkecil dengan transform, sehingga tetap persis memenuhi wadahnya.
+                    get gayaIframe() {
+                        if (this.zoom === 100) {
+                            return '';
+                        }
+                        const skala = this.zoom / 100;
+                        const ukuran = 100 / skala;
+
+                        return `width:${ukuran}%;height:${ukuran}%;transform:scale(${skala});transform-origin:0 0;`;
                     },
 
                     async muatPohon() {
@@ -208,11 +243,12 @@
             });
         </script>
 
-        <div x-data="rabGenerator(@js($konfigRab))" @rab-open.window="buka()" @keydown.escape.window="tutup()">
+        <div x-data="rabGenerator(@js($konfigRab))" @rab-open.window="buka()" @keydown.escape.window="escape()">
             <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">
                 <div x-show="open" x-transition.opacity class="absolute inset-0 bg-ink-950/50" @click="tutup()"></div>
 
-                <div x-show="open" x-transition class="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+                <div x-show="open" x-transition :class="diperbesar ? 'h-[96vh] max-w-[96vw]' : 'max-h-[90vh] max-w-5xl'"
+                     class="relative flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
                     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                         <div>
                             <h3 class="text-base font-bold text-ink-900">Unduh Template Excel</h3>
@@ -221,9 +257,9 @@
                         <button type="button" @click="tutup()" class="text-2xl leading-none text-slate-400 hover:text-slate-600" aria-label="Tutup">&times;</button>
                     </div>
 
-                    <div class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-2">
-                        {{-- Pohon pilihan --}}
-                        <div class="min-h-0 space-y-3 overflow-y-auto border-b border-slate-100 p-5 lg:border-b-0 lg:border-r">
+                    <div :class="diperbesar ? '' : 'lg:grid-cols-2'" class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden">
+                        {{-- Pohon pilihan. x-show (bukan x-if): saat diperbesar hanya disembunyikan, pilihan tetap utuh. --}}
+                        <div x-show="! diperbesar" class="min-h-0 space-y-3 overflow-y-auto border-b border-slate-100 p-5 lg:border-b-0 lg:border-r">
                             <p x-show="memuat" class="py-8 text-center text-sm text-slate-400">Memuat struktur template…</p>
                             <p x-show="galatPohon" x-text="galatPohon" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
 
@@ -274,7 +310,22 @@
 
                         {{-- Pratinjau --}}
                         <div class="flex min-h-[18rem] min-w-0 flex-col p-5">
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Pratinjau perkiraan</p>
+                            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Pratinjau perkiraan</p>
+
+                                <div x-show="! mempratinjau && previews.length > 0" x-cloak class="flex items-center gap-3">
+                                    <div class="flex items-center gap-1" role="group" aria-label="Zoom pratinjau">
+                                        <span class="text-[11px] text-slate-400">Zoom</span>
+                                        <template x-for="z in zoomOpsi" :key="z">
+                                            <button type="button" @click="setZoom(z)" x-text="z + '%'" :aria-pressed="zoom === z"
+                                                    :class="zoom === z ? 'bg-ink-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                                    class="rounded-md px-2 py-0.5 text-[11px] font-semibold transition-colors"></button>
+                                        </template>
+                                    </div>
+                                    <button type="button" @click="toggleBesar()" x-text="diperbesar ? 'Kecilkan' : 'Perbesar'"
+                                            class="rounded-md border border-slate-200 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"></button>
+                                </div>
+                            </div>
 
                             <p x-show="galat" x-text="galat" class="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
                             <p x-show="basi" class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
@@ -302,7 +353,10 @@
                                     </template>
                                 </div>
                                 {{-- sandbox kosong: dokumen pratinjau tidak boleh menjalankan skrip atau membocorkan CSS ke halaman --}}
-                                <iframe sandbox :srcdoc="previews[tab] ? previews[tab].html : ''" class="min-h-[22rem] w-full flex-1 rounded-lg border border-slate-200 bg-white"></iframe>
+                                {{-- Pembungkus hanya untuk zoom (skala CSS lewat :style pada iframe); tidak boleh ada penyembunyian di sini, lihat catatan x-if di atas. --}}
+                                <div class="relative min-h-[22rem] flex-1 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                    <iframe sandbox :srcdoc="previews[tab] ? previews[tab].html : ''" :style="gayaIframe" class="absolute left-0 top-0 h-full w-full"></iframe>
+                                </div>
                                 <p class="mt-1.5 text-[11px] text-slate-400">Tampilan di Excel dapat sedikit berbeda dari pratinjau ini.</p>
                             </div>
                             </template>

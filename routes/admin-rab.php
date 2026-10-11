@@ -14,4 +14,5 @@ Route::middleware(['auth', 'role:admin'])
         Route::put('sheet/{sheet}', [RabMasterController::class, 'updateSheet'])->name('sheet.update');
         Route::get('{fileExcel}', [RabMasterController::class, 'show'])->name('show');
         Route::put('{fileExcel}/aktifkan', [RabMasterController::class, 'aktifkan'])->name('aktifkan');
+        Route::delete('{fileExcel}', [RabMasterController::class, 'destroy'])->name('destroy');
     });

@@ -25,7 +25,7 @@
                     <th class="w-20 px-5 py-3 text-center font-semibold">Sheet</th>
                     <th class="w-28 px-5 py-3 text-center font-semibold">Peringatan</th>
                     <th class="w-28 px-5 py-3 text-center font-semibold">Status</th>
-                    <th class="w-24 px-5 py-3 text-center font-semibold">Aksi</th>
+                    <th class="w-40 px-5 py-3 text-center font-semibold">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -50,7 +50,22 @@
                             @endif
                         </td>
                         <td class="px-5 py-3 text-center">
-                            <a href="{{ route('admin.rab-generator.show', $file) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Tinjau</a>
+                            <div class="flex items-center justify-center gap-1">
+                                <a href="{{ route('admin.rab-generator.show', $file) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Tinjau</a>
+                                {{-- File aktif tidak bisa dihapus; hanya versi lama yang tidak aktif. Penghapusan dicatat di log aktivitas. --}}
+                                @unless ($file->aktif)
+                                    <button type="button" @click="$refs['confirm-{{ $file->id }}'].showModal()" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50">Hapus</button>
+                                    <x-confirm-action
+                                        refName="confirm-{{ $file->id }}"
+                                        :action="route('admin.rab-generator.destroy', $file)"
+                                        method="DELETE"
+                                        title="Hapus file master '{{ $file->nama_file }}'?"
+                                        body="Seluruh hasil deteksi dan koreksinya ikut terhapus dan tidak dapat dibatalkan."
+                                        confirmLabel="Ya, hapus"
+                                        confirmClass="bg-rose-600 hover:bg-rose-700"
+                                    />
+                                @endunless
+                            </div>
                         </td>
                     </tr>
                 @empty

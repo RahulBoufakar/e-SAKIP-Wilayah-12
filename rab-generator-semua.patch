@@ -1,0 +1,1451 @@
+diff --git a/app/Console/Commands/CleanupTempReports.php b/app/Console/Commands/CleanupTempReports.php
+new file mode 100644
+index 0000000..e508399
+--- /dev/null
++++ b/app/Console/Commands/CleanupTempReports.php
+@@ -0,0 +1,44 @@
++<?php
++
++namespace App\Console\Commands;
++
++use Illuminate\Console\Command;
++use Illuminate\Support\Facades\Storage;
++
++/**
++ * RAB Generator 02-arsitektur.md / 08 langkah 8: menghapus berkas hasil preview
++ * (disk 'private', folder temp/, dibuat RabReportController::preview) yang sudah
++ * lewat batas. Token di cache kedaluwarsa dalam 20 menit; berkasnya baru dihapus
++ * di sini setelah 60 menit, jadi unduhan yang sedang berjalan tidak terputus.
++ *
++ * Hanya menyentuh temp/*.xlsx. Berkas lain di folder itu dan folder lain dibiarkan.
++ */
++class CleanupTempReports extends Command
++{
++    protected $signature = 'rab-generator:cleanup-temp
++                            {--menit=60 : Hapus berkas temp yang lebih lama dari N menit}';
++
++    protected $description = 'Hapus berkas hasil preview RAB Generator di storage/app/private/temp yang sudah lebih lama dari batas (default 60 menit).';
++
++    public function handle(): int
++    {
++        $batas = now()->subMinutes((int) $this->option('menit'))->getTimestamp();
++        $disk = Storage::disk('private');
++        $dihapus = 0;
++
++        foreach ($disk->files('temp') as $path) {
++            if (! str_ends_with($path, '.xlsx')) {
++                continue;
++            }
++
++            if ($disk->lastModified($path) < $batas) {
++                $disk->delete($path);
++                $dihapus++;
++            }
++        }
++
++        $this->info("Selesai. Berkas temp dihapus: {$dihapus}.");
++
++        return self::SUCCESS;
++    }
++}
+diff --git a/app/Console/Kernel.php b/app/Console/Kernel.php
+index d88dd9b..ba31b24 100644
+--- a/app/Console/Kernel.php
++++ b/app/Console/Kernel.php
+@@ -19,6 +19,9 @@ protected function schedule(Schedule $schedule)
+ 
+         // Generate laporan kinerja secara otomatis setiap hari pukul 01:00
+         $schedule->command('laporan-kinerja:generate-otomatis')->dailyAt('01:00');
++
++        // RAB Generator: hapus berkas preview temp yang lebih dari 1 jam (token cache sudah kedaluwarsa 20 menit)
++        $schedule->command('rab-generator:cleanup-temp')->everyFifteenMinutes();
+     }
+ 
+     /**
+diff --git a/app/Http/Controllers/Admin/PengaturanController.php b/app/Http/Controllers/Admin/PengaturanController.php
+index fbf4312..dda3549 100644
+--- a/app/Http/Controllers/Admin/PengaturanController.php
++++ b/app/Http/Controllers/Admin/PengaturanController.php
+@@ -4,6 +4,7 @@
+ 
+ use App\Events\ActivityOccurred;
+ use App\Http\Controllers\Controller;
++use App\Models\FileExcel;
+ use App\Models\PengaturanAplikasi;
+ use App\Models\TemplateDokumen;
+ use App\Services\AppAssetImageService;
+@@ -25,7 +26,12 @@ public function index(Request $request)
+ 
+         $templateList = $tab === 'template' ? TemplateDokumen::orderBy('kode')->get() : collect();
+ 
+-        return view('admin.pengaturan.index', compact('tab', 'templateList'));
++        // RAB Generator: file master aktif (null bila flag mati atau belum ada). Selama null, kartu unggah
++        // template rab_excel lama tetap tampil karena itu masih yang dipakai tim kerja.
++        $rabGeneratorEnabled = (bool) config('rab_generator.enabled');
++        $fileMasterAktif = $tab === 'template' && $rabGeneratorEnabled ? FileExcel::aktif()->first() : null;
++
++        return view('admin.pengaturan.index', compact('tab', 'templateList', 'rabGeneratorEnabled', 'fileMasterAktif'));
+     }
+ 
+     // PUT /admin/pengaturan/aplikasi
+@@ -129,6 +135,39 @@ public function updateTemplate(Request $request, string $kode)
+         return back()->with('feedback', ['type' => 'success', 'message' => "{$template->nama} berhasil diperbarui."]);
+     }
+ 
++    // DELETE /admin/pengaturan/template/{kode} — hapus berkas template lama yang sudah digantikan RAB Generator
++    public function destroyTemplate(string $kode)
++    {
++        $template = TemplateDokumen::where('kode', $kode)->firstOrFail();
++        abort_unless($template->digantikanGenerator(), 404);
++
++        // Selama generator belum aktif, template lama masih yang dipakai tim kerja: tidak boleh dihapus.
++        if (! (config('rab_generator.enabled') && FileExcel::aktif()->exists())) {
++            return back()->with('feedback', ['type' => 'error', 'message' => "{$template->nama} masih dipakai tim kerja. Aktifkan RAB Generator (flag dan file master aktif) sebelum menghapusnya."]);
++        }
++
++        if (! $template->file) {
++            return back()->with('feedback', ['type' => 'error', 'message' => "{$template->nama} tidak memiliki file untuk dihapus."]);
++        }
++
++        $path = $template->file;
++
++        // Kolom dikosongkan dulu: bila penghapusan berkas gagal, yang tersisa hanya berkas yatim, bukan tautan mati.
++        // Barisnya dipertahankan (kode template dipakai seeder dan enum).
++        $template->update(['file' => null]);
++        Storage::disk('public')->delete($path);
++
++        // AUDIT § A4: penghapusan tidak dapat dibatalkan, jadi dicatat dengan snapshot berkas yang dihapus.
++        event(new ActivityOccurred(
++            subject: $template,
++            description: "menghapus file template lama \"{$template->nama}\"",
++            causer: Auth::user(),
++            properties: ['kode' => $template->kode, 'file' => $path],
++        ));
++
++        return back()->with('feedback', ['type' => 'success', 'message' => "File {$template->nama} berhasil dihapus."]);
++    }
++
+     // GET /admin/pengaturan/template/{kode}/preview — khusus jenis PDF
+     // AUDIT § A6/A7: ikut diubah ke streaming (bukan JSON+base64), karena
+     // view ini memakai komponen Blade <x-file-preview> yang sama dengan
+diff --git a/app/Http/Controllers/Admin/RabGenerator/RabMasterController.php b/app/Http/Controllers/Admin/RabGenerator/RabMasterController.php
+index 953659e..7fc7005 100644
+--- a/app/Http/Controllers/Admin/RabGenerator/RabMasterController.php
++++ b/app/Http/Controllers/Admin/RabGenerator/RabMasterController.php
+@@ -146,6 +146,40 @@ public function aktifkan(FileExcel $fileExcel)
+         return back()->with('feedback', ['type' => 'success', 'message' => 'File master diaktifkan.']);
+     }
+ 
++    // DELETE /admin/rab-generator/{fileExcel} — hapus file master lama yang tidak aktif
++    public function destroy(FileExcel $fileExcel)
++    {
++        $this->authorize('delete', $fileExcel);
++
++        // Snapshot untuk log: setelah baris dan berkas hilang, tidak ada lagi yang bisa dilihat.
++        $snapshot = [
++            'nama_file' => $fileExcel->nama_file,
++            'path' => $fileExcel->path,
++            'hash_sha256' => $fileExcel->hash_sha256,
++            'jumlah_sheet' => $fileExcel->sheets()->count(),
++            'tanggal_upload' => $fileExcel->tanggal_upload?->toIso8601String(),
++        ];
++
++        // Satu query bersyarat (bukan cek lalu hapus): bila file ini diaktifkan orang lain di sela-sela itu,
++        // tidak ada baris yang terhapus. Sheet, header, footer, kategori, dan kelompok ikut terhapus lewat cascade.
++        if (FileExcel::whereKey($fileExcel->id)->where('aktif', false)->delete() === 0) {
++            return back()->with('feedback', ['type' => 'error', 'message' => 'File master yang sedang aktif tidak dapat dihapus. Aktifkan file lain terlebih dahulu.']);
++        }
++
++        // Baris dihapus lebih dulu: bila penghapusan berkas gagal, yang tersisa hanya berkas yatim di disk private.
++        Storage::disk('private')->delete($fileExcel->path);
++
++        event(new ActivityOccurred(
++            subject: $fileExcel,
++            description: "menghapus file master RAB \"{$fileExcel->nama_file}\"",
++            causer: Auth::user(),
++            properties: $snapshot,
++        ));
++
++        return redirect()->route('admin.rab-generator.index')
++            ->with('feedback', ['type' => 'success', 'message' => "File master \"{$fileExcel->nama_file}\" dihapus."]);
++    }
++
+     // PUT /admin/rab-generator/sheet/{sheet} — koreksi header/footer dan nama kelompok
+     public function updateSheet(Request $request, Sheet $sheet, RabMasterInspector $inspector)
+     {
+diff --git a/app/Models/TemplateDokumen.php b/app/Models/TemplateDokumen.php
+index e24f4ac..8f8a2a5 100644
+--- a/app/Models/TemplateDokumen.php
++++ b/app/Models/TemplateDokumen.php
+@@ -9,6 +9,13 @@ class TemplateDokumen extends Model
+ {
+     const CREATED_AT = null;
+ 
++    /**
++     * Jenis template yang digantikan RAB Generator (tim kerja kini mengunduh Excel hasil generator, lalu
++     * membuat PDF-nya sendiri). Disembunyikan dari Pengaturan dan daftar unduhan tim kerja begitu generator
++     * aktif (flag + ada file master aktif); berkasnya baru boleh dihapus admin setelah itu.
++     */
++    public const DIGANTIKAN_GENERATOR = ['rab_excel', 'rab_pdf'];
++
+     private const FORMAT = [
+         'rab_excel' => ['mimes' => 'xls,xlsx', 'accept' => '.xls,.xlsx', 'label' => 'Excel (XLS/XLSX)'],
+         'rab_pdf' => ['mimes' => 'pdf', 'accept' => '.pdf', 'label' => 'PDF'],
+@@ -38,6 +45,11 @@ public function formatLabel(): string
+         return self::FORMAT[$this->kode]['label'];
+     }
+ 
++    public function digantikanGenerator(): bool
++    {
++        return in_array($this->kode, self::DIGANTIKAN_GENERATOR, true);
++    }
++
+     /** Hanya format PDF yang didukung pratinjau (iframe). */
+     public function isPdf(): bool
+     {
+diff --git a/app/Policies/FileExcelPolicy.php b/app/Policies/FileExcelPolicy.php
+index 1d22857..a5a090c 100644
+--- a/app/Policies/FileExcelPolicy.php
++++ b/app/Policies/FileExcelPolicy.php
+@@ -33,6 +33,12 @@ public function activate(User $user, FileExcel $fileExcel): bool
+         return $user->hasRole('admin');
+     }
+ 
++    // Hanya soal peran. Larangan menghapus file master AKTIF dijaga atomik di controller.
++    public function delete(User $user, FileExcel $fileExcel): bool
++    {
++        return $user->hasRole('admin');
++    }
++
+     // Tim kerja membuat pratinjau/unduhan template RAB dari file master aktif (RabReportController).
+     public function generate(User $user): bool
+     {
+diff --git a/app/Services/RabMasterAnalyzer.php b/app/Services/RabMasterAnalyzer.php
+index cd6ce0d..53f38e7 100644
+--- a/app/Services/RabMasterAnalyzer.php
++++ b/app/Services/RabMasterAnalyzer.php
+@@ -129,6 +129,9 @@ private function analisisSheet(Worksheet $ws, int $urutan): ?array
+         $kategori = [];
+         $k = null; // indeks kategori aktif
+         $g = null; // indeks kelompok aktif dalam kategori aktif
++        $barisKomponen = null; // baris komponen / sub aktif, untuk memetakan induk -> anak (peringatan rumus)
++        $barisSub = null;
++        $anak = []; // baris induk => baris anak langsung (RO -> komponen -> sub -> akun)
+ 
+         foreach ($segmen as $no => $tipe) {
+             $kode = $rows[$no][0];
+@@ -145,6 +148,9 @@ private function analisisSheet(Worksheet $ws, int $urutan): ?array
+                 ];
+                 $k = count($kategori) - 1;
+                 $g = null;
++                $barisKomponen = $no;
++                $barisSub = null;
++                $anak[$roBaris][] = $no;
+             } elseif ($tipe === 'sub') {
+                 if ($k === null) {
+                     $peringatan[] = "Sub {$kode} (baris {$no}) berada sebelum komponen manapun; baris ini tidak dapat dipilih.";
+@@ -160,6 +166,8 @@ private function analisisSheet(Worksheet $ws, int $urutan): ?array
+                     'urutan' => count($kategori[$k]['kelompok']) + 1,
+                 ];
+                 $g = count($kategori[$k]['kelompok']) - 1;
++                $barisSub = $no;
++                $anak[$barisKomponen][] = $no;
+             } elseif ($tipe === 'akun') {
+                 if ($g === null) {
+                     $peringatan[] = "Akun {$kode} (baris {$no}) tidak berada di dalam kelompok; baris ini tidak dapat dipilih.";
+@@ -168,6 +176,7 @@ private function analisisSheet(Worksheet $ws, int $urutan): ?array
+                 }
+ 
+                 $kategori[$k]['kelompok'][$g]['baris_akhir'] = $akhir[$no];
++                $anak[$barisSub][] = $no;
+             }
+         }
+ 
+@@ -175,6 +184,8 @@ private function analisisSheet(Worksheet $ws, int $urutan): ?array
+ 
+         [$kolomAkhir, $barisCetakAkhir] = $this->areaCetak($ws);
+ 
++        array_push($peringatan, ...$this->peringatanRumusInduk($ws, $kolomAkhir, $anak, $segmen, $rows));
++
+         return [
+             'kode_sheet' => $ws->getTitle(),
+             'nama_sheet' => $rows[$roBaris][1] !== '' ? $rows[$roBaris][1] : $ws->getTitle(),
+@@ -252,6 +263,88 @@ private function areaCetak(Worksheet $ws): array
+         return [$ws->getHighestDataColumn(), $ws->getHighestDataRow()];
+     }
+ 
++    /**
++     * Q3 (07-risiko): rumus total induk yang lupa menjumlahkan salah satu anaknya, mis. sub `=X76+X83`
++     * padahal akun di baris 79 juga ada nilainya. Berdasarkan pola, bukan nilai:
++     * - induk = RO, komponen, sub; anak = tingkat di bawahnya (komponen, sub, akun);
++     * - kolom total = kolom akhir area cetak;
++     * - ditandai hanya bila rumus merujuk SEBAGIAN anak (minimal satu, tetapi tidak semua). Rumus yang tidak
++     *   merujuk satu anak pun (angka tetap, merujuk cucu) dilewati agar tidak berisik;
++     * - anak yang sel totalnya kosong tidak dihitung (tidak ada yang bisa dijumlahkan).
++     * Perakit tetap menyalin rumus apa adanya; ini hanya peringatan untuk admin.
++     *
++     * @param  array<int, int[]>  $anak  baris induk => baris anak
++     * @param  array<int, string>  $segmen  baris => tipe (ro/komponen/sub/akun)
++     * @param  array<int, array{0: string, 1: string}>  $rows
++     * @return string[]
++     */
++    private function peringatanRumusInduk(Worksheet $ws, string $kolom, array $anak, array $segmen, array $rows): array
++    {
++        $jenis = ['ro' => 'RO', 'komponen' => 'komponen', 'sub' => 'sub', 'akun' => 'akun'];
++        $peringatan = [];
++
++        foreach ($anak as $induk => $daftarAnak) {
++            $rumus = $this->nilaiSel($ws, $kolom, $induk);
++            if (! is_string($rumus) || ! str_starts_with($rumus, '=')) {
++                continue;
++            }
++
++            $dirujuk = $this->barisDirujuk($rumus, $kolom);
++            $berNilai = array_filter($daftarAnak, fn (int $no) => $this->nilaiSel($ws, $kolom, $no) !== null);
++            $terlewat = array_values(array_filter($berNilai, fn (int $no) => ! in_array($no, $dirujuk, true)));
++
++            // Bukan pola jumlah anak (tidak merujuk satu anak pun) atau sudah lengkap.
++            if ($terlewat === [] || count($terlewat) === count($berNilai)) {
++                continue;
++            }
++
++            $daftar = implode(', ', array_map(
++                fn (int $no) => "{$jenis[$segmen[$no]]} {$rows[$no][0]} (baris {$no})",
++                $terlewat,
++            ));
++            $peringatan[] = "Rumus total {$jenis[$segmen[$induk]]} {$rows[$induk][0]} (baris {$induk}) tidak menjumlahkan {$daftar}; "
++                .'total di master bisa lebih kecil dari rinciannya.';
++        }
++
++        return $peringatan;
++    }
++
++    /** Nilai sel (rumus atau angka); null bila sel tidak ada atau kosong. Tidak membuat sel baru. */
++    private function nilaiSel(Worksheet $ws, string $kolom, int $baris): mixed
++    {
++        if (! $ws->cellExists($kolom.$baris)) {
++            return null;
++        }
++
++        $nilai = $ws->getCell($kolom.$baris)->getValue();
++
++        return $nilai === '' ? null : $nilai;
++    }
++
++    /**
++     * Nomor baris yang dirujuk rumus pada kolom total: sel tunggal (`X22`) dan rentang (`X22:X30`, semua
++     * barisnya dihitung). Rujukan ke kolom lain atau sheet lain tidak dihitung.
++     *
++     * @return int[]
++     */
++    private function barisDirujuk(string $rumus, string $kolom): array
++    {
++        $rumus = str_replace('$', '', strtoupper($rumus));
++        $kolom = preg_quote(strtoupper($kolom), '/');
++        $baris = [];
++
++        $rumus = preg_replace_callback('/(?<![A-Z])'.$kolom.'(\d+):'.$kolom.'(\d+)(?!\d)/', function (array $m) use (&$baris) {
++            array_push($baris, ...range((int) $m[1], (int) $m[2]));
++
++            return '';
++        }, $rumus);
++
++        preg_match_all('/(?<![A-Z!])'.$kolom.'(\d+)(?!\d)/', $rumus, $cocok);
++        array_push($baris, ...array_map('intval', $cocok[1]));
++
++        return array_values(array_unique($baris));
++    }
++
+     /**
+      * Peringatan 03 (aturan validasi no. 6) + kode komponen ganda (melanggar unik per sheet).
+      * Public supaya halaman admin bisa menghitung ulang dari data di database (peringatan hilang
+diff --git a/app/Services/RabPreviewRenderer.php b/app/Services/RabPreviewRenderer.php
+index f89752a..a21643c 100644
+--- a/app/Services/RabPreviewRenderer.php
++++ b/app/Services/RabPreviewRenderer.php
+@@ -2,15 +2,19 @@
+ 
+ namespace App\Services;
+ 
++use PhpOffice\PhpSpreadsheet\Cell\DataType;
+ use PhpOffice\PhpSpreadsheet\Spreadsheet;
++use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+ use PhpOffice\PhpSpreadsheet\Writer\Html;
+ 
+ /**
+  * RAB Generator 02-arsitektur.md — workbook hasil ke HTML pratinjau, satu dokumen per sheet
+  * (tab per sheet di modal). Writer\Html bukan Excel; pratinjau hanyalah perkiraan.
+  *
+- * Perbaikan tampilan (format jam salah, garis kisi, nowrap) adalah langkah 10 dan sengaja
+- * belum ada di sini. Jangan pakai PhpSpreadsheet 5.x untuk Writer\Html (10-15x lebih lambat).
++ * Perbaikan tampilan (langkah 10): format jam pada sel string, garis kisi, dan nowrap.
++ * PERHATIAN: render() MENGUBAH workbook yang diberikan (format sel string dan garis kisi).
++ * Panggil hanya pada workbook khusus pratinjau, setelah berkas unduhan disimpan.
++ * Jangan pakai PhpSpreadsheet 5.x untuk Writer\Html (10-15x lebih lambat).
+  */
+ class RabPreviewRenderer
+ {
+@@ -19,6 +23,9 @@ class RabPreviewRenderer
+      */
+     public function render(Spreadsheet $spreadsheet): array
+     {
++        $this->perbaikiWorkbook($spreadsheet);
++        $cssNowrap = $this->cssNowrap($spreadsheet);
++
+         $hasil = [];
+ 
+         foreach ($spreadsheet->getAllSheets() as $i => $sheet) {
+@@ -26,9 +33,48 @@ public function render(Spreadsheet $spreadsheet): array
+             $writer->setSheetIndex($i);
+             $writer->setGenerateSheetNavigationBlock(false);
+ 
+-            $hasil[] = ['judul' => $sheet->getTitle(), 'html' => $writer->generateHtmlAll()];
++            $html = $writer->generateHtmlAll();
++            // Sisipkan di akhir blok <style> milik writer supaya mengalahkan aturan bawaannya.
++            $html = preg_replace('#</style>#', $cssNowrap.'</style>', $html, 1);
++
++            $hasil[] = ['judul' => $sheet->getTitle(), 'html' => $html];
+         }
+ 
+         return $hasil;
+     }
++
++    private function perbaikiWorkbook(Spreadsheet $spreadsheet): void
++    {
++        foreach ($spreadsheet->getAllSheets() as $sheet) {
++            $sheet->setShowGridlines(false);
++
++            foreach ($sheet->getCoordinates(false) as $koordinat) {
++                $sel = $sheet->getCell($koordinat);
++
++                // Teks seperti "1." atau "2.3" yang berformat jam di master tampil "0:00" di HTML.
++                // Hanya sel string yang diubah; angka dan tanggal sungguhan tidak disentuh.
++                if ($sel->getDataType() === DataType::TYPE_STRING
++                    && $sheet->getStyle($koordinat)->getNumberFormat()->getFormatCode() !== NumberFormat::FORMAT_GENERAL) {
++                    $sheet->getStyle($koordinat)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_GENERAL);
++                }
++            }
++        }
++    }
++
++    /**
++     * Excel membiarkan teks non-wrap meluber ke sel kosong di kanannya; HTML tidak, sehingga teks
++     * membungkus. Semua sel dibuat nowrap, kecuali gaya yang memang diatur wrap di Excel.
++     */
++    private function cssNowrap(Spreadsheet $spreadsheet): string
++    {
++        $css = "      table td, table th { white-space: nowrap; }\n";
++
++        foreach ($spreadsheet->getCellXfCollection() as $indeks => $gaya) {
++            if ($gaya->getAlignment()->getWrapText()) {
++                $css .= "      td.style{$indeks}, th.style{$indeks} { white-space: normal; }\n";
++            }
++        }
++
++        return $css;
++    }
+ }
+diff --git a/resources/views/admin/pengaturan/index.blade.php b/resources/views/admin/pengaturan/index.blade.php
+index 510acc0..b997e64 100644
+--- a/resources/views/admin/pengaturan/index.blade.php
++++ b/resources/views/admin/pengaturan/index.blade.php
+@@ -68,7 +68,46 @@ class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-
+             
+         @elseif ($tab === 'template')
+             <div class="space-y-4">
++                {{-- RAB Generator: template RAB Excel kini dibuat dari satu file master. Kartu ini mengarahkan admin ke halaman kelolanya. --}}
++                @if ($rabGeneratorEnabled)
++                    <div class="rounded-xl border border-brand-200 bg-brand-50/40 p-4">
++                        <div class="flex flex-wrap items-start justify-between gap-4">
++                            <div>
++                                <div class="flex items-center gap-2">
++                                    <p class="text-sm font-semibold text-ink-900">Generator Template RAB (Excel)</p>
++                                    @if ($fileMasterAktif)
++                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
++                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
++                                            File master aktif
++                                        </span>
++                                    @else
++                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
++                                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
++                                            Belum ada file master aktif
++                                        </span>
++                                    @endif
++                                </div>
++                                <p class="mt-1 text-xs text-slate-500">Dibuat otomatis dari satu file master: tim kerja memilih sheet, komponen, dan kelompok, lalu mengunduh hasilnya.</p>
++                                @if ($fileMasterAktif)
++                                    <p class="mt-1 text-xs text-slate-400">Master aktif: <span class="font-semibold text-slate-600">{{ $fileMasterAktif->nama_file }}</span>, diunggah {{ $fileMasterAktif->tanggal_upload->format('d/m/Y') }}</p>
++                                @else
++                                    <p class="mt-1 text-xs font-medium text-amber-700">Unggah dan aktifkan file master agar tim kerja dapat memakainya. Sementara itu template lama tetap dipakai.</p>
++                                @endif
++                            </div>
++
++                            <a href="{{ route('admin.rab-generator.index') }}" class="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Kelola File Master RAB</a>
++                        </div>
++                    </div>
++                @endif
++
+                 @foreach ($templateList as $template)
++                    {{--
++                        Kartu unggah template rab_excel dan rab_pdf lama (TemplateDokumen::DIGANTIKAN_GENERATOR) DISEMBUNYIKAN begitu
++                        RAB Generator menggantikannya di sisi tim kerja (flag aktif dan ada file master aktif; sama dengan syarat di
++                        usulan-program-kerja/show). Berkasnya tetap ada sampai admin menghapusnya di bagian "Template lama" di bawah.
++                        Untuk menampilkan kartunya lagi, hapus baris @continue di bawah ini.
++                    --}}
++                    @continue($fileMasterAktif && $template->digantikanGenerator())
+                     <div class="rounded-xl border border-slate-200 p-4">
+                         <div class="flex flex-wrap items-start justify-between gap-4">
+                             <div>
+@@ -115,6 +154,32 @@ class="flex-1 border-b-2 px-4 py-3 text-center text-sm font-semibold transition-
+                         </div>
+                     </div>
+                 @endforeach
++
++                {{-- Berkas template lama yang sudah digantikan RAB Generator: boleh dihapus admin. Penghapusan dicatat di log aktivitas. --}}
++                @php $templateLama = $fileMasterAktif ? $templateList->filter(fn ($t) => $t->digantikanGenerator() && $t->file) : collect(); @endphp
++                @if ($templateLama->isNotEmpty())
++                    <div class="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
++                        <p class="text-sm font-semibold text-ink-900">Template lama (tidak aktif)</p>
++                        <p class="mt-1 text-xs text-slate-500">Sudah digantikan RAB Generator dan tidak lagi tampil untuk tim kerja. Hapus bila sudah tidak diperlukan. Penghapusan dicatat di log aktivitas dan tidak dapat dibatalkan.</p>
++
++                        <ul class="mt-3 divide-y divide-amber-100">
++                            @foreach ($templateLama as $template)
++                                <li class="flex flex-wrap items-center justify-between gap-3 py-2">
++                                    <div class="flex items-center gap-3">
++                                        <span class="text-sm font-medium text-ink-900">{{ $template->nama }}</span>
++                                        <a href="{{ route('admin.pengaturan.template.unduh', $template->kode) }}" class="text-xs font-medium text-brand-700 hover:underline">Download</a>
++                                    </div>
++                                    <form method="POST" action="{{ route('admin.pengaturan.template.destroy', $template->kode) }}"
++                                          onsubmit="return confirm(@js('Hapus file '.$template->nama.'? Penghapusan tidak dapat dibatalkan.'))">
++                                        @csrf
++                                        @method('DELETE')
++                                        <button type="submit" class="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50">Hapus</button>
++                                    </form>
++                                </li>
++                            @endforeach
++                        </ul>
++                    </div>
++                @endif
+             </div>
+         @else
+             <div class="max-w-lg">
+diff --git a/resources/views/admin/rab-generator/index.blade.php b/resources/views/admin/rab-generator/index.blade.php
+index 3bc9fb0..a9b9600 100644
+--- a/resources/views/admin/rab-generator/index.blade.php
++++ b/resources/views/admin/rab-generator/index.blade.php
+@@ -25,7 +25,7 @@
+                     <th class="w-20 px-5 py-3 text-center font-semibold">Sheet</th>
+                     <th class="w-28 px-5 py-3 text-center font-semibold">Peringatan</th>
+                     <th class="w-28 px-5 py-3 text-center font-semibold">Status</th>
+-                    <th class="w-24 px-5 py-3 text-center font-semibold">Aksi</th>
++                    <th class="w-40 px-5 py-3 text-center font-semibold">Aksi</th>
+                 </tr>
+             </thead>
+             <tbody class="divide-y divide-slate-100">
+@@ -50,7 +50,18 @@
+                             @endif
+                         </td>
+                         <td class="px-5 py-3 text-center">
+-                            <a href="{{ route('admin.rab-generator.show', $file) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Tinjau</a>
++                            <div class="flex items-center justify-center gap-1">
++                                <a href="{{ route('admin.rab-generator.show', $file) }}" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50">Tinjau</a>
++                                {{-- File aktif tidak bisa dihapus; hanya versi lama yang tidak aktif. Penghapusan dicatat di log aktivitas. --}}
++                                @unless ($file->aktif)
++                                    <form method="POST" action="{{ route('admin.rab-generator.destroy', $file) }}"
++                                          onsubmit="return confirm(@js('Hapus file master "'.$file->nama_file.'"? Seluruh hasil deteksi dan koreksinya ikut terhapus dan tidak dapat dibatalkan.'))">
++                                        @csrf
++                                        @method('DELETE')
++                                        <button type="submit" class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50">Hapus</button>
++                                    </form>
++                                @endunless
++                            </div>
+                         </td>
+                     </tr>
+                 @empty
+diff --git a/resources/views/components/rab-generator/modal.blade.php b/resources/views/components/rab-generator/modal.blade.php
+index ccc374c..845eb08 100644
+--- a/resources/views/components/rab-generator/modal.blade.php
++++ b/resources/views/components/rab-generator/modal.blade.php
+@@ -39,6 +39,9 @@ class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs
+                     tab: 0,
+                     token: null,        // ada hanya selama pratinjau sesuai dengan pilihan saat ini
+                     basi: false,        // pilihan berubah sesudah pratinjau dibuat
++                    diperbesar: false,  // pratinjau memenuhi modal, pohon pilihan disembunyikan (tidak dibuang)
++                    zoom: 100,          // persen; hanya pilihan di zoomOpsi
++                    zoomOpsi: [50, 75, 100],
+ 
+                     async buka() {
+                         this.open = true;
+@@ -49,6 +52,38 @@ class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs
+ 
+                     tutup() {
+                         this.open = false;
++                        this.diperbesar = false;
++                    },
++
++                    // Esc: saat diperbesar hanya mengecilkan; Esc berikutnya baru menutup modal.
++                    escape() {
++                        if (this.diperbesar) {
++                            this.diperbesar = false;
++                            return;
++                        }
++                        this.tutup();
++                    },
++
++                    toggleBesar() {
++                        this.diperbesar = ! this.diperbesar;
++                    },
++
++                    setZoom(persen) {
++                        if (this.zoomOpsi.includes(persen)) {
++                            this.zoom = persen;
++                        }
++                    },
++
++                    // Iframe bersandbox tidak bisa diukur isinya, jadi zoom memakai skala CSS: iframe dilebarkan
++                    // 100/skala % lalu diperkecil dengan transform, sehingga tetap persis memenuhi wadahnya.
++                    get gayaIframe() {
++                        if (this.zoom === 100) {
++                            return '';
++                        }
++                        const skala = this.zoom / 100;
++                        const ukuran = 100 / skala;
++
++                        return `width:${ukuran}%;height:${ukuran}%;transform:scale(${skala});transform-origin:0 0;`;
+                     },
+ 
+                     async muatPohon() {
+@@ -208,11 +243,12 @@ class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs
+             });
+         </script>
+ 
+-        <div x-data="rabGenerator(@js($konfigRab))" @rab-open.window="buka()" @keydown.escape.window="tutup()">
++        <div x-data="rabGenerator(@js($konfigRab))" @rab-open.window="buka()" @keydown.escape.window="escape()">
+             <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">
+                 <div x-show="open" x-transition.opacity class="absolute inset-0 bg-ink-950/50" @click="tutup()"></div>
+ 
+-                <div x-show="open" x-transition class="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
++                <div x-show="open" x-transition :class="diperbesar ? 'h-[96vh] max-w-[96vw]' : 'max-h-[90vh] max-w-5xl'"
++                     class="relative flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+                     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                         <div>
+                             <h3 class="text-base font-bold text-ink-900">Unduh Template Excel</h3>
+@@ -221,9 +257,9 @@ class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs
+                         <button type="button" @click="tutup()" class="text-2xl leading-none text-slate-400 hover:text-slate-600" aria-label="Tutup">&times;</button>
+                     </div>
+ 
+-                    <div class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-2">
+-                        {{-- Pohon pilihan --}}
+-                        <div class="min-h-0 space-y-3 overflow-y-auto border-b border-slate-100 p-5 lg:border-b-0 lg:border-r">
++                    <div :class="diperbesar ? '' : 'lg:grid-cols-2'" class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden">
++                        {{-- Pohon pilihan. x-show (bukan x-if): saat diperbesar hanya disembunyikan, pilihan tetap utuh. --}}
++                        <div x-show="! diperbesar" class="min-h-0 space-y-3 overflow-y-auto border-b border-slate-100 p-5 lg:border-b-0 lg:border-r">
+                             <p x-show="memuat" class="py-8 text-center text-sm text-slate-400">Memuat struktur template…</p>
+                             <p x-show="galatPohon" x-text="galatPohon" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
+ 
+@@ -274,7 +310,22 @@ class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+ 
+                         {{-- Pratinjau --}}
+                         <div class="flex min-h-[18rem] min-w-0 flex-col p-5">
+-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Pratinjau perkiraan</p>
++                            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
++                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Pratinjau perkiraan</p>
++
++                                <div x-show="! mempratinjau && previews.length > 0" x-cloak class="flex items-center gap-3">
++                                    <div class="flex items-center gap-1" role="group" aria-label="Zoom pratinjau">
++                                        <span class="text-[11px] text-slate-400">Zoom</span>
++                                        <template x-for="z in zoomOpsi" :key="z">
++                                            <button type="button" @click="setZoom(z)" x-text="z + '%'" :aria-pressed="zoom === z"
++                                                    :class="zoom === z ? 'bg-ink-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
++                                                    class="rounded-md px-2 py-0.5 text-[11px] font-semibold transition-colors"></button>
++                                        </template>
++                                    </div>
++                                    <button type="button" @click="toggleBesar()" x-text="diperbesar ? 'Kecilkan' : 'Perbesar'"
++                                            class="rounded-md border border-slate-200 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"></button>
++                                </div>
++                            </div>
+ 
+                             <p x-show="galat" x-text="galat" class="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
+                             <p x-show="basi" class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
+@@ -302,7 +353,10 @@ class="rounded-lg px-3 py-1 text-xs font-semibold transition-colors"></button>
+                                     </template>
+                                 </div>
+                                 {{-- sandbox kosong: dokumen pratinjau tidak boleh menjalankan skrip atau membocorkan CSS ke halaman --}}
+-                                <iframe sandbox :srcdoc="previews[tab] ? previews[tab].html : ''" class="min-h-[22rem] w-full flex-1 rounded-lg border border-slate-200 bg-white"></iframe>
++                                {{-- Pembungkus hanya untuk zoom (skala CSS lewat :style pada iframe); tidak boleh ada penyembunyian di sini, lihat catatan x-if di atas. --}}
++                                <div class="relative min-h-[22rem] flex-1 overflow-hidden rounded-lg border border-slate-200 bg-white">
++                                    <iframe sandbox :srcdoc="previews[tab] ? previews[tab].html : ''" :style="gayaIframe" class="absolute left-0 top-0 h-full w-full"></iframe>
++                                </div>
+                                 <p class="mt-1.5 text-[11px] text-slate-400">Tampilan di Excel dapat sedikit berbeda dari pratinjau ini.</p>
+                             </div>
+                             </template>
+diff --git a/resources/views/tim-kerja/program-kerja/usulan-program-kerja/show.blade.php b/resources/views/tim-kerja/program-kerja/usulan-program-kerja/show.blade.php
+index ab6536f..6f3badc 100644
+--- a/resources/views/tim-kerja/program-kerja/usulan-program-kerja/show.blade.php
++++ b/resources/views/tim-kerja/program-kerja/usulan-program-kerja/show.blade.php
+@@ -49,7 +49,7 @@ class="rounded-2xl bg-white p-6 shadow-card"
+                     <x-form.textarea label="Deskripsi" name="deskripsi" :rows="3" x-model="form.deskripsi" />
+                     <x-form.textarea label="Permasalahan" name="permasalahan" :rows="3" x-model="form.permasalahan" />
+ 
+-                    {{-- RAB Generator: bila aktif (flag + ada file master aktif), template rab_excel statis digantikan modal pilihan. --}}
++                    {{-- RAB Generator: bila aktif (flag + ada file master aktif), template rab_excel statis digantikan modal pilihan dan template rab_pdf disembunyikan (PDF dibuat tim kerja dari Excel hasil generator). --}}
+                     @php $rabGeneratorAktif = config('rab_generator.enabled') && \App\Models\FileExcel::aktif()->exists(); @endphp
+                     @if ($templateList->isNotEmpty() || $rabGeneratorAktif)
+                         <div class="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-3">
+@@ -58,7 +58,7 @@ class="rounded-2xl bg-white p-6 shadow-card"
+                                 <x-rab-generator.modal />
+                             @endif
+                             @foreach ($templateList as $template)
+-                                @continue($rabGeneratorAktif && $template->kode === 'rab_excel')
++                                @continue($rabGeneratorAktif && $template->digantikanGenerator())
+                                 <a href="{{ $template->file_url }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm hover:bg-brand-50">
+                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 12m0 0l4.5-4.5M12 12V3" /></svg>
+                                     {{ $template->nama }}
+diff --git a/routes/admin-rab.php b/routes/admin-rab.php
+index a424977..740b4ef 100644
+--- a/routes/admin-rab.php
++++ b/routes/admin-rab.php
+@@ -14,4 +14,5 @@
+         Route::put('sheet/{sheet}', [RabMasterController::class, 'updateSheet'])->name('sheet.update');
+         Route::get('{fileExcel}', [RabMasterController::class, 'show'])->name('show');
+         Route::put('{fileExcel}/aktifkan', [RabMasterController::class, 'aktifkan'])->name('aktifkan');
++        Route::delete('{fileExcel}', [RabMasterController::class, 'destroy'])->name('destroy');
+     });
+diff --git a/routes/admin.php b/routes/admin.php
+index 3990597..b4ef729 100644
+--- a/routes/admin.php
++++ b/routes/admin.php
+@@ -106,6 +106,7 @@
+         Route::get('pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
+         Route::put('pengaturan/aplikasi', [PengaturanController::class, 'updateAplikasi'])->name('pengaturan.aplikasi.update');
+         Route::put('pengaturan/template/{kode}', [PengaturanController::class, 'updateTemplate'])->name('pengaturan.template.update');
++        Route::delete('pengaturan/template/{kode}', [PengaturanController::class, 'destroyTemplate'])->name('pengaturan.template.destroy');
+         Route::get('pengaturan/template/{kode}/preview', [PengaturanController::class, 'previewTemplate'])->name('pengaturan.template.preview');
+         Route::get('pengaturan/template/{kode}/unduh', [PengaturanController::class, 'unduhTemplate'])->name('pengaturan.template.unduh');
+         Route::put('pengaturan/lainnya', [PengaturanController::class, 'updateLainnya'])->name('pengaturan.lainnya.update');
+diff --git a/tests/Feature/RabGenerator/CleanupTempReportsTest.php b/tests/Feature/RabGenerator/CleanupTempReportsTest.php
+new file mode 100644
+index 0000000..906b310
+--- /dev/null
++++ b/tests/Feature/RabGenerator/CleanupTempReportsTest.php
+@@ -0,0 +1,62 @@
++<?php
++
++use Illuminate\Console\Scheduling\Schedule;
++use Illuminate\Support\Facades\Artisan;
++use Illuminate\Support\Facades\Storage;
++
++/** Buat berkas di disk private lalu atur umurnya (menit yang lalu). */
++function tempRab(string $path, int $umurMenit): void
++{
++    Storage::disk('private')->put($path, 'x');
++    touch(Storage::disk('private')->path($path), time() - $umurMenit * 60);
++}
++
++beforeEach(function () {
++    Storage::fake('private');
++});
++
++it('S6: berkas temp lebih dari 1 jam dihapus, yang lebih baru tidak', function () {
++    tempRab('temp/lama.xlsx', 61);
++    tempRab('temp/baru.xlsx', 59);
++    tempRab('temp/sangat-baru.xlsx', 1);
++
++    $this->artisan('rab-generator:cleanup-temp')->expectsOutput('Selesai. Berkas temp dihapus: 1.')->assertSuccessful();
++
++    Storage::disk('private')->assertMissing('temp/lama.xlsx');
++    Storage::disk('private')->assertExists('temp/baru.xlsx');
++    Storage::disk('private')->assertExists('temp/sangat-baru.xlsx');
++});
++
++it('hanya menyentuh temp/*.xlsx: berkas lain dan folder lain dibiarkan walau tua', function () {
++    tempRab('temp/catatan.txt', 600);
++    tempRab('rab-master/master.xlsx', 600);
++    tempRab('temp/lama.xlsx', 600);
++
++    $this->artisan('rab-generator:cleanup-temp')->assertSuccessful();
++
++    Storage::disk('private')->assertExists('temp/catatan.txt');
++    Storage::disk('private')->assertExists('rab-master/master.xlsx');
++    Storage::disk('private')->assertMissing('temp/lama.xlsx');
++});
++
++it('batas dapat diubah lewat --menit', function () {
++    tempRab('temp/sepuluh-menit.xlsx', 10);
++
++    $this->artisan('rab-generator:cleanup-temp', ['--menit' => 5])->assertSuccessful();
++
++    Storage::disk('private')->assertMissing('temp/sepuluh-menit.xlsx');
++});
++
++it('aman dijalankan bila folder temp belum ada', function () {
++    $this->artisan('rab-generator:cleanup-temp')->expectsOutput('Selesai. Berkas temp dihapus: 0.')->assertSuccessful();
++});
++
++it('terdaftar di scheduler tiap 15 menit', function () {
++    Artisan::call('list'); // bootstrap kernel konsol supaya Kernel::schedule() dijalankan
++
++    $event = collect(app(Schedule::class)->events())
++        ->first(fn ($e) => str_contains($e->command, 'rab-generator:cleanup-temp'));
++
++    expect($event)->not->toBeNull()
++        ->and($event->expression)->toBe('*/15 * * * *');
++});
+diff --git a/tests/Feature/RabGenerator/PengaturanTemplateTest.php b/tests/Feature/RabGenerator/PengaturanTemplateTest.php
+new file mode 100644
+index 0000000..3d8d072
+--- /dev/null
++++ b/tests/Feature/RabGenerator/PengaturanTemplateTest.php
+@@ -0,0 +1,237 @@
++<?php
++
++use App\Events\ActivityOccurred;
++use App\Models\FileExcel;
++use App\Models\TemplateDokumen;
++use Illuminate\Http\UploadedFile;
++use Illuminate\Support\Facades\Event;
++use Illuminate\Support\Facades\Storage;
++
++/*
++ * Tab "Template Dokumen" di Pengaturan (08 langkah 12 butir 3): kartu unggah rab_excel lama disembunyikan
++ * dan rab_pdf lama disembunyikan begitu RAB Generator menggantikannya, diganti kartu yang mengarah ke halaman
++ * file master. Berkas lama boleh dihapus admin (dicatat di log). Template KAK/TOR tidak berubah.
++ */
++
++function halamanTemplate($test)
++{
++    return $test->actingAs($test->admin)->get(route('admin.pengaturan.index', ['tab' => 'template']));
++}
++
++function aksiUnggah(string $kode): string
++{
++    return 'action="'.route('admin.pengaturan.template.update', $kode).'"';
++}
++
++beforeEach(function () {
++    $this->admin = userWithRole('admin');
++
++    foreach (['rab_excel' => 'Template RAB (Excel)', 'rab_pdf' => 'Template RAB (PDF)', 'kak_tor' => 'Template KAK/TOR (Word)'] as $kode => $nama) {
++        TemplateDokumen::create(['kode' => $kode, 'nama' => $nama]);
++    }
++});
++
++it('flag mati: tampilan lama utuh, kartu rab_excel masih ada dan tidak ada tombol generator', function () {
++    config(['rab_generator.enabled' => false]);
++
++    halamanTemplate($this)->assertOk()
++        ->assertSee(aksiUnggah('rab_excel'), false)
++        ->assertSee(aksiUnggah('rab_pdf'), false)
++        ->assertSee(aksiUnggah('kak_tor'), false)
++        ->assertDontSee('Kelola File Master RAB');
++});
++
++it('flag aktif tanpa master aktif: tombol ke generator tampil dengan peringatan, kartu rab_excel lama tetap ada', function () {
++    config(['rab_generator.enabled' => true]);
++
++    halamanTemplate($this)->assertOk()
++        ->assertSee('Kelola File Master RAB')
++        ->assertSee(route('admin.rab-generator.index'), false)
++        ->assertSee('Belum ada file master aktif')
++        ->assertSee(aksiUnggah('rab_excel'), false) // template lama masih satu-satunya yang dipakai tim kerja
++        ->assertSee(aksiUnggah('rab_pdf'), false);
++});
++
++it('flag aktif dengan master aktif: kartu rab_excel dan rab_pdf lama disembunyikan, KAK/TOR tetap, master aktif ditampilkan', function () {
++    config(['rab_generator.enabled' => true]);
++    FileExcel::create(['nama_file' => 'master-rab-2026.xlsx', 'path' => 'rab-master/x.xlsx', 'hash_sha256' => str_repeat('a', 64)])->aktifkan();
++
++    halamanTemplate($this)->assertOk()
++        ->assertSee('Kelola File Master RAB')
++        ->assertSee('File master aktif')
++        ->assertSee('master-rab-2026.xlsx')
++        ->assertDontSee(aksiUnggah('rab_excel'), false)
++        ->assertDontSee(aksiUnggah('rab_pdf'), false)
++        ->assertSee(aksiUnggah('kak_tor'), false);
++});
++
++it('master tidak aktif tidak dianggap menggantikan template lama', function () {
++    config(['rab_generator.enabled' => true]);
++    FileExcel::create(['nama_file' => 'draf.xlsx', 'path' => 'rab-master/d.xlsx', 'hash_sha256' => str_repeat('b', 64)]);
++
++    halamanTemplate($this)->assertOk()
++        ->assertSee('Belum ada file master aktif')
++        ->assertSee(aksiUnggah('rab_excel'), false);
++});
++
++it('endpoint unggah template rab_excel tetap berfungsi walau kartunya disembunyikan (rute dan data tidak dihapus)', function () {
++    Storage::fake('public');
++    config(['rab_generator.enabled' => true]);
++    FileExcel::create(['nama_file' => 'm.xlsx', 'path' => 'rab-master/m.xlsx', 'hash_sha256' => str_repeat('c', 64)])->aktifkan();
++
++    $this->actingAs($this->admin)
++        ->put(route('admin.pengaturan.template.update', 'rab_excel'), ['file' => UploadedFile::fake()->create('lama.xlsx', 10)])
++        ->assertRedirect();
++
++    $template = TemplateDokumen::where('kode', 'rab_excel')->first();
++
++    expect($template->file)->not->toBeNull();
++    Storage::disk('public')->assertExists($template->file);
++});
++
++
++// --- Hapus template lama (tidak aktif) ---
++
++/** Template lama berisi berkas di disk public, dan generator aktif (flag + master aktif). */
++function templateLamaDenganGeneratorAktif(): void
++{
++    Storage::fake('public');
++    config(['rab_generator.enabled' => true]);
++    FileExcel::create(['nama_file' => 'm.xlsx', 'path' => 'rab-master/m.xlsx', 'hash_sha256' => str_repeat('d', 64)])->aktifkan();
++
++    foreach (['rab_excel' => 'lama.xlsx', 'rab_pdf' => 'lama.pdf', 'kak_tor' => 'kak.docx'] as $kode => $nama) {
++        Storage::disk('public')->put("template-dokumen/{$nama}", 'isi');
++        TemplateDokumen::where('kode', $kode)->update(['file' => "template-dokumen/{$nama}"]);
++    }
++}
++
++it('bagian "Template lama" menampilkan hanya rab_excel dan rab_pdf yang berkas, dengan tombol Hapus dan konfirmasi', function () {
++    templateLamaDenganGeneratorAktif();
++
++    $html = halamanTemplate($this)->assertOk()->assertSee('Template lama (tidak aktif)')->getContent();
++
++    // URL form hapus sama dengan form unggah (beda metode), jadi yang dihitung form ber-_method DELETE dan teks konfirmasinya.
++    expect(substr_count($html, 'name="_method" value="DELETE"'))->toBe(2)
++        ->and($html)->toContain('Hapus file Template RAB (Excel)?')
++        ->and($html)->toContain('Hapus file Template RAB (PDF)?')
++        ->and($html)->not->toContain('Hapus file Template KAK/TOR');
++});
++
++it('bagian "Template lama" tidak tampil bila flag mati, belum ada master aktif, atau berkas sudah tidak ada', function () {
++    templateLamaDenganGeneratorAktif();
++
++    config(['rab_generator.enabled' => false]);
++    halamanTemplate($this)->assertDontSee('Template lama (tidak aktif)');
++
++    config(['rab_generator.enabled' => true]);
++    FileExcel::query()->update(['aktif' => false]);
++    halamanTemplate($this)->assertDontSee('Template lama (tidak aktif)');
++
++    FileExcel::query()->update(['aktif' => true]);
++    TemplateDokumen::whereIn('kode', ['rab_excel', 'rab_pdf'])->update(['file' => null]);
++    halamanTemplate($this)->assertDontSee('Template lama (tidak aktif)');
++});
++
++it('hapus: berkas dan isi kolom file hilang, baris template tetap, dan aksinya tercatat di log dengan snapshot berkas', function () {
++    Event::fake([ActivityOccurred::class]);
++    templateLamaDenganGeneratorAktif();
++
++    $this->actingAs($this->admin)->delete(route('admin.pengaturan.template.destroy', 'rab_excel'))
++        ->assertRedirect()->assertSessionHas('feedback.type', 'success');
++
++    $template = TemplateDokumen::where('kode', 'rab_excel')->first();
++    expect($template)->not->toBeNull()->and($template->file)->toBeNull();
++    Storage::disk('public')->assertMissing('template-dokumen/lama.xlsx');
++    Storage::disk('public')->assertExists('template-dokumen/lama.pdf'); // hanya yang dipilih
++
++    Event::assertDispatched(ActivityOccurred::class, fn ($e) => $e->description === 'menghapus file template lama "Template RAB (Excel)"'
++        && $e->causer->is($this->admin)
++        && $e->subject->is($template)
++        && $e->properties === ['kode' => 'rab_excel', 'file' => 'template-dokumen/lama.xlsx']);
++});
++
++it('hapus ditolak selama generator belum aktif (template lama masih dipakai tim kerja): berkas utuh, tanpa log', function () {
++    Event::fake([ActivityOccurred::class]);
++    templateLamaDenganGeneratorAktif();
++
++    $coba = function () {
++        $this->actingAs($this->admin)->delete(route('admin.pengaturan.template.destroy', 'rab_pdf'))
++            ->assertRedirect()->assertSessionHas('feedback.type', 'error');
++
++        expect(TemplateDokumen::where('kode', 'rab_pdf')->value('file'))->toBe('template-dokumen/lama.pdf');
++        Storage::disk('public')->assertExists('template-dokumen/lama.pdf');
++    };
++
++    config(['rab_generator.enabled' => false]); // flag mati
++    $coba();
++
++    config(['rab_generator.enabled' => true]);   // flag aktif tetapi belum ada master aktif
++    FileExcel::query()->update(['aktif' => false]);
++    $coba();
++
++    Event::assertNotDispatched(ActivityOccurred::class);
++});
++
++it('hapus template KAK/TOR ditolak 404 (bukan template yang digantikan generator)', function () {
++    Event::fake([ActivityOccurred::class]);
++    templateLamaDenganGeneratorAktif();
++
++    $this->actingAs($this->admin)->delete(route('admin.pengaturan.template.destroy', 'kak_tor'))->assertNotFound();
++
++    Storage::disk('public')->assertExists('template-dokumen/kak.docx');
++    Event::assertNotDispatched(ActivityOccurred::class);
++});
++
++it('hapus template yang tidak punya berkas memberi pesan galat dan tidak membuat log', function () {
++    Event::fake([ActivityOccurred::class]);
++    templateLamaDenganGeneratorAktif();
++    TemplateDokumen::where('kode', 'rab_pdf')->update(['file' => null]);
++
++    $this->actingAs($this->admin)->delete(route('admin.pengaturan.template.destroy', 'rab_pdf'))
++        ->assertRedirect()->assertSessionHas('feedback.type', 'error');
++
++    Event::assertNotDispatched(ActivityOccurred::class);
++});
++
++it('hapus hanya untuk admin: tim kerja 403 dan tamu diarahkan ke login, berkas utuh', function () {
++    templateLamaDenganGeneratorAktif();
++
++    $this->actingAs(userWithRole('tim_kerja'))->delete(route('admin.pengaturan.template.destroy', 'rab_excel'))->assertForbidden();
++    auth()->logout();
++    $this->delete(route('admin.pengaturan.template.destroy', 'rab_excel'))->assertRedirect(route('login'));
++
++    Storage::disk('public')->assertExists('template-dokumen/lama.xlsx');
++});
++
++// --- Daftar unduhan tim kerja ---
++
++function halamanUsulanTimKerja($test)
++{
++    $iku = makeIku(makeSasaranKegiatan(makeTahunAnggaran()));
++    $tim = makeTimKerja();
++    $iku->timKerja()->attach($tim->id);
++    $user = userWithRole('tim_kerja');
++    $user->timKerja()->attach($tim->id);
++
++    return $test->actingAs($user)->get(route('tim-kerja.usulan-program-kerja.show', makeUsulan($iku)->id));
++}
++
++it('tim kerja: template rab_pdf dan rab_excel lama tidak tampil di daftar unduhan begitu generator aktif, KAK/TOR tetap', function () {
++    templateLamaDenganGeneratorAktif();
++
++    halamanUsulanTimKerja($this)->assertOk()
++        ->assertSee('Unduh Template Excel')            // tombol modal generator
++        ->assertDontSee('Template RAB (PDF)')
++        ->assertDontSee('Template RAB (Excel)')
++        ->assertSee('Template KAK/TOR (Word)');
++});
++
++it('tim kerja: selama generator belum aktif, template lama (Excel dan PDF) tetap tampil', function () {
++    templateLamaDenganGeneratorAktif();
++    config(['rab_generator.enabled' => false]);
++
++    halamanUsulanTimKerja($this)->assertOk()
++        ->assertSee('Template RAB (PDF)')
++        ->assertSee('Template RAB (Excel)')
++        ->assertDontSee('Unduh Template Excel');
++});
+diff --git a/tests/Feature/RabGenerator/RabMasterAdminTest.php b/tests/Feature/RabGenerator/RabMasterAdminTest.php
+index e0d0333..eb96004 100644
+--- a/tests/Feature/RabGenerator/RabMasterAdminTest.php
++++ b/tests/Feature/RabGenerator/RabMasterAdminTest.php
+@@ -311,3 +311,117 @@ function koreksiRab($test, Sheet $sheet, array $ubah = [])
+ 
+     Event::assertDispatched(ActivityOccurred::class, fn ($e) => str_contains($e->description, 'mengaktifkan file master RAB'));
+ });
++
++it('Q3: rumus total induk yang melewatkan anak disimpan sebagai peringatan sheet dan tampil di halaman tinjau', function () {
++    unggahMasterRab($this, function (Spreadsheet $s) {
++        $ws = $s->getSheetByName('7735.951');
++        $ws->getCell('X21')->setValue('=X22'); // komponen 051 lupa sub B (baris 28)
++        $ws->getCell('X22')->setValue(100);
++        $ws->getCell('X28')->setValue(200);
++    });
++    $file = FileExcel::first();
++    $pesan = 'Rumus total komponen 051 (baris 21) tidak menjumlahkan sub B (baris 28)';
++
++    expect($file->peringatan['sheet']['7735.951'])->toHaveCount(1)
++        ->and($file->peringatan['sheet']['7735.951'][0])->toContain($pesan)
++        ->and($file->jumlah_peringatan)->toBe(2); // + sheet "Catatan" tanpa RO
++
++    $this->actingAs($this->admin)->get(route('admin.rab-generator.show', $file))
++        ->assertOk()->assertSee($pesan);
++});
++
++// --- Hapus file master lama yang tidak aktif ---
++
++/** Dua master terunggah: [lama (tidak aktif), baru (aktif)]. */
++function duaMasterRab($test): array
++{
++    unggahMasterRab($test);
++    unggahMasterRab($test);
++    [$lama, $baru] = FileExcel::orderBy('id')->get()->all();
++    $baru->aktifkan();
++
++    return [$lama->fresh(), $baru->fresh()];
++}
++
++it('hapus file master tidak aktif: baris, hasil deteksi (cascade), dan berkas di disk private hilang; log mencatat snapshot', function () {
++    [$lama, $baru] = duaMasterRab($this);
++    $path = $lama->path;
++    $sheetBaru = Sheet::where('file_excel_id', $baru->id)->count();
++    Storage::disk('private')->assertExists($path);
++
++    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))
++        ->assertRedirect(route('admin.rab-generator.index'))
++        ->assertSessionHas('feedback.type', 'success');
++
++    expect(FileExcel::find($lama->id))->toBeNull()
++        ->and(Sheet::where('file_excel_id', $lama->id)->count())->toBe(0)
++        ->and(Header::count())->toBe($sheetBaru)    // hanya milik master baru yang tersisa
++        ->and(Footer::count())->toBe($sheetBaru)
++        ->and(Kategori::count())->toBe(Kategori::whereIn('sheet_id', Sheet::pluck('id'))->count())
++        ->and(Kelompok::count())->toBe(Kelompok::whereIn('kategori_id', Kategori::pluck('id'))->count());
++    Storage::disk('private')->assertMissing($path);
++    Storage::disk('private')->assertExists($baru->path);
++
++    Event::assertDispatched(ActivityOccurred::class, fn ($e) => $e->description === 'menghapus file master RAB "master-uji.xlsx"'
++        && $e->causer->is($this->admin)
++        && $e->properties['path'] === $path
++        && $e->properties['hash_sha256'] === $lama->hash_sha256
++        && $e->properties['jumlah_sheet'] === 1
++        && isset($e->properties['tanggal_upload']));
++});
++
++it('file master AKTIF tidak dapat dihapus: baris, berkas, dan hasil deteksi utuh, tanpa log', function () {
++    [, $baru] = duaMasterRab($this);
++
++    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $baru))
++        ->assertRedirect()->assertSessionHas('feedback.type', 'error');
++
++    expect(FileExcel::find($baru->id))->not->toBeNull()
++        ->and(Sheet::where('file_excel_id', $baru->id)->count())->toBeGreaterThan(0);
++    Storage::disk('private')->assertExists($baru->path);
++    Event::assertNotDispatched(ActivityOccurred::class, fn ($e) => str_contains($e->description, 'menghapus file master'));
++});
++
++it('file master yang baru diaktifkan di sela-sela tidak terhapus (penghapusan bersyarat atomik)', function () {
++    [$lama] = duaMasterRab($this);
++    $lama->aktifkan(); // diaktifkan sebelum permintaan hapus diproses
++
++    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))
++        ->assertSessionHas('feedback.type', 'error');
++
++    expect(FileExcel::find($lama->id))->not->toBeNull();
++    Storage::disk('private')->assertExists($lama->path);
++});
++
++it('hapus file master hanya untuk admin; flag mati 404; tamu ke halaman login; file utuh', function () {
++    [$lama] = duaMasterRab($this);
++
++    $this->actingAs(userWithRole('tim_kerja'))->delete(route('admin.rab-generator.destroy', $lama))->assertForbidden();
++
++    auth()->logout();
++    $this->delete(route('admin.rab-generator.destroy', $lama))->assertRedirect(route('login'));
++
++    config(['rab_generator.enabled' => false]);
++    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))->assertNotFound();
++
++    expect(FileExcel::find($lama->id))->not->toBeNull();
++    Storage::disk('private')->assertExists($lama->path);
++});
++
++it('daftar file master: tombol Hapus hanya pada file tidak aktif, dengan konfirmasi', function () {
++    duaMasterRab($this);
++
++    $html = $this->actingAs($this->admin)->get(route('admin.rab-generator.index'))->assertOk()->getContent();
++
++    expect(substr_count($html, 'name="_method" value="DELETE"'))->toBe(1)
++        ->and($html)->toContain('Hapus file master');
++});
++
++it('menghapus master lama tidak mengganggu pembuatan pratinjau dari master aktif', function () {
++    [$lama, $baru] = duaMasterRab($this);
++
++    $this->actingAs($this->admin)->delete(route('admin.rab-generator.destroy', $lama))->assertRedirect();
++
++    expect(FileExcel::aktif()->first()->id)->toBe($baru->id)
++        ->and(Storage::disk('private')->exists($baru->path))->toBeTrue();
++});
+diff --git a/tests/Feature/RabGenerator/RabMasterAnalyzerTest.php b/tests/Feature/RabGenerator/RabMasterAnalyzerTest.php
+index 4cf680b..8b29d08 100644
+--- a/tests/Feature/RabGenerator/RabMasterAnalyzerTest.php
++++ b/tests/Feature/RabGenerator/RabMasterAnalyzerTest.php
+@@ -237,3 +237,65 @@ function ringkasKelompok(array $kategori): array
+         @unlink($path);
+     }
+ });
++
++// --- Peringatan Q3: rumus total induk yang lupa menjumlahkan anaknya (07-risiko) ---
++
++/**
++ * Master uji dengan rumus total lengkap di kolom X (kolom akhir area cetak). Sheet lengkap:
++ * RO 19 -> komponen 21 (sub A 22: akun 23, 26 | sub B 28: akun 29), komponen 32 (sub A 33: akun 34).
++ *
++ * @param  array<string, mixed>  $ganti  koordinat => nilai pengganti (null menghapus sel)
++ * @return string[] peringatan sheet pertama yang menyangkut rumus total
++ */
++function peringatanRumus(array $ganti = []): array
++{
++    $s = new Spreadsheet;
++    masterUjiSheetLengkap($ws = $s->getActiveSheet());
++
++    $nilai = [
++        'X19' => '=X21+X32', 'X21' => '=X22+X28', 'X32' => '=X33',
++        'X22' => '=X23+X26', 'X28' => '=X29', 'X33' => '=X34',
++        'X23' => 100, 'X26' => 200, 'X29' => 300, 'X34' => 400,
++    ];
++    foreach (array_merge($nilai, $ganti) as $koordinat => $v) {
++        if ($v !== null) {
++            $ws->getCell($koordinat)->setValue($v);
++        }
++    }
++
++    $semua = (new RabMasterAnalyzer)->analyzeSpreadsheet($s)['sheets'][0]['peringatan'];
++
++    return array_values(array_filter($semua, fn ($p) => str_starts_with($p, 'Rumus total')));
++}
++
++it('Q3: rumus total lengkap tidak menghasilkan peringatan', function () {
++    expect(peringatanRumus())->toBe([]);
++});
++
++it('Q3: sub yang lupa menjumlahkan satu akun diperingatkan dengan baris akun yang terlewat', function () {
++    expect(peringatanRumus(['X22' => '=X23']))->toBe([
++        'Rumus total sub A (baris 22) tidak menjumlahkan akun 521213 (baris 26); total di master bisa lebih kecil dari rinciannya.',
++    ]);
++});
++
++it('Q3: komponen dan RO yang melewatkan anak juga diperingatkan, berurutan sesuai baris induknya', function () {
++    $peringatan = peringatanRumus(['X19' => '=X21', 'X21' => '=X22']);
++
++    expect($peringatan)->toHaveCount(2)
++        ->and($peringatan[0])->toContain('RO 7735.EBB.951 (baris 19)')->toContain('komponen 052 (baris 32)')
++        ->and($peringatan[1])->toContain('komponen 051 (baris 21)')->toContain('sub B (baris 28)');
++});
++
++it('Q3: rentang SUM, rujukan absolut, dan kolom lain dibaca dengan benar', function () {
++    expect(peringatanRumus(['X22' => '=SUM(X23:X26)']))->toBe([], 'rentang yang mencakup kedua akun lengkap')
++        ->and(peringatanRumus(['X22' => '=$X$23+$X$26']))->toBe([], 'rujukan absolut dihitung')
++        ->and(peringatanRumus(['X22' => '=$X$23']))->toHaveCount(1, 'rujukan absolut yang tidak lengkap tetap diperingatkan')
++        ->and(peringatanRumus(['X22' => '=X23+W26']))->toHaveCount(1, 'rujukan ke kolom lain bukan anak yang dijumlahkan');
++});
++
++it('Q3: bukan pola jumlah anak tidak diperingatkan (angka tetap, tanpa rumus, merujuk cucu, anak tanpa nilai)', function () {
++    expect(peringatanRumus(['X22' => 300]))->toBe([], 'angka tetap')
++        ->and(peringatanRumus(['X22' => null]))->toBe([], 'tanpa isi')
++        ->and(peringatanRumus(['X22' => '=X24+X25']))->toBe([], 'tidak merujuk satu akun pun')
++        ->and(peringatanRumus(['X22' => '=X23', 'X26' => null]))->toBe([], 'akun tanpa nilai tidak wajib dijumlahkan');
++});
+diff --git a/tests/Feature/RabGenerator/RabPreviewRendererTest.php b/tests/Feature/RabGenerator/RabPreviewRendererTest.php
+new file mode 100644
+index 0000000..009b884
+--- /dev/null
++++ b/tests/Feature/RabGenerator/RabPreviewRendererTest.php
+@@ -0,0 +1,74 @@
++<?php
++
++use App\Services\RabPreviewRenderer;
++use PhpOffice\PhpSpreadsheet\Cell\DataType;
++use PhpOffice\PhpSpreadsheet\Spreadsheet;
++
++/*
++ * Langkah 10 (02-arsitektur.md): perbaikan tampilan pratinjau. Workbook uji FIKTIF dan kecil;
++ * yang diuji hanya perilaku renderer, bukan perakitan.
++ */
++
++function previewHtml(?Closure $ubah = null): string
++{
++    $s = new Spreadsheet;
++    $ws = $s->getActiveSheet();
++    $ws->setTitle('uji');
++    $ws->getCell('A1')->setValueExplicit('Teks biasa', DataType::TYPE_STRING);
++
++    if ($ubah) {
++        $ubah($s, $ws);
++    }
++
++    return (new RabPreviewRenderer)->render($s)[0]['html'];
++}
++
++it('sel string berformat jam tidak tampil 0:00, nilai teksnya tetap', function () {
++    $html = previewHtml(function ($s, $ws) {
++        $ws->getCell('A2')->setValueExplicit('1.', DataType::TYPE_STRING);
++        $ws->getStyle('A2')->getNumberFormat()->setFormatCode('h:mm');
++    });
++
++    expect($html)->toContain('1.')->not->toContain('0:00');
++});
++
++it('sel angka berformat jam sungguhan tetap diformat sebagai jam', function () {
++    $html = previewHtml(function ($s, $ws) {
++        $ws->getCell('A2')->setValue(0.5); // 12:00
++        $ws->getStyle('A2')->getNumberFormat()->setFormatCode('h:mm');
++    });
++
++    expect($html)->toContain('12:00');
++});
++
++it('garis kisi dimatikan pada tabel pratinjau', function () {
++    $html = previewHtml(fn ($s, $ws) => $ws->setShowGridlines(true));
++
++    expect($html)->not->toMatch("/<table[^>]*class=['\"][^'\"]*gridlines/");
++});
++
++it('semua sel nowrap, kecuali gaya yang memang wrap di Excel', function () {
++    $html = previewHtml(function ($s, $ws) {
++        $ws->getCell('A2')->setValueExplicit('Teks panjang yang wrap', DataType::TYPE_STRING);
++        $ws->getStyle('A2')->getAlignment()->setWrapText(true);
++    });
++
++    expect($html)->toContain('table td, table th { white-space: nowrap; }');
++
++    // Kelas gaya sel A2 (wrap) dikecualikan; kelas gaya sel A1 (tidak wrap) tidak.
++    preg_match_all('/td\.style(\d+), th\.style\d+ \{ white-space: normal; \}/', $html, $cocok);
++    expect($cocok[1])->toHaveCount(1);
++
++    $kelasWrap = $cocok[1][0];
++    expect($html)->toMatch("/<td[^>]*class=['\"][^'\"]*\\bstyle{$kelasWrap}\\b[^>]*>Teks panjang yang wrap/")
++        ->and($html)->not->toMatch("/<td[^>]*class=['\"][^'\"]*\\bstyle{$kelasWrap}\\b[^>]*>Teks biasa/");
++});
++
++it('aturan nowrap berada di dalam blok style milik dokumen pratinjau', function () {
++    $html = previewHtml();
++
++    $posisiNowrap = strpos($html, 'white-space: nowrap');
++
++    expect($posisiNowrap)->toBeInt()
++        ->and($posisiNowrap)->toBeLessThan(strpos($html, '</style>'));
++});
+diff --git a/tests/Feature/RabGenerator/RabReportTest.php b/tests/Feature/RabGenerator/RabReportTest.php
+index f8f93af..9cab4f7 100644
+--- a/tests/Feature/RabGenerator/RabReportTest.php
++++ b/tests/Feature/RabGenerator/RabReportTest.php
+@@ -252,6 +252,21 @@ function rabRepPreview($test, FileExcel $file, array $sheets, $user = null)
+         ->and($response->streamedContent())->toBe(Storage::disk('private')->get("temp/{$token}.xlsx"));
+ });
+ 
++it('perbaikan tampilan pratinjau tidak mengubah berkas unduhan (format sel string dan garis kisi tetap)', function () {
++    $file = rabRepFileAktif('format.xlsx', function (Spreadsheet $s) {
++        $ws = $s->getSheetByName('7735.951');
++        $ws->getStyle('B19')->getNumberFormat()->setFormatCode('h:mm');
++        $ws->setShowGridlines(true);
++    });
++    $sheet = rabRepSheet($file, '7735.951');
++    $token = rabRepPreview($this, $file, [['sheet_id' => $sheet->id, 'kelompok_ids' => [rabRepKelompokId($sheet, 34)]]])->json('preview_token');
++
++    $hasil = IOFactory::load(Storage::disk('private')->path("temp/{$token}.xlsx"))->getSheetByName('7735.951');
++
++    expect($hasil->getShowGridlines())->toBeTrue()
++        ->and($hasil->getStyle('B19')->getNumberFormat()->getFormatCode())->toBe('h:mm');
++});
++
+ it('S3: token milik user lain ditolak 403', function () {
+     $file = rabRepFileAktif();
+     $sheet = rabRepSheet($file, '7735.951');
+@@ -269,8 +284,10 @@ function rabRepPreview($test, FileExcel $file, array $sheets, $user = null)
+ 
+     $this->travel(21)->minutes();
+ 
+-    $this->actingAs($this->timKerja)->get(route('tim-kerja.rab-generator.unduh', $token))
+-        ->assertNotFound()->assertSee('kedaluwarsa');
++    // JSON seperti klien asli (modal memakai Accept: application/json); request HTML akan
++    // dirender sebagai halaman 404 kustom yang tidak memuat pesan abort().
++    $this->actingAs($this->timKerja)->getJson(route('tim-kerja.rab-generator.unduh', $token))
++        ->assertNotFound()->assertJsonPath('message', 'Pratinjau sudah kedaluwarsa. Buat pratinjau ulang.');
+ });
+ 
+ it('token yang bukan UUID ditolak 404 tanpa menyentuh cache atau disk', function () {
+diff --git a/tests/Js/rab-generator-modal.test.mjs b/tests/Js/rab-generator-modal.test.mjs
+index c7abf33..465cedb 100644
+--- a/tests/Js/rab-generator-modal.test.mjs
++++ b/tests/Js/rab-generator-modal.test.mjs
+@@ -265,3 +265,99 @@ test('regresi: iframe pratinjau dibuat di dalam <template x-if>, bukan di wadah
+     assert.ok(blok.includes('<iframe'), 'iframe harus berada di dalam blok x-if');
+     assert.ok(! /x-show/.test(sebelumIframe), 'tidak boleh ada x-show di antara x-if dan iframe');
+ });
++
++// --- Perbesar dan zoom pratinjau ---
++
++const PRATINJAU_OK = balas(200, { status: 'ok', preview_token: 'tok-1', previews: [{ judul: '7735.951', html: '<p>x</p>' }] });
++
++test('perbesar: default mati, toggle bolak-balik, dan tidak menyentuh pilihan, token, atau pratinjau', async () => {
++    const { c } = await siap([PRATINJAU_OK]);
++    c.pilih[1].on = true;
++    c.toggleKategori(c.sheets[0], c.sheets[0].kategori[0]);
++    await c.pratinjau();
++
++    assert.equal(c.diperbesar, false);
++    const pilihSebelum = JSON.stringify(c.pilih);
++
++    c.toggleBesar();
++    assert.equal(c.diperbesar, true);
++    c.toggleBesar();
++    assert.equal(c.diperbesar, false);
++
++    c.toggleBesar();
++    assert.equal(JSON.stringify(c.pilih), pilihSebelum);
++    assert.equal(c.token, 'tok-1');
++    assert.equal(c.previews.length, 1);
++    assert.equal(c.basi, false, 'memperbesar bukan perubahan pilihan: Unduh tetap aktif');
++});
++
++test('Esc saat diperbesar hanya mengecilkan; Esc berikutnya menutup modal', async () => {
++    const { c } = await siap();
++    c.toggleBesar();
++
++    c.escape();
++    assert.equal(c.diperbesar, false);
++    assert.equal(c.open, true, 'modal tetap terbuka setelah Esc pertama');
++
++    c.escape();
++    assert.equal(c.open, false);
++});
++
++test('tutup() mereset mode perbesar, tetapi zoom pilihan pengguna dipertahankan', async () => {
++    const { c } = await siap();
++    c.toggleBesar();
++    c.setZoom(75);
++
++    c.tutup();
++
++    assert.equal(c.diperbesar, false);
++    assert.equal(c.zoom, 75);
++});
++
++test('zoom: hanya 50/75/100 yang diterima, nilai lain diabaikan', async () => {
++    const { c } = await siap();
++    assert.equal(c.zoom, 100);
++
++    c.setZoom(50);
++    assert.equal(c.zoom, 50);
++    c.setZoom(33);
++    c.setZoom('75'); // string bukan salah satu opsi
++    c.setZoom(0);
++    assert.equal(c.zoom, 50);
++});
++
++test('gaya iframe: 100% tanpa transform; 50% dan 75% dikompensasi agar tetap memenuhi wadah', async () => {
++    const { c } = await siap();
++
++    assert.equal(c.gayaIframe, '');
++
++    c.setZoom(50);
++    assert.equal(c.gayaIframe, 'width:200%;height:200%;transform:scale(0.5);transform-origin:0 0;');
++
++    c.setZoom(75);
++    assert.match(c.gayaIframe, /^width:133\.3+\d*%;height:133\.3+\d*%;transform:scale\(0\.75\);transform-origin:0 0;$/);
++});
++
++test('regresi markup: pohon disembunyikan dengan x-show (bukan x-if), grid satu kolom saat diperbesar, Esc lewat escape()', () => {
++    const awalPohon = blade.indexOf('{{-- Pohon pilihan');
++    assert.notEqual(awalPohon, -1);
++    const tagPohon = /<div[^>]*>/.exec(blade.slice(blade.indexOf('<div', awalPohon)))[0];
++
++    assert.ok(tagPohon.includes('x-show="! diperbesar"'), 'pohon harus disembunyikan lewat x-show');
++    assert.ok(! /<template[^>]*x-if="[^"]*diperbesar/.test(blade), 'pohon tidak boleh dibuang dengan x-if (pilihan harus utuh)');
++
++    assert.ok(/:class="diperbesar \? '' : 'lg:grid-cols-2'"/.test(blade), 'dua kolom hanya saat tidak diperbesar');
++    assert.ok(blade.includes('@keydown.escape.window="escape()"'));
++    assert.ok(! blade.includes('@keydown.escape.window="tutup()"'));
++});
++
++test('markup: tombol Perbesar/Kecilkan dan grup zoom ada, dan iframe dibungkus tanpa x-show', () => {
++    assert.ok(blade.includes('@click="toggleBesar()"'));
++    assert.ok(blade.includes("diperbesar ? 'Kecilkan' : 'Perbesar'"));
++    assert.ok(blade.includes('@click="setZoom(z)"'));
++    assert.ok(blade.includes(':style="gayaIframe"'));
++
++    const iframe = blade.indexOf('<iframe');
++    const pembungkus = blade.lastIndexOf('<div', iframe);
++    assert.ok(! /x-show|x-if/.test(blade.slice(pembungkus, iframe)), 'pembungkus iframe tidak boleh x-show/x-if');
++});

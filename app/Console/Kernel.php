@@ -19,6 +19,9 @@ class Kernel extends ConsoleKernel
 
         // Generate laporan kinerja secara otomatis setiap hari pukul 01:00
         $schedule->command('laporan-kinerja:generate-otomatis')->dailyAt('01:00');
+
+        // RAB Generator: hapus berkas preview temp yang lebih dari 1 jam (token cache sudah kedaluwarsa 20 menit)
+        $schedule->command('rab-generator:cleanup-temp')->everyFifteenMinutes();
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
+use App\Models\FileExcel;
 use App\Models\PengaturanAplikasi;
 use App\Models\TemplateDokumen;
 use App\Services\AppAssetImageService;
@@ -25,7 +26,12 @@ class PengaturanController extends Controller
 
         $templateList = $tab === 'template' ? TemplateDokumen::orderBy('kode')->get() : collect();
 
-        return view('admin.pengaturan.index', compact('tab', 'templateList'));
+        // RAB Generator: file master aktif (null bila flag mati atau belum ada). Selama null, kartu unggah
+        // template rab_excel lama tetap tampil karena itu masih yang dipakai tim kerja.
+        $rabGeneratorEnabled = (bool) config('rab_generator.enabled');
+        $fileMasterAktif = $tab === 'template' && $rabGeneratorEnabled ? FileExcel::aktif()->first() : null;
+
+        return view('admin.pengaturan.index', compact('tab', 'templateList', 'rabGeneratorEnabled', 'fileMasterAktif'));
     }
 
     // PUT /admin/pengaturan/aplikasi

@@ -252,6 +252,21 @@ it('unduh mengirim berkas yang sama dengan hasil pratinjau sebagai attachment xl
         ->and($response->streamedContent())->toBe(Storage::disk('private')->get("temp/{$token}.xlsx"));
 });
 
+it('perbaikan tampilan pratinjau tidak mengubah berkas unduhan (format sel string dan garis kisi tetap)', function () {
+    $file = rabRepFileAktif('format.xlsx', function (Spreadsheet $s) {
+        $ws = $s->getSheetByName('7735.951');
+        $ws->getStyle('B19')->getNumberFormat()->setFormatCode('h:mm');
+        $ws->setShowGridlines(true);
+    });
+    $sheet = rabRepSheet($file, '7735.951');
+    $token = rabRepPreview($this, $file, [['sheet_id' => $sheet->id, 'kelompok_ids' => [rabRepKelompokId($sheet, 34)]]])->json('preview_token');
+
+    $hasil = IOFactory::load(Storage::disk('private')->path("temp/{$token}.xlsx"))->getSheetByName('7735.951');
+
+    expect($hasil->getShowGridlines())->toBeTrue()
+        ->and($hasil->getStyle('B19')->getNumberFormat()->getFormatCode())->toBe('h:mm');
+});
+
 it('S3: token milik user lain ditolak 403', function () {
     $file = rabRepFileAktif();
     $sheet = rabRepSheet($file, '7735.951');
@@ -269,8 +284,8 @@ it('S4: token kedaluwarsa (> 20 menit) ditolak 404 dengan pesan jelas', function
 
     $this->travel(21)->minutes();
 
-    $this->actingAs($this->timKerja)->get(route('tim-kerja.rab-generator.unduh', $token))
-        ->assertNotFound()->assertSee('kedaluwarsa');
+    $this->actingAs($this->timKerja)->getJson(route('tim-kerja.rab-generator.unduh', $token))
+    ->assertNotFound()->assertJsonPath('message', 'Pratinjau sudah kedaluwarsa. Buat pratinjau ulang.');
 });
 
 it('token yang bukan UUID ditolak 404 tanpa menyentuh cache atau disk', function () {
