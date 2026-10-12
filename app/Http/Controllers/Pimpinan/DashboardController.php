@@ -87,7 +87,7 @@ class DashboardController extends Controller
                     'masalah' => 'Belum Diisi',
                 ]);
 
-            $ikuBermasalah = $bermasalahTerisi->merge($belumDiisi)->values();
+            $ikuBermasalah = $bermasalahTerisi->toBase()->merge($belumDiisi)->values();
         }
 
         $trenMahasiswa = JumlahMahasiswa::with('tahunAnggaran')->get()
