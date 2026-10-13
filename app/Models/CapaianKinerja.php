@@ -216,4 +216,46 @@ class CapaianKinerja extends Model
             default => [],
         };
     }
+
+    /**
+     * Config presentasi/validasi satu komponen; null bila tidak dikenal.
+     * arsitektur_pts punya 2 tabel dengan kolom berbeda, jadi config-nya per komponen.
+     */
+    public static function configKomponen(string $tipeIku, string $komponen): ?array
+    {
+        if ($tipeIku !== 'arsitektur_pts') {
+            return config("capaian_kinerja_tipe.{$tipeIku}");
+        }
+
+        return match ($komponen) {
+            'akreditasi' => [
+                'butuh_pts' => true,
+                'kolom' => [
+                    ['field' => 'akreditasi', 'label' => 'Akreditasi', 'tipe' => 'text', 'required' => true],
+                    ['field' => 'no_sk', 'label' => 'No. SK', 'tipe' => 'text', 'required' => true],
+                    ['field' => 'masa_berlaku', 'label' => 'Masa Berlaku', 'tipe' => 'date', 'required' => true],
+                ],
+            ],
+            'penggabungan' => [
+                'butuh_pts' => true,
+                'kolom' => [
+                    ['field' => 'sk_penggabungan', 'label' => 'No. SK Penggabungan', 'tipe' => 'text', 'required' => true],
+                    ['field' => 'file_bukti_dukung', 'label' => 'Bukti Dokumen SK Penggabungan PTS', 'tipe' => 'file', 'required' => true, 'link_teks' => 'SK'],
+                ],
+            ],
+            default => null,
+        };
+    }
+
+    /** Semua field upload file untuk config komponen tertentu. */
+    public static function fileFields(array $config): array
+    {
+        $fields = collect($config['kolom'])->where('tipe', 'file')->pluck('field')->all();
+
+        if (($config['bukti'] ?? true) && ! in_array('file_bukti_dukung', $fields, true)) {
+            $fields[] = 'file_bukti_dukung';
+        }
+
+        return $fields;
+    }
 }

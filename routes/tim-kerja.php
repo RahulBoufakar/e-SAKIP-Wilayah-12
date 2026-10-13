@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\TimKerja\CapaianKinerja\AnalisaKinerjaController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaBarisController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaBuktiController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaKirimController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaMigrasiController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\JumlahPublikasiController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DataProkerController;
@@ -58,15 +63,15 @@ Route::middleware(['auth', 'role:tim_kerja'])
         // Capaian Kinerja
         Route::get('capaian-kinerja', [CapaianKinerjaController::class, 'index'])->name('capaian-kinerja.index');
         Route::get('capaian-kinerja/{iku}', [CapaianKinerjaController::class, 'show'])->name('capaian-kinerja.show');
-        Route::get('capaian-kinerja/{iku}/preview-kirim', [CapaianKinerjaController::class, 'previewKirim'])->name('capaian-kinerja.preview-kirim');
-        Route::put('capaian-kinerja/{iku}/kirim', [CapaianKinerjaController::class, 'kirim'])->name('capaian-kinerja.kirim');
-        Route::post('capaian-kinerja/{iku}/baris/{komponen}', [CapaianKinerjaController::class, 'storeBaris'])->name('capaian-kinerja.baris.store');
-        Route::put('capaian-kinerja/{iku}/baris/{komponen}/{barisId}', [CapaianKinerjaController::class, 'updateBaris'])->name('capaian-kinerja.baris.update');
-        Route::delete('capaian-kinerja/{iku}/baris/{komponen}/{barisId}', [CapaianKinerjaController::class, 'destroyBaris'])->name('capaian-kinerja.baris.destroy');
-        Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/preview', [CapaianKinerjaController::class, 'previewBukti'])->name('capaian-kinerja.bukti.preview');
-        Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/unduh', [CapaianKinerjaController::class, 'unduhBukti'])->name('capaian-kinerja.bukti.unduh');
-        Route::post('capaian-kinerja/{iku}/migrasi-triwulan', [CapaianKinerjaController::class, 'migrasiTriwulan'])->name('capaian-kinerja.migrasi-triwulan');
-        Route::put('capaian-kinerja/{iku}/jumlah-publikasi', [CapaianKinerjaController::class, 'simpanJumlahPublikasi'])->name('capaian-kinerja.jumlah-publikasi.update');
+        Route::get('capaian-kinerja/{iku}/preview-kirim', [CapaianKinerjaKirimController::class, 'preview'])->name('capaian-kinerja.preview-kirim');
+        Route::put('capaian-kinerja/{iku}/kirim', [CapaianKinerjaKirimController::class, 'kirim'])->name('capaian-kinerja.kirim');
+        Route::post('capaian-kinerja/{iku}/baris/{komponen}', [CapaianKinerjaBarisController::class, 'store'])->name('capaian-kinerja.baris.store');
+        Route::put('capaian-kinerja/{iku}/baris/{komponen}/{barisId}', [CapaianKinerjaBarisController::class, 'update'])->name('capaian-kinerja.baris.update');
+        Route::delete('capaian-kinerja/{iku}/baris/{komponen}/{barisId}', [CapaianKinerjaBarisController::class, 'destroy'])->name('capaian-kinerja.baris.destroy');
+        Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/preview', [CapaianKinerjaBuktiController::class, 'preview'])->name('capaian-kinerja.bukti.preview');
+        Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/unduh', [CapaianKinerjaBuktiController::class, 'unduh'])->name('capaian-kinerja.bukti.unduh');
+        Route::post('capaian-kinerja/{iku}/migrasi-triwulan', CapaianKinerjaMigrasiController::class)->name('capaian-kinerja.migrasi-triwulan');
+        Route::put('capaian-kinerja/{iku}/jumlah-publikasi', JumlahPublikasiController::class)->name('capaian-kinerja.jumlah-publikasi.update');
 
         // Analisa Kinerja
         Route::get('analisa-kinerja', [AnalisaKinerjaController::class, 'index'])->name('analisa-kinerja.index');
