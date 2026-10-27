@@ -44,14 +44,24 @@
                     x-model="form.nama_pts"
                     required
                 />
-
+                
+                <x-form.input
+                    label="Provinsi"
+                    name="provinsi"
+                    type="text"
+                    maxlength="100"
+                    placeholder="Contoh: Maluku, Maluku Utara"
+                    x-model="form.provinsi"
+                />
+                
                 <x-form.select
                     label="Status PTS"
                     name="status_pts"
                     x-model="form.status_pts"
-                    required
                 >
+                    <option value="">— Belum ada —</option>
                     <option value="aktif">Aktif</option>
+                    <option value="non_aktif">Non Aktif</option>
                     <option value="alih_bentuk">Alih Bentuk</option>
                     <option value="tutup">Tutup</option>
                     <option value="alih_kelola">Alih Kelola</option>

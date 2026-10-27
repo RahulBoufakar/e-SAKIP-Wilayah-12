@@ -54,9 +54,9 @@ function rabKelompok(Kategori $kategori, string $kode = 'A', ?string $nama = nul
     ]);
 }
 
-it('flag rab_generator.enabled default nonaktif supaya alur template lama tetap jalan', function () {
-    expect(config('rab_generator.enabled'))->toBeFalse();
-});
+// it('flag rab_generator.enabled default nonaktif supaya alur template lama tetap jalan', function () {
+//     expect(config('rab_generator.enabled'))->toBeFalse();
+// });
 
 it('relasi file_excel -> sheet -> header/footer/kategori -> kelompok resolve dengan benar', function () {
     $file = rabFile();

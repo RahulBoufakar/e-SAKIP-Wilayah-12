@@ -81,6 +81,19 @@ class CapaianKinerjaPolicy
             : Response::denyAsNotFound();
     }
 
+    // Import akreditasi dari sinkronisasi: syarat update (pemilik + Triwulan aktif) + hanya IKU arsitektur_pts.
+    public function importPddikti(User $user, CapaianKinerja $capaianKinerja): Response
+    {
+        $update = $this->update($user, $capaianKinerja);
+        if ($update->denied()) {
+            return $update;
+        }
+
+        return $capaianKinerja->iku->tipe_iku === 'arsitektur_pts'
+            ? Response::allow()
+            : Response::denyAsNotFound();
+    }
+
     // AUDIT § B3: kepemilikan tim didelegasikan ke TeamOwnershipService.
     private function owns(User $user, ?Iku $iku): bool
     {

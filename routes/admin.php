@@ -92,8 +92,15 @@ Route::middleware(['auth', 'role:admin'])
             Route::post('jumlah-pts', [JumlahPtsController::class, 'store'])->name('jumlah-pts.store');
             Route::delete('jumlah-pts/{jumlahPts}', [JumlahPtsController::class, 'destroy'])->name('jumlah-pts.destroy');
 
-            // FR-34: hanya halaman placeholder, sengaja tidak ada route POST aktif
+            // Sinkronisasi data PTS & akreditasi dari API LLDikti 12
             Route::get('sinkronisasi', [SinkronisasiController::class, 'index'])->name('sinkronisasi.index');
+            Route::get('sinkronisasi/status', [SinkronisasiController::class, 'status'])->name('sinkronisasi.status');
+            Route::middleware('throttle:6,1')->group(function () {
+                Route::post('sinkronisasi/pts', [SinkronisasiController::class, 'pts'])->name('sinkronisasi.pts');
+                Route::post('sinkronisasi/akreditasi', [SinkronisasiController::class, 'akreditasi'])->name('sinkronisasi.akreditasi');
+                Route::post('sinkronisasi/semua', [SinkronisasiController::class, 'semua'])->name('sinkronisasi.semua');
+                Route::put('sinkronisasi/{sinkronisasiPts}/tandai-gagal', [SinkronisasiController::class, 'tandaiGagal'])->name('sinkronisasi.tandai-gagal');
+            });
 
             // Laporan Pimpinan — jalur cadangan Admin, akses sama seperti Pimpinan (PRD §2.2/§3.2)
             Route::get('laporan-pimpinan', [LaporanKinerjaController::class, 'index'])->name('laporan-pimpinan.index');

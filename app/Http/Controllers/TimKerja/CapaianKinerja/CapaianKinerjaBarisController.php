@@ -84,7 +84,9 @@ class CapaianKinerjaBarisController extends Controller
             // Diedit di triwulan ini = milik triwulan ini: putus tautan sinkronisasi migrasi.
             // (Hanya untuk model yang punya kolomnya; 3 tabel entri tunggal tidak.)
             $putusTautan = in_array('sumber_baris_id', $baris->getFillable(), true) ? ['sumber_baris_id' => null] : [];
-            $baris->update($data + $file + $putusTautan);
+            // Diedit Tim Kerja = isian manual: baris Akreditasi hasil import API menjadi manual.
+            $jadiManual = ($komponen === 'akreditasi' && ($baris->sumber ?? 'manual') !== 'manual') ? ['sumber' => 'manual'] : [];
+            $baris->update($data + $file + $putusTautan + $jadiManual);
         } catch (QueryException $e) {
             Storage::disk('private')->delete(array_values($file));
 

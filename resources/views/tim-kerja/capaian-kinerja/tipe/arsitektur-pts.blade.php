@@ -19,7 +19,7 @@
     @php
         $akreditasiList = $capaian->relasi('akreditasi')->with('pts')->latest()->get();
         $penggabunganList = $capaian->relasi('penggabungan')->with('pts')->latest()->get();
-        $ptsOptions = \App\Models\Pts::orderBy('nama_pts')->get(['id', 'kode_pts', 'nama_pts']);
+        $ptsOptions = \App\Models\Pts::opsiDropdown($akreditasiList->pluck('pts_id')->merge($penggabunganList->pluck('pts_id'))->all());
         $akr = old('komponen_form') === 'akreditasi';
         $gab = old('komponen_form') === 'penggabungan';
     @endphp
@@ -71,13 +71,29 @@
             <x-status-badge :status="$capaian->status" />
         </div>
 
-        {{-- Placeholder Import PDDIKTI (§8: khusus komponen Akreditasi, belum tersedia API) --}}
-        <div class="mt-4 flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3V15" /></svg>
-            <p class="text-xs text-slate-500">Import data akreditasi otomatis dari PDDIKTI — belum tersedia pada versi ini, isi manual di bawah.</p>
-            <button type="button" disabled class="ml-auto shrink-0 cursor-not-allowed rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-400">Import PDDIKTI</button>
-        </div>
-
+        <!-- Tombol Import Akreditasi -->
+        @if ($isTriwulanAktif)
+            @php $namaSumber = config('pddikti.driver') === 'lldikti12' ? 'LLDikti 12' : 'PDDikti'; @endphp
+            <div class="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-white px-5 py-3 shadow-card">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs text-slate-600">Salin data akreditasi PTS hasil sinkronisasi ke komponen Akreditasi sebagai draft. Isian manual Anda tidak ditimpa.</p>
+                    @if ($terakhirSinkronAkreditasi)
+                        <p class="mt-0.5 text-xs text-slate-400">Data sinkronisasi terakhir: {{ \Illuminate\Support\Carbon::parse($terakhirSinkronAkreditasi)->format('d/m/Y H:i') }}</p>
+                    @else
+                        <p class="mt-0.5 text-xs font-medium text-amber-700">Data akreditasi belum pernah disinkronkan. Hubungi Administrator.</p>
+                    @endif
+                </div>
+                <button type="button" @click="$refs['konfirmasi-import-akreditasi'].showModal()" class="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">Import dari {{ $namaSumber }}</button>
+            </div>
+            <x-confirm-action refName="konfirmasi-import-akreditasi"
+                :action="route('tim-kerja.capaian-kinerja.import-akreditasi', $iku->id).'?triwulan_id='.$triwulanDipilih->id"
+                title="Import data akreditasi?"
+                body="Data akreditasi PTS yang masih berlaku disalin sebagai draft. Isian manual dan data yang sedang/sudah divalidasi tidak diubah."
+                confirmLabel="Ya, import" />
+        @endif
+        
+        {{-- Tombol Kirikm Semua --}}
         @if ($isTriwulanAktif)
             <div class="mt-4 flex flex-wrap justify-end gap-3">
                 <x-workflow.migrasi-triwulan :iku="$iku" :triwulan-id="$triwulanDipilih->id" :ringkasan="$ringkasanMigrasi" />
@@ -116,7 +132,12 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($akreditasiList as $row)
                         <tr class="hover:bg-brand-50/40">
-                            <td class="px-4 py-2.5 text-slate-600">{{ $row->pts->nama_pts ?? '—' }}</td>
+                            <td class="px-4 py-2.5 text-slate-600">
+                                    {{ $row->pts->nama_pts ?? '—' }}
+                                    @if (($row->sumber ?? 'manual') !== 'manual')
+                                        <span class="ml-1 inline-flex rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">{{ $row->sumber === 'lldikti12' ? 'LLDikti12' : 'PDDikti' }}</span>
+                                    @endif
+                            </td>
                             <td class="px-4 py-2.5 text-slate-600">{{ $row->akreditasi }}</td>
                             <td class="px-4 py-2.5 text-slate-600">{{ $row->no_sk }}</td>
                             <td class="px-4 py-2.5 text-slate-600">{{ \Illuminate\Support\Carbon::parse($row->masa_berlaku)->format('d/m/Y') }}</td>
@@ -141,6 +162,10 @@
                 </tbody>
             </table>
         </div>
+        
+        @if ($akreditasiList->contains('sumber', 'lldikti12'))
+            <p class="mt-2 text-xs text-slate-400">Sumber data akreditasi hasil import: LLDIKTI Wilayah XII</p>
+        @endif
 
         <!-- Komponen 2: Penggabungan PTS -->
         <div class="mt-5 overflow-hidden rounded-2xl bg-white shadow-card">

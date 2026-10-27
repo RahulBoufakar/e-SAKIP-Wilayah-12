@@ -4,18 +4,19 @@ use App\Http\Controllers\TimKerja\CapaianKinerja\AnalisaKinerjaController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaBarisController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaBuktiController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaDokumenController;
+use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaImportController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaKirimController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaMigrasiController;
 use App\Http\Controllers\TimKerja\CapaianKinerja\JumlahPublikasiController;
-use App\Http\Controllers\TimKerja\CapaianKinerja\CapaianKinerjaDokumenController;
 use App\Http\Controllers\TimKerja\DashboardController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DataProkerController;
-use App\Http\Controllers\TimKerja\ProgramKerja\StatusKegiatanController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DetailKegiatanController;
 use App\Http\Controllers\TimKerja\ProgramKerja\DokumenLaporanKegiatanFileController;
 use App\Http\Controllers\TimKerja\ProgramKerja\KalenderProkerController;
 use App\Http\Controllers\TimKerja\ProgramKerja\PelaporanKegiatanController;
 use App\Http\Controllers\TimKerja\ProgramKerja\PtsTaggingController;
+use App\Http\Controllers\TimKerja\ProgramKerja\StatusKegiatanController;
 use App\Http\Controllers\TimKerja\ProgramKerja\UsulanProgramKerjaController;
 use App\Http\Controllers\TimKerja\ProgramKerja\UsulanProgramKerjaFileController;
 use App\Http\Controllers\TimKerja\TargetKinerja\IkuLldiktiController;
@@ -72,7 +73,8 @@ Route::middleware(['auth', 'role:tim_kerja'])
         Route::get('capaian-kinerja/{iku}/bukti/{komponen}/{barisId}/unduh', [CapaianKinerjaBuktiController::class, 'unduh'])->name('capaian-kinerja.bukti.unduh');
         Route::post('capaian-kinerja/{iku}/migrasi-triwulan', CapaianKinerjaMigrasiController::class)->name('capaian-kinerja.migrasi-triwulan');
         Route::put('capaian-kinerja/{iku}/jumlah-publikasi', JumlahPublikasiController::class)->name('capaian-kinerja.jumlah-publikasi.update');
-
+        Route::post('capaian-kinerja/{iku}/import-akreditasi', CapaianKinerjaImportController::class)->name('capaian-kinerja.import-akreditasi');
+        
         // Analisa Kinerja
         Route::get('analisa-kinerja', [AnalisaKinerjaController::class, 'index'])->name('analisa-kinerja.index');
         Route::put('analisa-kinerja/{iku}/{triwulan}', [AnalisaKinerjaController::class, 'storeOrUpdate'])->name('analisa-kinerja.store-or-update');

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\Pts;
+use App\Models\PtsAkreditasi;
 use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use App\Services\CapaianKinerjaBerkasService;
@@ -86,9 +87,16 @@ class CapaianKinerjaController extends Controller
         $capaian->setRelation('iku', $iku);
 
         $config = config("capaian_kinerja_tipe.{$iku->tipe_iku}");
-        $ptsOptions = ($config['butuh_pts'] ?? false)
-            ? Pts::orderBy('nama_pts')->get(['id', 'kode_pts', 'nama_pts'])
-            : collect();
+        $ptsOptions = collect();
+        if ($config['butuh_pts'] ?? false) {
+            $ptsTerpakai = collect(array_keys($iku->komponenCapaian()))
+                ->flatMap(fn ($komponen) => $capaian->relasi($komponen)->pluck('pts_id'))
+                ->unique()->all();
+            $ptsOptions = Pts::opsiDropdown($ptsTerpakai);
+        }
+        $terakhirSinkronAkreditasi = $iku->tipe_iku === 'arsitektur_pts'
+            ? PtsAkreditasi::max('terakhir_sinkron_at')
+            : null;
 
         $ringkasanMigrasi = $isTriwulanAktif ? $this->migrasi->ringkasan($capaian) : null;
         $masalahFile = $isTriwulanAktif ? $this->berkas->masalahFile($capaian) : collect();
@@ -97,7 +105,7 @@ class CapaianKinerjaController extends Controller
             ? 'tim-kerja.capaian-kinerja.tipe.arsitektur-pts'
             : 'tim-kerja.capaian-kinerja.tipe.generik';
 
-        return view($view, compact('iku', 'capaian', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'config', 'ptsOptions', 'ringkasanMigrasi', 'masalahFile'));
+        return view($view, compact('iku', 'capaian', 'triwulanList', 'triwulanDipilih', 'isTriwulanAktif', 'config', 'ptsOptions', 'ringkasanMigrasi', 'masalahFile', 'terakhirSinkronAkreditasi'));
     }
 
     /** @return array{0: \Illuminate\Support\Collection, 1: ?Triwulan, 2: bool} */
