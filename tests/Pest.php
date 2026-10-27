@@ -4,6 +4,7 @@ use App\Models\AnalisaKinerja;
 use App\Models\CapaianKinerja;
 use App\Models\Iku;
 use App\Models\LaporanKinerja;
+use App\Models\Pts;
 use App\Models\SasaranKegiatan;
 use App\Models\TahunAnggaran;
 use App\Models\TimKerja;
@@ -11,6 +12,7 @@ use App\Models\Triwulan;
 use App\Models\TriwulanStatus;
 use App\Models\User;
 use App\Models\UsulanProgramKerja;
+use App\Services\Pddikti\PtsDataSource;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\TriwulanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,4 +113,49 @@ function makeLaporanKinerja(TahunAnggaran $tahunAnggaran, array $attrs = []): La
         'versi' => 1,
         'status' => 'diproses',
     ], $attrs));
+}
+
+function makePts(string $kode = 'P001', array $attrs = []): Pts
+{
+    return Pts::create(array_merge([
+        'kode_pts' => $kode, 'nama_pts' => "PTS {$kode}", 'provinsi' => 'Maluku', 'status_pts' => 'aktif',
+        'sumber_data' => 'manual', // eksplisit — jangan andalkan default kolom DB
+    ], $attrs));
+}
+
+/** Sumber data palsu untuk PtsSyncService: mengembalikan array ternormalisasi apa adanya. */
+function sumberPalsu(array $pts = [], array $akreditasi = []): PtsDataSource
+{
+    return new class($pts, $akreditasi) implements PtsDataSource {
+        public function __construct(private array $pts, private array $akreditasi)
+        {
+        }
+
+        public function ambilSemuaPts(): array
+        {
+            return $this->pts;
+        }
+
+        public function ambilSemuaAkreditasi(): array
+        {
+            return $this->akreditasi;
+        }
+    };
+}
+
+/** Baris ternormalisasi PTS (bentuk keluaran driver), bentuk nilainya dari dokumentasi Tahap 0. */
+function apiPts(array $o = []): array
+{
+    return $o + [
+        'kode_pts' => '121002', 'nama_pts' => 'Universitas Darussalam Ambon', 'provinsi' => 'Maluku', 'status' => 'Aktif',
+        'peringkat_akreditasi' => 'Baik Sekali', 'status_akreditasi' => 'Aktif',
+    ];
+}
+
+function apiAkreditasi(array $o = []): array
+{
+    return $o + [
+        'kode_pts' => '121002', 'peringkat' => 'Baik Sekali', 'no_sk' => 'SK/1',
+        'tgl_sk' => '2022-10-11', 'tgl_akhir' => '2027-10-11', 'status' => 'Aktif',
+    ];
 }

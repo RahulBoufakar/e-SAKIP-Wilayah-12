@@ -139,6 +139,9 @@
                 </tbody>
             </table>
         </div>
+        @if ($akreditasiList->contains('sumber', 'lldikti12'))
+            <p class="mt-3 text-xs text-slate-400">Sumber data akreditasi hasil import: LLDIKTI Wilayah XII</p>
+        @endif
 
         <!-- Modal Validasi (dipakai bergantian untuk kedua komponen via state `komponen`) -->
         <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4">

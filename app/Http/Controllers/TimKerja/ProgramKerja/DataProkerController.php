@@ -51,7 +51,8 @@ class DataProkerController extends Controller
 
         $prokerList = $query->orderByDesc('id')->paginate(15)->withQueryString();
 
-        $ptsOptions = Pts::orderBy('nama_pts')->get(['id', 'kode_pts', 'nama_pts']);
+        $ptsTerpakai = $prokerList->getCollection()->flatMap(fn ($p) => $p->pts->pluck('id'))->unique()->all();
+        $ptsOptions = Pts::opsiDropdown($ptsTerpakai);
         $bulanIndo = self::BULAN_INDO;
         $filterOptions = $this->filterOptionsTahun($tahun, $timKerjaIds);
 

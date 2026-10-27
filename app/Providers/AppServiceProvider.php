@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\PengaturanAplikasi;
+use App\Services\Pddikti\Lldikti12PtsDataSource;
+use App\Services\Pddikti\PddiktiPtsDataSource;
+use App\Services\Pddikti\PtsDataSource;
 use App\View\Composers\ContextBarComposer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +21,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        // Pilih implementasi sumber data PTS berdasarkan driver PDDIKTI yang dikonfigurasi.
+        $this->app->bind(PtsDataSource::class, function () {
+            $driver = config('pddikti.driver');
+
+            return match ($driver) {
+                'lldikti12' => new Lldikti12PtsDataSource(config('pddikti.drivers.lldikti12')),
+                'pddikti' => new PddiktiPtsDataSource(),
+                default => throw new \InvalidArgumentException(
+                    "PDDIKTI_DRIVER \"{$driver}\" tidak dikenal. Gunakan: lldikti12 atau pddikti."
+                ),
+            };
+        });
     }
 
     /**
@@ -40,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
             ));
         });
 
+        // Share the current context (role) with the navbar views, so that we can highlight the correct menu item based on the user's role.
         View::composer([
             'admin.layout.navbar',
             'tim-kerja.layout.navbar',

@@ -18,15 +18,43 @@ class PtsController extends Controller
     {
         $this->authorize('viewAny', Pts::class);
 
-        $ptsList = Pts::when($request->filled('search'), function ($q) use ($request) {
-                $q->where('nama_pts', 'like', '%'.$request->search.'%')
-                    ->orWhere('kode_pts', 'like', '%'.$request->search.'%');
+        $ptsList = Pts::query()
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('nama_pts', 'like', '%'.$request->search.'%')
+                        ->orWhere('kode_pts', 'like', '%'.$request->search.'%');
+                });
+            })
+            ->when($request->filled('status_pts') || $request->filled('status'), function ($q) use ($request) {
+                $val = $request->status_pts ?? $request->status;
+                $q->where('status_pts', $val);
+            })
+            ->when($request->filled('akreditasi_pts') || $request->filled('akreditasi'), function ($q) use ($request) {
+                $val = $request->akreditasi_pts ?? $request->akreditasi;
+                $q->where('akreditasi_pts', $val);
+            })
+            ->when($request->filled('sumber_data') || $request->filled('sumber'), function ($q) use ($request) {
+                $val = $request->sumber_data ?? $request->sumber;
+                $q->where('sumber_data', $val);
+            })
+            ->when($request->filled('provinsi'), function ($q) use ($request) {
+                $q->where('provinsi', $request->provinsi);
             })
             ->orderBy('kode_pts')
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.master-data.pts.index', compact('ptsList'));
+        $provinsiOptions = Pts::whereNotNull('provinsi')
+            ->where('provinsi', '!=', '')
+            ->distinct()
+            ->orderBy('provinsi')
+            ->pluck('provinsi');
+
+        if ($provinsiOptions->isEmpty()) {
+            $provinsiOptions = collect(['Maluku', 'Maluku Utara']);
+        }
+
+        return view('admin.master-data.pts.index', compact('ptsList', 'provinsiOptions'));
     }
 
     // POST /admin/master-data/pts
@@ -53,11 +81,20 @@ class PtsController extends Controller
         $this->authorize('update', $pts);
 
         $data = $this->validated($request, $pts);
-        $pts->update($data);
+
+        // TDD Sinkronisasi PTS §8: setiap edit Admin mengubah sumber_data menjadi manual
+        // (sinkronisasi berikutnya akan menimpanya kembali — "API selalu menang").
+        $sumberLama = $pts->sumber_data;
+        $pts->update($data + ['sumber_data' => 'manual']);
+
+        $deskripsi = "memperbarui data PTS \"{$pts->nama_pts}\" ({$pts->kode_pts})";
+        if ($sumberLama !== 'manual') {
+            $deskripsi .= " (sumber: {$sumberLama} ke manual)";
+        }
 
         event(new ActivityOccurred(
             subject: $pts,
-            description: "memperbarui data PTS \"{$pts->nama_pts}\" ({$pts->kode_pts})",
+            description: $deskripsi,
             causer: Auth::user(),
         ));
 
@@ -92,7 +129,8 @@ class PtsController extends Controller
         return $request->validate([
             'kode_pts' => ['required', 'string', 'max:20', Rule::unique('pts', 'kode_pts')->ignore($pts?->id)],
             'nama_pts' => 'required|string|max:255',
-            'status_pts' => 'required|in:aktif,alih_bentuk,tutup,alih_kelola,pembinaan',
+            'provinsi' => 'nullable|string|max:100',
+            'status_pts' => 'nullable|in:aktif,non_aktif,alih_bentuk,tutup,alih_kelola,pembinaan',
             'akreditasi_pts' => 'nullable|in:unggul,terakreditasi,tidak_terakreditasi',
         ], [
             'kode_pts.required' => 'Kode PTS wajib diisi.',
@@ -100,7 +138,7 @@ class PtsController extends Controller
             'kode_pts.unique' => 'Kode PTS sudah digunakan.',
             'nama_pts.required' => 'Nama PTS wajib diisi.',
             'nama_pts.max' => 'Nama PTS maksimal 255 karakter.',
-            'status_pts.required' => 'Status PTS wajib dipilih.',
+            'provinsi.max' => 'Provinsi maksimal 100 karakter.',
             'status_pts.in' => 'Status PTS tidak valid.',
             'akreditasi_pts.in' => 'Akreditasi PTS tidak valid.',
         ]);
