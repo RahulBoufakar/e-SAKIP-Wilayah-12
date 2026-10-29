@@ -6,20 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Spek §4.3 tabel 9 — IKU 8. Denominator jumlah_publikasi (bukan jumlah_pts). Bukti WAJIB.
+    // Spek §4.3 tabel 9 — IKU 3.3. Denominator jumlah_publikasi milik header (bukan jumlah_pts).
+    // Pola baris sama dengan IKU 3.1; bukti dukung opsional.
     public function up(): void
     {
         Schema::create('capaian_fasilitasi_penelitian', function (Blueprint $table) {
             $table->id();
             $table->foreignId('capaian_kinerja_id')->constrained('capaian_kinerja')->cascadeOnDelete();
+            // Id baris asal (triwulan sebelumnya). Null = baris mandiri / tautan diputus.
+            $table->unsignedBigInteger('sumber_baris_id')->nullable();
             $table->foreignId('pts_id')->constrained('pts')->restrictOnDelete();
-            $table->string('dosen_perwakilan');
             $table->string('bentuk_fasilitasi');
-            $table->text('output');
-            $table->string('file_bukti_dukung');
+            $table->date('tanggal_kegiatan');
+            $table->string('file_bukti_dukung')->nullable();
             $table->enum('status_validasi', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamps();
+
+            $table->foreign('sumber_baris_id')->references('id')->on('capaian_fasilitasi_penelitian')->nullOnDelete();
+            $table->unique(['capaian_kinerja_id', 'pts_id', 'bentuk_fasilitasi', 'tanggal_kegiatan'], 'ck_penelitian_fasilitasi_uq');
         });
     }
 

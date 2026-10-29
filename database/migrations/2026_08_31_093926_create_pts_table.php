@@ -12,8 +12,11 @@ return new class extends Migration
             $table->id();
             $table->string('kode_pts', 20)->unique();
             $table->string('nama_pts', 255);
-            $table->enum('status_pts', ['aktif', 'alih_bentuk', 'tutup', 'alih_kelola', 'pembinaan'])->default('aktif');
+            $table->string('provinsi', 100)->nullable();
+            $table->enum('status_pts', ['aktif', 'non_aktif', 'alih_bentuk', 'tutup', 'alih_kelola', 'pembinaan'])->nullable()->default(null);
             $table->enum('akreditasi_pts', ['unggul', 'terakreditasi', 'tidak_terakreditasi'])->nullable();
+            $table->enum('sumber_data', ['manual', 'lldikti12', 'pddikti'])->default('manual');
+            $table->timestamp('terakhir_sinkron_at')->nullable();
             $table->timestamps();
         });
     }
