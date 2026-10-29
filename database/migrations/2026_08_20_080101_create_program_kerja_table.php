@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('usulan_program_kerja_id')->unique()
                 ->constrained('usulan_program_kerja')->cascadeOnDelete();
             $table->string('kode_proker')->nullable();
+            $table->enum('status_kegiatan', ['Belum Dilaksanakan', 'Sedang Dilaksanakan', 'Selesai Dilaksanakan'])
+                ->default('Belum Dilaksanakan');
             $table->timestamps();
         });
     }

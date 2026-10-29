@@ -12,6 +12,8 @@ return new class extends Migration
         Schema::create('capaian_fasilitasi_kemahasiswaan', function (Blueprint $table) {
             $table->id();
             $table->foreignId('capaian_kinerja_id')->constrained('capaian_kinerja')->cascadeOnDelete();
+            // Id baris asal (triwulan sebelumnya). Null = baris mandiri / tautan diputus.
+            $table->unsignedBigInteger('sumber_baris_id')->nullable();
             $table->foreignId('pts_id')->constrained('pts')->restrictOnDelete();
             $table->string('bentuk_fasilitasi');
             $table->date('tanggal_kegiatan');
@@ -19,6 +21,9 @@ return new class extends Migration
             $table->enum('status_validasi', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamps();
+
+            $table->foreign('sumber_baris_id')->references('id')->on('capaian_fasilitasi_kemahasiswaan')->nullOnDelete();
+            $table->unique(['capaian_kinerja_id', 'pts_id', 'bentuk_fasilitasi', 'tanggal_kegiatan'], 'ck_mhs_dup_uq');
         });
     }
 

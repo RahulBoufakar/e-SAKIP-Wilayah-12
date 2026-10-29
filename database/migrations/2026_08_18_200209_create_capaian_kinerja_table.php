@@ -13,6 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
+        // Header agregat per (IKU, Triwulan, Tahun). realisasi_otomatis = hasil hitung
+        // dari baris detail yang disetujui; realisasi_override = true bila Tim Kerja
+        // mengganti manual saat kirim.
         Schema::create('capaian_kinerja', function (Blueprint $table) {
             $table->id();
             $table->foreignId('iku_id')->constrained('iku')->restrictOnDelete();
@@ -21,7 +24,8 @@ return new class extends Migration
             $table->foreignId('tahun_anggaran_id')->constrained('tahun_anggaran')->restrictOnDelete();
             $table->decimal('target', 10, 2)->nullable();
             $table->decimal('realisasi', 10, 2)->nullable();
-            $table->json('variabel')->nullable();
+            $table->decimal('realisasi_otomatis', 10, 2)->nullable();
+            $table->boolean('realisasi_override')->default(false);
             $table->enum('status', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamp('created_at')->useCurrent();

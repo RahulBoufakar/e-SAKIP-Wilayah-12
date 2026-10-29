@@ -12,12 +12,17 @@ return new class extends Migration
         Schema::create('capaian_penggabungan_pts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('capaian_kinerja_id')->constrained('capaian_kinerja')->cascadeOnDelete();
+            // Id baris asal (triwulan sebelumnya). Null = baris mandiri / tautan diputus.
+            $table->unsignedBigInteger('sumber_baris_id')->nullable();
             $table->foreignId('pts_id')->constrained('pts')->restrictOnDelete();
             $table->string('sk_penggabungan');
             $table->string('file_bukti_dukung')->nullable();
             $table->enum('status_validasi', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamps();
+
+            $table->foreign('sumber_baris_id')->references('id')->on('capaian_penggabungan_pts')->nullOnDelete();
+            $table->unique(['capaian_kinerja_id', 'pts_id'], 'ck_penggabungan_pts_uq');
         });
     }
 

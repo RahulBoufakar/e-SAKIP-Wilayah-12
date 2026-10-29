@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    // Spek §4.3 tabel 10 — IKU 9. Nilai langsung, tanpa pembagian (§5 Pola 6).
+    // Spek §4.3 tabel 10 — IKU 9. Nilai langsung, tanpa pembagian (§5 Pola 6). Entri tunggal per header.
     public function up(): void
     {
         Schema::create('capaian_nilai_rka', function (Blueprint $table) {
@@ -17,6 +17,8 @@ return new class extends Migration
             $table->enum('status_validasi', ['draft', 'menunggu_validasi', 'disetujui', 'ditolak'])->default('draft');
             $table->text('catatan_revisi')->nullable();
             $table->timestamps();
+
+            $table->unique('capaian_kinerja_id', 'ck_nilairka_tunggal_uq');
         });
     }
 

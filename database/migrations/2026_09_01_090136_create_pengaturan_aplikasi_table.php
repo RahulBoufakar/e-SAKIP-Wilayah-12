@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('nama_aplikasi')->default('eSAKIP LLDikti Wilayah XII');
             $table->string('logo')->nullable();
             $table->string('favicon')->nullable();
+            $table->string('background_kontak')->nullable();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
         });
     }

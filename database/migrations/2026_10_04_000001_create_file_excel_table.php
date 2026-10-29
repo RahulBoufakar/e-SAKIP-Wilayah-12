@@ -18,6 +18,10 @@ return new class extends Migration
             $table->boolean('aktif')->default(false);
             $table->timestamp('tanggal_upload')->useCurrent();
             $table->foreignId('diunggah_oleh')->nullable()->constrained('users')->nullOnDelete();
+            // Peringatan hasil deteksi yang TIDAK bisa dihitung ulang dari data di database
+            // (sheet dilewati, RO ganda, sub/akun yatim, ...). Bentuk: {"file": [...], "sheet": {"<kode_sheet>": [...]}}.
+            // Peringatan struktur (nama kosong, kode ganda) dihitung langsung dari tabel supaya hilang saat admin memperbaikinya.
+            $table->json('peringatan')->nullable();
         });
     }
 
