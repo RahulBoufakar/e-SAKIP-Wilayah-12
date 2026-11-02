@@ -11,6 +11,40 @@
         $bulanIndoDashboard = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     @endphp
 
+    {{-- ================= PERLU REVISI ================= --}}
+    @if ($itemDitolak->isNotEmpty())
+        <div class="mb-5 overflow-hidden rounded-2xl bg-white shadow-card">
+            <div class="border-b border-slate-100 px-5 py-4">
+                <div class="flex items-center gap-2">
+                    <p class="text-sm font-semibold text-ink-900">Perlu Revisi</p>
+                    <span class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">{{ $itemDitolak->count() }}</span>
+                </div>
+                <p class="mt-0.5 text-xs text-slate-400">Item yang ditolak validator dan menunggu perbaikan Anda.</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @foreach ($itemDitolak as $item)
+                    <div class="px-5 py-4">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">{{ $item['modul'] }}</span>
+                            <span class="font-mono text-xs font-semibold text-brand-700">{{ $item['iku_kode'] }}</span>
+                            <span class="text-xs text-slate-400">{{ $item['triwulan'] }}</span>
+                        </div>
+                        <p class="mt-1.5 min-w-0 truncate text-sm font-medium text-ink-900">{{ $item['iku_deskripsi'] }}</p>
+                        <p class="mt-1 text-sm text-slate-600">{{ $item['catatan_revisi'] }}</p>
+                        @if ($item['url'])
+                            <a href="{{ $item['url'] }}" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline">
+                                Buka halaman sumber
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" /></svg>
+                            </a>
+                        @else
+                            <p class="mt-2 text-xs italic text-slate-400">Halaman sumber belum tersedia.</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- ================= USULAN PROGRAM KERJA ================= --}}
     <div class="rounded-2xl bg-white p-5 shadow-card">
         <p class="text-sm font-semibold text-ink-900">Usulan Program Kerja (Tahun {{ $activeTahun }})</p>
@@ -216,37 +250,6 @@
         @else
             <p class="mt-4 text-sm text-slate-400">Triwulan aktif belum diatur.</p>
         @endif
-    </div>
-
-    {{-- ================= PERLU REVISI ================= --}}
-    <div class="mt-5 overflow-hidden rounded-2xl bg-white shadow-card">
-        <div class="border-b border-slate-100 px-5 py-4">
-            <p class="text-sm font-semibold text-ink-900">Perlu Revisi</p>
-            <p class="text-xs text-slate-400">Item yang ditolak validator dan menunggu perbaikan Anda.</p>
-        </div>
-        <div class="divide-y divide-slate-100">
-            @forelse ($itemDitolak as $item)
-                <div class="px-5 py-4">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">{{ $item['modul'] }}</span>
-                        <span class="font-mono text-xs font-semibold text-brand-700">{{ $item['iku_kode'] }}</span>
-                        <span class="text-xs text-slate-400">{{ $item['triwulan'] }}</span>
-                    </div>
-                    <p class="mt-1.5 min-w-0 truncate text-sm font-medium text-ink-900">{{ $item['iku_deskripsi'] }}</p>
-                    <p class="mt-1 text-sm text-slate-600">{{ $item['catatan_revisi'] }}</p>
-                    @if ($item['url'])
-                        <a href="{{ $item['url'] }}" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline">
-                            Buka halaman sumber
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" /></svg>
-                        </a>
-                    @else
-                        <p class="mt-2 text-xs italic text-slate-400">Halaman sumber belum tersedia.</p>
-                    @endif
-                </div>
-            @empty
-                <p class="px-5 py-12 text-center text-sm text-slate-400">Tidak ada item yang ditolak.</p>
-            @endforelse
-        </div>
     </div>
 @endsection
 
